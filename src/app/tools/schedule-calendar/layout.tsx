@@ -1,3 +1,5 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 export default function ScheduleCalendarLayout({
   children,
 }: {
@@ -13,9 +15,25 @@ export default function ScheduleCalendarLayout({
         </main>
         {/* Sidebar area (right ~30%) */}
         <aside className="hidden lg:block w-1/4 p-4 border-l">
-          {/* Sidebar content will go here */}
           <h2 className="text-xl font-semibold mb-4">サイドパネル</h2>
-          <p>ここに予定管理やSNS投稿の設定が入ります。</p>
+          <Tabs defaultValue="schedule-management" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="schedule-management">予定管理</TabsTrigger>
+              <TabsTrigger value="sns-posting">SNS投稿</TabsTrigger>
+            </TabsList>
+            <TabsContent value="schedule-management" className="mt-4">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">予定管理</h3>
+                <p>ここに予定の追加・編集・削除フォームや一覧が表示されます。</p>
+              </div>
+            </TabsContent>
+            <TabsContent value="sns-posting" className="mt-4">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">SNS投稿</h3>
+                <p>ここにSNS投稿文の生成機能が表示されます。</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </aside>
       </div>
     </div>
