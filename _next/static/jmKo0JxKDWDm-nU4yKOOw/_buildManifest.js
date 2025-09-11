@@ -1,10 +1,15 @@
 self.__BUILD_MANIFEST = {
   "/_error": [
-    "./static/chunks/b7cd0f6b7dc2b547.js"
+    "./static/chunks/0381b784d70f32a0.js"
   ],
   "__rewrites": {
     "afterFiles": [],
-    "beforeFiles": [],
+    "beforeFiles": [
+      {
+        "source": "/Kurodev-tool-portal//_next/:path+",
+        "destination": "/Kurodev-tool-portal/_next/:path+"
+      }
+    ],
     "fallback": []
   },
   "sortedPages": [
