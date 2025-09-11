@@ -1,0 +1,103 @@
+/* Import base styles from Tailwind */
+@import "tailwindcss";
+
+/* Define shadcn/ui theme variables */
+@layer base {
+  :root {
+    --radius: 0.5rem; /* 追加 */
+    --background: 0 0% 100%; /* White */
+    --foreground: 240 10% 3.9%; /* Dark Gray */
+
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 240 10% 3.9%; /* Dark Gray */
+    --card-hover: 0 0% 95%; /* Light mode card hover */
+
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 240 10% 3.9%; /* Dark Gray */
+
+    --primary: 237 100% 65%; /* Cyber Pop Blue */
+    --primary-foreground: 0 0% 98%; /* White */
+    --primary-hover: 237 100% 55%; /* Primary color for hover state */
+
+    --secondary: 318 100% 65%; /* Cyber Pop Pink */
+    --secondary-foreground: 240 10% 3.9%; /* Dark Gray */
+    --secondary-hover: 318 100% 55%; /* Secondary color for hover state */
+
+    --muted: 318 100% 95%; /* Light Pink for cards */
+    --muted-foreground: 240 10% 3.9%; /* Dark Gray */
+
+    --accent: 237 100% 95%; /* Light Blue for cards */
+    --accent-foreground: 240 10% 3.9%; /* Dark Gray */
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 237 100% 65%; /* Primary color for ring */
+  }
+
+  .dark {
+    --background: 240 10% 3.9%; /* Charcoal Gray */
+    --foreground: 0 0% 98%; /* White */
+
+    --card: 240 10% 3.9%; /* Charcoal Gray */
+    --card-foreground: 0 0% 98%; /* White */
+    --card-hover: 240 10% 10%; /* Dark mode card hover */
+
+    --popover: 240 10% 3.9%; /* Charcoal Gray */
+    --popover-foreground: 0 0% 98%; /* White */
+
+    --primary: 237 100% 65%; /* Cyber Pop Blue */
+    --primary-foreground: 0 0% 98%; /* White */
+    --primary-hover: 237 100% 55%; /* Primary color for hover state */
+
+    --secondary: 318 100% 65%; /* Cyber Pop Pink */
+    --secondary-foreground: 0 0% 98%; /* White */
+    --secondary-hover: 318 100% 55%; /* Secondary color for hover state */
+
+    --muted: 318 100% 20%; /* Dark Pink for cards */
+    --muted-foreground: 0 0% 98%; /* White - 各種設定画面の文字色を白に戻す */
+
+    --accent: 237 100% 20%; /* Dark Blue for cards */
+    --accent-foreground: 0 0% 98%; /* White */
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 237 100% 65%; /* Primary color for ring */
+  }
+}
+
+@layer base {
+  }
+
+/* Make Tailwind aware of the shadcn/ui variables */
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-DEFAULT: 1rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
