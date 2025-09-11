@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 import { Badge } from "./badge";
-import Link from "next/link";
 
 type ToolStatus = "released" | "beta" | "development";
 
@@ -43,8 +42,7 @@ export function ToolCard({
   }
 
   return (
-    <Link href={`/tools/${title.replace(/\s/g, '').toLowerCase()}`} passHref>
-      <Card className={`h-full flex flex-col ${cardClasses}`} hoverable={hoverable}>
+    <Card className={`h-full flex flex-col ${cardClasses}`} hoverable={hoverable}>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             {title}
@@ -61,6 +59,5 @@ export function ToolCard({
           {/* ここに詳細リンクやボタンなどを追加できます */}
         </CardFooter>
       </Card>
-    </Link>
   );
 }
