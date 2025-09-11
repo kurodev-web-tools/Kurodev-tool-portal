@@ -61,7 +61,7 @@ export function Header() {
     <header className="border-b">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="text-2xl font-bold">
-          VTuber Tools
+          Kurodev Tools
         </Link>
         <nav className="flex items-center space-x-4 lg:space-x-6">
           <Tabs defaultValue={pathname === "/tools" ? "tools" : "suites"}>
