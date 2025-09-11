@@ -74,10 +74,10 @@ export default function LoginPage() {
           <Button type="submit" className="w-full">ログイン</Button>
         </form>
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          アカウントをお持ちでないですか？{" "}
+          {/* アカウントをお持ちでないですか？{" "}
           <Link href="/register" className="text-primary hover:underline">
             新規登録
-          </Link>
+          </Link> */}
         </p>
       </div>
     </div>
