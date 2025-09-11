@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  basePath: '/Kurodev-tools-portal',
+  basePath: '/Kurodev-tool-portal',
 };
 
 export default nextConfig;
