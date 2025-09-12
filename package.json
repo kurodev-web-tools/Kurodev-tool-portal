@@ -1,12 +1,12 @@
 {
-  "name": "vtuber-tools-portal",
+  "name": "kurodev-tool-portal",
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://kurodev-v.github.io/Kurodev-tools-portal/",
+  "homepage": "https://kurodev-web-tools.github.io/Kurodev-tools-portal/",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },

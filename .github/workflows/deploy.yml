@@ -24,13 +24,13 @@ jobs:
         run: |
           echo "PNPM_CACHE_DIR=$(pnpm store path)" >> $GITHUB_ENV
 
-      - uses: actions/cache@v4
-        name: Setup pnpm cache
-        with:
-          path: ${{ env.PNPM_CACHE_DIR }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+      # - uses: actions/cache@v4
+      #   name: Setup pnpm cache
+      #   with:
+      #     path: ${{ env.PNPM_CACHE_DIR }}
+      #     key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
