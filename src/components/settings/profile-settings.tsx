@@ -88,7 +88,7 @@ export default function ProfileSettings() {
             control={form.control}
             name="email"
             render={({ field }) => (
-              <FormItem name="email">
+              <FormItem>
                 <FormLabel>メールアドレス</FormLabel>
                 <FormControl>
                   <Input placeholder="your@example.com" {...field} />
@@ -104,7 +104,7 @@ export default function ProfileSettings() {
             control={form.control}
             name="avatar"
             render={({ field }) => (
-              <FormItem name="avatar">
+              <FormItem>
                 <FormLabel>アバターURL</FormLabel>
                 <FormControl>
                   <Input placeholder="https://example.com/avatar.png" {...field} value={field.value ?? ''} />
