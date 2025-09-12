@@ -110,7 +110,7 @@ export function CalendarView() {
               <Button variant="outline" onClick={goToPreviousWeek}>←</Button>
               <h3 className="font-bold">
                 {selectedDate ? format(startOfWeek(selectedDate, { weekStartsOn: 0 }), "M月", { locale: ja }) : ''}
-                第{selectedDate ? Math.ceil(format(selectedDate, "d", { locale: ja }) as any / 7) : ''}週
+                第{selectedDate ? Math.ceil(Number(format(selectedDate, "d", { locale: ja })) / 7) : ''}週
               </h3>
               <Button variant="outline" onClick={goToNextWeek}>→</Button>
             </div>
