@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScheduleForm } from "@/components/schedule/schedule-form"; // Import ScheduleForm
 
 export default function ScheduleCalendarLayout({
   children,
@@ -23,8 +24,8 @@ export default function ScheduleCalendarLayout({
             </TabsList>
             <TabsContent value="schedule-management" className="mt-4">
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">予定管理</h3>
-                <p>ここに予定の追加・編集・削除フォームや一覧が表示されます。</p>
+                {/* Place ScheduleForm here */}
+                <ScheduleForm />
               </div>
             </TabsContent>
             <TabsContent value="sns-posting" className="mt-4">
