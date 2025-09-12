@@ -56,7 +56,7 @@ export function ScheduleForm() {
   const onSubmit = (data: ScheduleFormData) => {
     try {
       // isCompletedはフォームにはないので、falseで固定
-      addSchedule({ ...data, isCompleted: false });
+      addSchedule(data);
       toast.success("スケジュールを保存しました。");
       form.reset({ date: today }); // フォームをリセットし、日付は今日に戻す
     } catch (error) {
