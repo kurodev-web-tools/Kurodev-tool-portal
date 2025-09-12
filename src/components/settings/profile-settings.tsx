@@ -72,7 +72,7 @@ export default function ProfileSettings() {
             control={form.control}
             name="username"
             render={({ field }) => (
-              <FormItem name="username">
+              <FormItem>
                 <FormLabel>ユーザー名</FormLabel>
                 <FormControl>
                   <Input placeholder="あなたのユーザー名" {...field} />
