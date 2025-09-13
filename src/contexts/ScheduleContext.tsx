@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react';
-import { ScheduleItem } from '@/lib/schedule-storage';
+import { ScheduleItem } from '@/types/schedule';
 import { loadSchedules } from '@/lib/schedule-storage';
 
 interface ScheduleContextType {
