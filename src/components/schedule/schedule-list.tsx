@@ -99,7 +99,7 @@ export function ScheduleList() {
             {futureSchedules.length > 0 ? (
               futureSchedules.map(renderScheduleItem)
             ) : (
-              <p className className="text-sm text-gray-500">予定はありません。</p>
+              <p className="text-sm text-gray-500">予定はありません。</p>
             )}
           </div>
         </div>
