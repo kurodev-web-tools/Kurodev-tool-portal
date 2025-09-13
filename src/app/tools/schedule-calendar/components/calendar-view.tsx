@@ -55,7 +55,7 @@ export function CalendarView() {
   const CustomDay = (props: DayProps) => {
     const dateToUse = props.day.date;
     const daySchedules = schedules.filter(s => isSameDay(parseISO(s.date), dateToUse));
-    const { className: originalClassName = "", ...restOfProps } = props.dayProps || {};
+    const { day, modifiers, className: originalClassName = "", ...restOfProps } = props;
 
     return (
       <td
