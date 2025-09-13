@@ -67,6 +67,16 @@ export function SnsPostTab() {
     toast.success('Xへの投稿画面を開きました。');
   };
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(postContent);
+      toast.success('クリップボードにコピーしました！');
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      toast.error('コピーに失敗しました。');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -114,9 +124,14 @@ export function SnsPostTab() {
         </Popover>
       </div>
 
-      <Button onClick={handlePostToX} disabled={!postContent}>
-        Xに投稿
-      </Button>
+      <div className="flex gap-2 mt-4">
+        <Button onClick={handlePostToX} disabled={!postContent} className="flex-grow">
+          Xに投稿
+        </Button>
+        <Button onClick={handleCopy} disabled={!postContent} variant="outline" className="flex-grow">
+          コピー
+        </Button>
+      </div>
     </div>
   );
 }
