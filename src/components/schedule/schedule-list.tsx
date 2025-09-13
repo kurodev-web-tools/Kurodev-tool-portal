@@ -36,6 +36,7 @@ export function ScheduleList() {
         toast.success('スケジュールを削除しました。');
         refreshSchedules();
       } catch (error) {
+        console.error("Failed to delete schedule", error);
         toast.error('スケジュールの削除に失敗しました。');
       }
       setScheduleIdToDelete(null);

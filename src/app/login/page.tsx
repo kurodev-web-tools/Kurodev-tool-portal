@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
+
 
 const loginSchema = z.object({
   email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),

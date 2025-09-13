@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval as eachDayOfMonthInterval, addWeeks, subWeeks, addMonths, subMonths, parseISO } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { DayProps } from 'react-day-picker';
-import { ScheduleItem } from '@/lib/schedule-storage';
+import { ScheduleItem } from '@/types/schedule';
 
 type ViewMode = 'month' | 'week' | 'day';
 
