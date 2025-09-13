@@ -63,7 +63,8 @@ export function CalendarView() {
         className={cn(
           originalClassName,
           "relative flex flex-col h-full w-full p-1 !h-32",
-          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
+          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent",
+          "h-32 w-full" // day_cell に相当するスタイル
         )}
         onClick={() => handleDayClick(dateToUse)}
       >
@@ -113,7 +114,6 @@ export function CalendarView() {
               components={{ Day: CustomDay }}
               locale={ja}
               className="rounded-md border w-full"
-              classNames={{ day_cell: 'h-32 w-full', day_button: 'text-sm font-bold' }}
             />
           )}
           {viewMode === 'week' && (
