@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useSchedule } from '@/contexts/ScheduleContext';
-import { ScheduleItem, deleteSchedule } from '@/lib/schedule-storage';
+import { ScheduleItem } from '@/types/schedule';
+import { deleteSchedule } from '@/lib/schedule-storage';
 import { format, isSameDay, isFuture, isPast, startOfToday, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -98,7 +99,7 @@ export function ScheduleList() {
             {futureSchedules.length > 0 ? (
               futureSchedules.map(renderScheduleItem)
             ) : (
-              <p className="text-sm text-gray-500">予定はありません。</p>
+              <p className className="text-sm text-gray-500">予定はありません。</p>
             )}
           </div>
         </div>
