@@ -3,7 +3,7 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { PanelLeftOpen, PanelLeftClose, CalendarPlus, MessageSquare, Settings } from "lucide-react";
+import { PanelLeftOpen, PanelLeftClose, CalendarPlus, MessageSquare, Settings, Plus } from "lucide-react";
 import { ScheduleModal } from '@/components/schedule/schedule-modal';
 import { ScheduleProvider, useSchedule } from '@/contexts/ScheduleContext';
 import { ScheduleList } from '@/components/schedule/schedule-list';
@@ -93,6 +93,17 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
         )}
       </div>
       <ScheduleModal />
+
+      {/* Floating Action Button for Mobile */}
+      <div className="absolute bottom-6 right-6 z-20 lg:hidden">
+        <Button
+          size="icon"
+          className="rounded-full h-14 w-14 shadow-lg"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
     </div>
   );
 }

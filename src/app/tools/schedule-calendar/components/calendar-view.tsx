@@ -26,14 +26,17 @@ const ScheduleTooltipContent = ({ schedule }: { schedule: ScheduleItem }) => (
 export function CalendarView() {
   const { setIsModalOpen, selectedDate, setSelectedDate, schedules } = useSchedule();
   const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  // --- ダブルクリック関連のロジック ---
   const [lastClickTime, setLastClickTime] = useState(0);
   const DOUBLE_CLICK_DELAY = 300;
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const handleDayDoubleClick = (day: Date) => {
     setSelectedDate(day);
     setIsModalOpen(true);
   };
+  // --- ここまで ---
 
   const handleDaySelect = (day: Date | undefined) => {
     if (day) {
@@ -43,7 +46,8 @@ export function CalendarView() {
     }
   };
 
-  const handleDayClick = (day: Date) => {
+  // --- PC用のクリックハンドラ（ダブルクリック判定付き） ---
+  const handleDesktopDayClick = (day: Date) => {
     const currentTime = new Date().getTime();
     if (currentTime - lastClickTime < DOUBLE_CLICK_DELAY) {
       handleDayDoubleClick(day);
@@ -65,10 +69,10 @@ export function CalendarView() {
         {...restOfProps}
         className={cn(
           originalClassName,
-          "relative flex flex-col h-full p-1 !h-32", // PCでは高さを固定
+          "relative flex flex-col h-full p-1 !h-32",
           isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
         )}
-        onClick={() => handleDayClick(dateToUse)}
+        onClick={() => handleDesktopDayClick(dateToUse)}
       >
         <div className="relative flex flex-col h-full justify-between z-10">
           <div className="text-sm font-bold flex-shrink-0">
@@ -93,9 +97,10 @@ export function CalendarView() {
     );
   };
 
-  // モバイル用: 日付の数字だけのシンプルなセル
+  // モバイル用: 日付の数字とドットだけのシンプルなセル
   const SimpleCustomDay = (props: DayProps) => {
     const dateToUse = props.day.date;
+    const daySchedules = schedules.filter(s => isSameDay(parseISO(s.date), dateToUse));
     const { day, modifiers, className: originalClassName = "", ...restOfProps } = props;
 
     return (
@@ -105,9 +110,14 @@ export function CalendarView() {
           originalClassName,
           isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
         )}
-        onClick={() => handleDayClick(dateToUse)}
+        onClick={() => handleDaySelect(dateToUse)}
       >
-        {format(dateToUse, 'd')}
+        <div className="relative h-full flex flex-col items-center justify-center">
+          <span>{format(dateToUse, 'd')}</span>
+          {daySchedules.length > 0 && (
+            <div className="absolute bottom-1 w-1 h-1 bg-primary rounded-full" />
+          )}
+        </div>
       </td>
     );
   };
@@ -124,7 +134,7 @@ export function CalendarView() {
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full">
-        <div className="flex justify-end p-2 space-x-2">
+        <div className="flex justify-end p-2 space-x-2 pr-14 lg:pr-0">
           <Button variant={viewMode === 'month' ? 'default' : 'outline'} onClick={() => setViewMode('month')}>月</Button>
           <Button variant={viewMode === 'week' ? 'default' : 'outline'} onClick={() => setViewMode('week')}>週</Button>
           <Button variant={viewMode === 'day' ? 'default' : 'outline'} onClick={() => setViewMode('day')}>日</Button>
@@ -157,11 +167,10 @@ export function CalendarView() {
                     <div
                       key={day.toISOString()}
                       className={cn(
-                        "border p-2 rounded-md h-[9rem]",
+                        "border p-2 rounded-md h-[7rem]",
                         isSameDay(day, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
                       )}
-                      onDoubleClick={() => handleDayDoubleClick(day)}
-                      onClick={() => handleDaySelect(day)}
+                      onClick={() => isDesktop ? handleDesktopDayClick(day) : handleDaySelect(day)}
                     >
                       <div className="flex items-baseline mb-2">
                         <h3 className="font-bold mr-2">{format(day, "M/d (E)", { locale: ja })}</h3>
