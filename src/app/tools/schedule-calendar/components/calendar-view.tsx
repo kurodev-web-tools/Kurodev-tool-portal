@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { DayProps } from 'react-day-picker';
 import { ScheduleItem } from '@/types/schedule';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 type ViewMode = 'month' | 'week' | 'day';
 
@@ -27,6 +28,7 @@ export function CalendarView() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [lastClickTime, setLastClickTime] = useState(0);
   const DOUBLE_CLICK_DELAY = 300;
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const handleDayDoubleClick = (day: Date) => {
     setSelectedDate(day);
@@ -52,7 +54,8 @@ export function CalendarView() {
     setLastClickTime(currentTime);
   };
 
-  const CustomDay = (props: DayProps) => {
+  // PC用: 予定が表示されるリッチな日付セル
+  const RichCustomDay = (props: DayProps) => {
     const dateToUse = props.day.date;
     const daySchedules = schedules.filter(s => isSameDay(parseISO(s.date), dateToUse));
     const { day, modifiers, className: originalClassName = "", ...restOfProps } = props;
@@ -62,9 +65,8 @@ export function CalendarView() {
         {...restOfProps}
         className={cn(
           originalClassName,
-          "relative flex flex-col h-full w-full p-1 !h-32",
-          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent",
-          "h-32 w-full" // day_cell に相当するスタイル
+          "relative flex flex-col h-full p-1 !h-32", // PCでは高さを固定
+          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
         )}
         onClick={() => handleDayClick(dateToUse)}
       >
@@ -91,6 +93,27 @@ export function CalendarView() {
     );
   };
 
+  // モバイル用: 日付の数字だけのシンプルなセル
+  const SimpleCustomDay = (props: DayProps) => {
+    const dateToUse = props.day.date;
+    const { day, modifiers, className: originalClassName = "", ...restOfProps } = props;
+
+    return (
+      <td
+        {...restOfProps}
+        className={cn(
+          originalClassName,
+          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
+        )}
+        onClick={() => handleDayClick(dateToUse)}
+      >
+        {format(dateToUse, 'd')}
+      </td>
+    );
+  };
+
+  const DayComponent = isDesktop ? RichCustomDay : SimpleCustomDay;
+
   const weekDays = selectedDate
     ? eachDayOfInterval({ start: startOfWeek(selectedDate, { weekStartsOn: 0 }), end: endOfWeek(selectedDate, { weekStartsOn: 0 }) })
     : [];
@@ -101,7 +124,7 @@ export function CalendarView() {
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full">
-        <div className="flex justify-end p-2 space-x-2 pr-14 lg:pr-0">
+        <div className="flex justify-end p-2 space-x-2">
           <Button variant={viewMode === 'month' ? 'default' : 'outline'} onClick={() => setViewMode('month')}>月</Button>
           <Button variant={viewMode === 'week' ? 'default' : 'outline'} onClick={() => setViewMode('week')}>週</Button>
           <Button variant={viewMode === 'day' ? 'default' : 'outline'} onClick={() => setViewMode('day')}>日</Button>
@@ -109,9 +132,10 @@ export function CalendarView() {
         <div className="flex-grow p-4 rounded-md">
           {viewMode === 'month' && (
             <Calendar
+              numberOfMonths={1}
               mode="single"
               selected={selectedDate}
-              components={{ Day: CustomDay }}
+              components={{ Day: DayComponent }}
               locale={ja}
               className="rounded-md border w-full"
             />
