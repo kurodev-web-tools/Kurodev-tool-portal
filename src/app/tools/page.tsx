@@ -7,6 +7,7 @@ const tools = [
     title: "スケジュールカレンダー",
     description: "配信スケジュールを管理するツール。",
     status: "released",
+    href: "/tools/schedule-calendar", // リンクを追加
   },
   {
     id: "tool-2",

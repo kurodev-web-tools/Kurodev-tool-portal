@@ -10,6 +10,7 @@ interface Item {
   description: string;
   status: "released" | "beta" | "development";
   feedbackMessage?: string;
+  href?: string;
 }
 
 interface StatusFilterProps {
@@ -86,6 +87,7 @@ export function StatusFilter({ items, gridCols = 3 }: StatusFilterProps) {
             status={item.status}
             feedbackMessage={item.feedbackMessage}
             hoverable={true}
+            href={item.href}
           />
         ))}
       </div>

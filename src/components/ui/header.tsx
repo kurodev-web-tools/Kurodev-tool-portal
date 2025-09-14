@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,15 +16,40 @@ import {
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "./button";
-import { MdNotifications } from "react-icons/md"; // Material Design Iconsから通知アイコンをインポート
+import { MdNotifications } from "react-icons/md";
 
 const PROFILE_SETTINGS_KEY = "vtuber-tools-profile-settings";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''; // 環境変数から取得するか、デフォルト値を設定
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { setTheme } = useTheme();
   const { user, logout } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | undefined>(undefined);
+
+  // activeTab の初期値を設定するロジック
+  const initialActiveTab = () => {
+    if (BASE_PATH) {
+      if (pathname === BASE_PATH || pathname === `${BASE_PATH}/`) {
+        return "suites";
+      }
+      // ここを修正
+      if (pathname.startsWith(`${BASE_PATH}/tools`)) { // 修正箇所
+        return "tools";
+      }
+    } else {
+      if (pathname === "/") {
+        return "suites";
+      }
+      if (pathname.startsWith("/tools")) {
+        return "tools";
+      }
+    }
+    return "suites"; // デフォルト
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(initialActiveTab());
 
   const loadProfileAvatar = () => {
     try {
@@ -41,10 +66,7 @@ export function Header() {
   useEffect(() => {
     if (user) {
       loadProfileAvatar();
-
-      // プロフィール更新をリッスン
       window.addEventListener('profileUpdated', loadProfileAvatar);
-
       return () => {
         window.removeEventListener('profileUpdated', loadProfileAvatar);
       };
@@ -53,8 +75,32 @@ export function Header() {
     }
   }, [user]);
 
+  useEffect(() => {
+    setActiveTab(initialActiveTab()); // useEffect 内でも更新ロジックを呼び出す
+  }, [pathname]);
+
   const getInitials = (name: string) => {
     return name.substring(0, 2).toUpperCase();
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === "suites") {
+      router.push("/");
+    } else if (value === "tools") {
+      router.push("/tools");
+    }
+  };
+
+  // タブを表示すべきかどうかを判定するヘルパー関数
+  const shouldShowTabs = () => {
+    if (BASE_PATH) {
+      const fullBasePath = BASE_PATH;
+      const fullToolsPath = `${BASE_PATH}/tools`;
+
+      return pathname === fullBasePath || pathname === `${fullBasePath}/` || pathname === fullToolsPath;
+    }
+    return pathname === "/" || pathname === "/tools";
   };
 
   return (
@@ -64,21 +110,22 @@ export function Header() {
           Kurodev Tools
         </Link>
         <nav className="flex items-center space-x-4 lg:space-x-6">
-          <Tabs defaultValue={pathname === "/tools" ? "tools" : "suites"}>
-            <TabsList>
-              <TabsTrigger value="suites" asChild>
-                <Link href="/">スイート</Link>
-              </TabsTrigger>
-              <TabsTrigger value="tools" asChild>
-                <Link href="/tools">ツール</Link>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {shouldShowTabs() && ( // タブを表示すべき場合にのみレンダリング
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList>
+                <TabsTrigger value="suites" asChild>
+                  <Link href="/">スイート</Link>
+                </TabsTrigger>
+                <TabsTrigger value="tools" asChild>
+                  <Link href="/tools">ツール</Link>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
 
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                {/* 通知アイコンをMdNotificationsに置き換え */}
                 <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
                   <MdNotifications className="h-6 w-6" />
                 </button>

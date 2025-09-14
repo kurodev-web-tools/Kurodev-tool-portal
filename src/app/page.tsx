@@ -7,6 +7,7 @@ const suites = [
     title: "企画準備",
     description: "配信の企画から準備までをサポートするツール群。",
     status: "released",
+    href: "/tools/schedule-calendar", // スケジュールカレンダーへのリンクを追加
   },
   {
     id: "suite-2",

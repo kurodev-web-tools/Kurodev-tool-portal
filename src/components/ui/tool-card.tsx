@@ -1,3 +1,4 @@
+import Link from "next/link"; // Linkをインポート
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 import { Badge } from "./badge";
 
@@ -8,7 +9,8 @@ interface ToolCardProps {
   description: string;
   status: ToolStatus;
   feedbackMessage?: string;
-  hoverable?: boolean; // 新しく追加
+  hoverable?: boolean;
+  href?: string; // href を追加
 }
 
 export function ToolCard({
@@ -16,7 +18,8 @@ export function ToolCard({
   description,
   status,
   feedbackMessage,
-  hoverable = false, // hoverableのデフォルト値をfalseに設定
+  hoverable = false,
+  href, // href を受け取る
 }: ToolCardProps) {
   const statusMap = {
     released: { text: "公開中", variant: "default" },
@@ -42,22 +45,24 @@ export function ToolCard({
   }
 
   return (
-    <Card className={`h-full flex flex-col ${cardClasses}`} hoverable={hoverable}>
-        <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            {title}
-            <Badge variant={currentStatus.variant as "default" | "warning" | "danger"}>{currentStatus.text}</Badge>
-          </CardTitle>
-          <CardDescription className="dark:text-black">{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow">
-          {status === "beta" && feedbackMessage && (
-            <p className="text-sm text-yellow-800">{feedbackMessage}</p>
-          )}
-        </CardContent>
-        <CardFooter>
-          {/* ここに詳細リンクやボタンなどを追加できます */}
-        </CardFooter>
-      </Card>
+    <Link href={href || "#"} passHref> {/* href があれば Link でラップ */}
+      <Card className={`h-full flex flex-col ${cardClasses}`} hoverable={hoverable}>
+          <CardHeader>
+            <CardTitle className="flex justify-between items-center">
+              {title}
+              <Badge variant={currentStatus.variant as "default" | "warning" | "danger"}>{currentStatus.text}</Badge>
+            </CardTitle>
+            <CardDescription className="dark:text-black">{description}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            {status === "beta" && feedbackMessage && (
+              <p className="text-sm text-yellow-800">{feedbackMessage}</p>
+            )}
+          </CardContent>
+          <CardFooter>
+            {/* ここに詳細リンクやボタンなどを追加できます */}
+          </CardFooter>
+        </Card>
+    </Link>
   );
 }
