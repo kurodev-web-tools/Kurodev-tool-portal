@@ -48,13 +48,13 @@
     --popover: 240 10% 3.9%; /* Charcoal Gray */
     --popover-foreground: 0 0% 98%; /* White */
 
-    --primary: 237 100% 65%; /* Cyber Pop Blue */
+    --primary: 237 100% 45%; /* Cyber Pop Blue */
     --primary-foreground: 0 0% 98%; /* White */
-    --primary-hover: 237 100% 55%; /* Primary color for hover state */
+    --primary-hover: 237 100% 35%; /* Primary color for hover state */
 
-    --secondary: 318 100% 65%; /* Cyber Pop Pink */
+    --secondary: 318 100% 45%; /* Cyber Pop Pink (Dark Mode Adjusted) */
     --secondary-foreground: 0 0% 98%; /* White */
-    --secondary-hover: 318 100% 55%; /* Secondary color for hover state */
+    --secondary-hover: 318 100% 35%; /* Secondary color for hover state (Dark Mode Adjusted) */
 
     --muted: 318 100% 20%; /* Dark Pink for cards */
     --muted-foreground: 0 0% 98%; /* White - 各種設定画面の文字色を白に戻す */
