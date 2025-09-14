@@ -9,11 +9,19 @@ import { ScheduleProvider, useSchedule } from '@/contexts/ScheduleContext';
 import { ScheduleList } from '@/components/schedule/schedule-list';
 import { SnsPostTab } from '@/app/tools/schedule-calendar/components/sns-post-tab';
 import { SettingsTab, SettingsProvider } from '@/app/tools/schedule-calendar/components/settings-tab';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false); // Default to closed on mobile
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false); // Default to closed
   const [selectedTab, setSelectedTab] = React.useState("schedule-management");
   const { setIsModalOpen } = useSchedule();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  React.useEffect(() => {
+    if (isDesktop) {
+      setIsSidebarOpen(true);
+    }
+  }, [isDesktop]);
 
   return (
     <div className="relative flex flex-col lg:h-screen">

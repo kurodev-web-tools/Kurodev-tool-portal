@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,6 +27,17 @@ export function CalendarView() {
   const { setIsModalOpen, selectedDate, setSelectedDate, schedules } = useSchedule();
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem('calendarViewMode') as ViewMode;
+    if (savedViewMode && ['month', 'week', 'day'].includes(savedViewMode)) {
+      setViewMode(savedViewMode);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('calendarViewMode', viewMode);
+  }, [viewMode]);
 
   // --- ダブルクリック関連のロジック ---
   const [lastClickTime, setLastClickTime] = useState(0);
