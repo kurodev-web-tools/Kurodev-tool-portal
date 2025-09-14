@@ -101,7 +101,7 @@ export function CalendarView() {
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full">
-        <div className="flex justify-end p-2 space-x-2">
+        <div className="flex justify-end p-2 space-x-2 pr-14 lg:pr-0">
           <Button variant={viewMode === 'month' ? 'default' : 'outline'} onClick={() => setViewMode('month')}>月</Button>
           <Button variant={viewMode === 'week' ? 'default' : 'outline'} onClick={() => setViewMode('week')}>週</Button>
           <Button variant={viewMode === 'day' ? 'default' : 'outline'} onClick={() => setViewMode('day')}>日</Button>
