@@ -16,12 +16,12 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
   const { setIsModalOpen } = useSchedule();
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex flex-grow h-full overflow-y-auto">
-        <main className={`flex-grow h-full p-4 overflow-y-auto ${isSidebarOpen ? "w-full lg:w-3/4" : "w-full"}`}>
+    <div className="flex flex-col lg:h-screen">
+      <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
+        <main className={`flex-grow p-4 w-full ${isSidebarOpen ? "lg:w-3/4" : "lg:w-full"}`}>
           {children}
         </main>
-        <aside className={`p-4 border-l flex-shrink-0 ${isSidebarOpen ? "w-1/4 block" : "w-0 hidden"} overflow-y-auto`}>
+        <aside className={`p-4 border-l flex-shrink-0 w-full lg:w-1/4 ${isSidebarOpen ? 'block' : 'hidden'}`}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">サイドパネル</h2>
             <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
@@ -49,7 +49,7 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
           </Tabs>
         </aside>
         {!isSidebarOpen && (
-          <div className="p-4 border-l flex-shrink-0 flex flex-col items-center justify-start space-y-4">
+          <div className="hidden lg:flex p-4 border-l flex-shrink-0 flex-col items-center justify-start space-y-4">
             <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
               <PanelLeftOpen className="h-5 w-5" />
             </Button>
