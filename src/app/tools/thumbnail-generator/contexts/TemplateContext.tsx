@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { ThumbnailTemplate, templates } from '../components/TemplateSelector';
 
 interface TemplateContextType {
-  selectedTemplate: ThumbnailTemplate;
+  selectedTemplate: ThumbnailTemplate; // nullを許容しないように変更
   setSelectedTemplate: (template: ThumbnailTemplate) => void;
   currentText: string;
   setCurrentText: (text: string) => void;
@@ -10,21 +10,44 @@ interface TemplateContextType {
   setCurrentTextColor: (color: string) => void;
   currentFontSize: string;
   setCurrentFontSize: (fontSize: string) => void;
+  backgroundImageSrc: string | null;
+  setBackgroundImageSrc: (src: string | null) => void;
+  characterImageSrc: string | null;
+  setCharacterImageSrc: (src: string | null) => void;
 }
 
-const TemplateContext = createContext<TemplateContextType | undefined>(undefined);
+const TemplateContext = createContext<TemplateContextType>({
+  selectedTemplate: templates[0], // デフォルトテンプレート
+  setSelectedTemplate: () => {},
+  currentText: templates[0].initialText,
+  setCurrentText: () => {},
+  currentTextColor: templates[0].initialTextColor,
+  setCurrentTextColor: () => {},
+  currentFontSize: templates[0].initialFontSize,
+  setCurrentFontSize: () => {},
+  backgroundImageSrc: templates[0].initialImageSrc || null,
+  setBackgroundImageSrc: () => {},
+  characterImageSrc: null,
+  setCharacterImageSrc: () => {},
+});
 
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [selectedTemplate, setSelectedTemplate] = useState<ThumbnailTemplate>(templates[0]); // デフォルトテンプレート
+  // selectedTemplateの初期値をtemplates[0]に直接設定
+  const [selectedTemplate, setSelectedTemplate] = useState<ThumbnailTemplate>(templates[0]);
   const [currentText, setCurrentText] = useState<string>(templates[0].initialText);
   const [currentTextColor, setCurrentTextColor] = useState<string>(templates[0].initialTextColor);
   const [currentFontSize, setCurrentFontSize] = useState<string>(templates[0].initialFontSize);
+  const [backgroundImageSrc, setBackgroundImageSrc] = useState<string | null>(templates[0].initialImageSrc || null);
+  const [characterImageSrc, setCharacterImageSrc] = useState<string | null>(null);
 
-  // 選択されたテンプレートが変更されたら、テキスト関連の状態をリセット
+  // 選択されたテンプレートが変更されたら、テキスト関連と背景画像の状態をリセット
   useEffect(() => {
+    // selectedTemplateがnullでないことは保証されるため、selectedTemplate.initialTextなどに直接アクセス
     setCurrentText(selectedTemplate.initialText);
     setCurrentTextColor(selectedTemplate.initialTextColor);
     setCurrentFontSize(selectedTemplate.initialFontSize);
+    setBackgroundImageSrc(selectedTemplate.initialImageSrc || null);
+    setCharacterImageSrc(null); // キャラクター画像は常にリセット
   }, [selectedTemplate]);
 
   return (
@@ -38,6 +61,10 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCurrentTextColor,
         currentFontSize,
         setCurrentFontSize,
+        backgroundImageSrc,
+        setBackgroundImageSrc,
+        characterImageSrc,
+        setCharacterImageSrc,
       }}
     >
       {children}

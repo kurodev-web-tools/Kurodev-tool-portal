@@ -9,6 +9,7 @@ export interface ThumbnailTemplate {
   name: string;
   description: string;
   previewClass: string; // プレビュー用のCSSクラス
+  textPositionClass: string; // テキストの位置を決めるCSSクラス
   initialText: string;
   initialTextColor: string;
   initialFontSize: string;
@@ -22,6 +23,7 @@ export const templates: ThumbnailTemplate[] = [
     name: 'シンプル',
     description: '基本的なレイアウト',
     previewClass: 'bg-blue-500 text-white flex items-center justify-center',
+    textPositionClass: 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
     initialText: 'VTuber配信タイトル',
     initialTextColor: 'white',
     initialFontSize: '2.5rem',
@@ -31,6 +33,7 @@ export const templates: ThumbnailTemplate[] = [
     name: 'モダン',
     description: 'テキストが中央に大きく表示',
     previewClass: 'bg-purple-600 text-white flex flex-col items-center justify-center',
+    textPositionClass: 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
     initialText: '今日の配信！',
     initialTextColor: 'white',
     initialFontSize: '3.5rem',
@@ -40,6 +43,7 @@ export const templates: ThumbnailTemplate[] = [
     name: 'ポップ',
     description: '背景画像とテキスト',
     previewClass: 'bg-yellow-400 text-gray-800 flex items-end justify-start p-4',
+    textPositionClass: 'absolute bottom-4 left-4',
     initialText: '見てね！',
     initialTextColor: 'black',
     initialFontSize: '2rem',

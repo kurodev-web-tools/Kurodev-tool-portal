@@ -1,17 +1,23 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import Draggable from 'react-draggable';
+import { cn } from '@/lib/utils';
 
 interface ThumbnailTextProps {
   text: string;
   color?: string;
   fontSize?: string;
+  className?: string; // classNameプロパティを追加
   // その他のスタイルプロパティ
 }
 
-const ThumbnailText: React.FC<ThumbnailTextProps> = ({ text, color = 'white', fontSize = '2rem' }) => {
+const ThumbnailText: React.FC<ThumbnailTextProps> = ({ text, color = 'white', fontSize = '2rem', className }) => {
+  const nodeRef = useRef(null);
   return (
-    <p style={{ color, fontSize, position: 'absolute' }}>
-      {text}
-    </p>
+    <Draggable nodeRef={nodeRef} bounds="parent">
+      <p ref={nodeRef} className={cn("cursor-move", className)} style={{ color, fontSize }}>
+        {text}
+      </p>
+    </Draggable>
   );
 };
 
