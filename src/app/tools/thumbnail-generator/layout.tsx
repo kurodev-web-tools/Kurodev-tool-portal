@@ -5,17 +5,35 @@ import { Button } from "@/components/ui/button";
 import { PanelLeftOpen, PanelLeftClose, Settings } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMediaQuery } from '@/hooks/use-media-query';
+import TemplateSelector from './components/TemplateSelector';
+import { TemplateProvider, useTemplate } from './contexts/TemplateContext';
+import { Input } from '@/components/ui/input'; // Inputをインポート
+import { Slider } from '@/components/ui/slider'; // Sliderをインポート
+import { Label } from '@/components/ui/label'; // Labelをインポート
+import { cn } from '@/lib/utils'; // cnをインポート
 
 function ThumbnailGeneratorView({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false); // Default to closed
-  const [selectedTab, setSelectedTab] = React.useState("settings"); // デフォルトは設定タブ
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [selectedTab, setSelectedTab] = React.useState("settings");
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const {
+    selectedTemplate,
+    setSelectedTemplate,
+    currentText,
+    setCurrentText,
+    currentTextColor,
+    setCurrentTextColor,
+    currentFontSize,
+    setCurrentFontSize,
+  } = useTemplate(); // useTemplateからテキスト関連の状態も取得
 
   React.useEffect(() => {
     if (isDesktop) {
-      setIsSidebarOpen(true); // デスクトップではデフォルトで開く
+      setIsSidebarOpen(true);
     }
   }, [isDesktop]);
+
+  const availableColors = ['#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']; // プリセットカラー
 
   return (
     <div className="relative flex flex-col lg:h-screen bg-gray-900 text-white font-sans">
@@ -28,7 +46,7 @@ function ThumbnailGeneratorView({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
         <main className="flex-grow p-4 w-full lg:w-auto">
-          {children} {/* ここにpage.tsxの内容がレンダリングされる */}
+          {children}
         </main>
 
         {/* Overlay for mobile when drawer is open */}
@@ -56,14 +74,52 @@ function ThumbnailGeneratorView({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-1"> {/* タブは1つなのでgrid-cols-1 */}
+            <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="settings">設定</TabsTrigger>
             </TabsList>
-            <TabsContent value="settings" className="mt-4">
-              {/* ここに現在の設定パネルの内容が入る */}
-              <div className="h-full border border-gray-700 p-4"> {/* p-4を追加 */}
-                <h2 className="text-xl font-semibold mb-4">設定パネル</h2>
-                <p className="text-gray-400">ここに設定パネル（テンプレート選択、テキスト入力など）が入ります。</p>
+            <TabsContent value="settings" className="mt-4 space-y-6"> {/* space-y-6を追加 */}
+              <TemplateSelector
+                onSelectTemplate={setSelectedTemplate}
+                selectedTemplateId={selectedTemplate.id}
+              />
+
+              {/* テキスト編集機能 */}
+              <div className="space-y-2">
+                <Label htmlFor="thumbnail-text">サムネイルテキスト</Label>
+                <Input
+                  id="thumbnail-text"
+                  value={currentText}
+                  onChange={(e) => setCurrentText(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>テキストカラー</Label>
+                <div className="flex gap-2">
+                  {availableColors.map((color) => (
+                    <div
+                      key={color}
+                      className={cn(
+                        "w-8 h-8 rounded-full cursor-pointer border-2 border-transparent",
+                        currentTextColor === color && "border-primary"
+                      )}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setCurrentTextColor(color)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="font-size">フォントサイズ ({currentFontSize})</Label>
+                <Slider
+                  id="font-size"
+                  min={1}
+                  max={5}
+                  step={0.1}
+                  value={[parseFloat(currentFontSize)]} // Sliderは配列を受け取る
+                  onValueChange={(value) => setCurrentFontSize(`${value[0]}rem`)}
+                />
               </div>
             </TabsContent>
           </Tabs>
@@ -87,6 +143,8 @@ function ThumbnailGeneratorView({ children }: { children: React.ReactNode }) {
 
 export default function ThumbnailGeneratorLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ThumbnailGeneratorView>{children}</ThumbnailGeneratorView>
+    <TemplateProvider>
+      <ThumbnailGeneratorView>{children}</ThumbnailGeneratorView>
+    </TemplateProvider>
   );
 }
