@@ -34,6 +34,7 @@ const tools = [
     description: "動画のサムネイルをAIが自動生成。",
     status: "beta",
     feedbackMessage: "フィードバックお待ちしております！",
+    href: "/tools/thumbnail-generator",
   },
   {
     id: "tool-6",

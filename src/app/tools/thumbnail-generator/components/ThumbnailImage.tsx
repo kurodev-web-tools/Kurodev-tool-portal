@@ -4,8 +4,8 @@ import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
 interface ThumbnailImageProps {
   src: string;
   alt: string;
-  width?: number;
-  height?: number;
+  width: number; // widthを必須にする
+  height: number; // heightを必須にする
   x: number;
   y: number;
   onDragStop: (e: any, d: DraggableData) => void;
@@ -22,8 +22,8 @@ interface ThumbnailImageProps {
 const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   src,
   alt,
-  width = 300,
-  height = 200,
+  width,
+  height,
   x,
   y,
   onDragStop,

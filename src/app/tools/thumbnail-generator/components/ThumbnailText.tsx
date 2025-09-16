@@ -43,7 +43,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
       bounds="parent"
       minWidth={50}
       minHeight={20}
-      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200" // 境界線をグレーに変更
+      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
       style={{
         display: 'flex',
         alignItems: 'center',
