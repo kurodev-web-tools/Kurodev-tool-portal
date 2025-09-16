@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef } from 'react';
-import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
+import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd'; // Added DraggableData, ResizableDelta, Position
 import { cn } from '@/lib/utils';
 
 interface ThumbnailTextProps {
@@ -38,8 +39,8 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
     <Rnd
       size={{ width, height }}
       position={{ x, y }}
-      onDragStop={onDragStop}
-      onResizeStop={onResizeStop}
+      onDragStop={(e, data) => onDragStop(e, data)}
+      onResizeStop={(e, dir, ref, delta, position) => onResizeStop(e, dir, ref, delta, position)}
       bounds="parent"
       minWidth={50}
       minHeight={20}
@@ -58,3 +59,4 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
 };
 
 export default ThumbnailText;
+/* eslint-enable @typescript-eslint/no-explicit-any */

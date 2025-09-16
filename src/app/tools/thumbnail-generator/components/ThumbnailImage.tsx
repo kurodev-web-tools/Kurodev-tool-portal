@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
+import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd'; // Added DraggableData, ResizableDelta, Position
+import Image from 'next/image';
 
 interface ThumbnailImageProps {
   src: string;
@@ -34,18 +36,18 @@ const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
     <Rnd
       size={{ width, height }}
       position={{ x, y }}
-      onDragStop={onDragStop}
-      onResizeStop={onResizeStop}
+      onDragStop={(e, data) => onDragStop(e, data)}
+      onResizeStop={(e, dir, ref, delta, position) => onResizeStop(e, dir, ref, delta, position)}
       bounds="parent"
-      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200" // 境界線をグレーに変更
+      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
     >
-      <img
+      <Image
         src={src}
         alt={alt}
+        width={width}
+        height={height}
         className={className}
         style={{
-          width: '100%',
-          height: '100%',
           objectFit: 'cover',
         }}
         draggable="false"
@@ -55,3 +57,4 @@ const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
 };
 
 export default ThumbnailImage;
+/* eslint-enable @typescript-eslint/no-explicit-any */

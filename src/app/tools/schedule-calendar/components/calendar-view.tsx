@@ -73,7 +73,7 @@ export function CalendarView() {
   const RichCustomDay = (props: DayProps) => {
     const dateToUse = props.day.date;
     const daySchedules = schedules.filter(s => isSameDay(parseISO(s.date), dateToUse));
-    const { day, modifiers, className: originalClassName = "", ...restOfProps } = props;
+    const { className: originalClassName = "", ...restOfProps } = props;
 
     return (
       <td
@@ -112,7 +112,7 @@ export function CalendarView() {
   const SimpleCustomDay = (props: DayProps) => {
     const dateToUse = props.day.date;
     const daySchedules = schedules.filter(s => isSameDay(parseISO(s.date), dateToUse));
-    const { day, modifiers, className: originalClassName = "", ...restOfProps } = props;
+    const { className: originalClassName = "", ...restOfProps } = props;
 
     return (
       <td

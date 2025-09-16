@@ -73,26 +73,26 @@ export default function ThumbnailGeneratorPage() {
   // 画像の位置とサイズを更新するハンドラー
   const handleImageDragStop = (
     type: 'background' | 'character',
-    e: any,
+    e: MouseEvent, // Changed any to MouseEvent
     d: DraggableData
   ) => {
     if (type === 'background') {
-      setBackgroundImagePosition(prev => ({ ...prev, x: d.x, y: d.y }));
+      setBackgroundImagePosition((prev: { x: number; y: number; width: number; height: number }) => ({ ...prev, x: d.x, y: d.y }));
     } else {
-      setCharacterImagePosition(prev => ({ ...prev, x: d.x, y: d.y }));
+      setCharacterImagePosition((prev: { x: number; y: number; width: number; height: number }) => ({ ...prev, x: d.x, y: d.y }));
     }
   };
 
   const handleImageResizeStop = (
     type: 'background' | 'character',
-    e: any,
+    e: MouseEvent, // Changed any to MouseEvent
     dir: string,
     ref: HTMLElement,
     delta: ResizableDelta,
     position: Position
   ) => {
     if (type === 'background') {
-      setBackgroundImagePosition(prev => ({
+      setBackgroundImagePosition((prev: { x: number; y: number; width: number; height: number }) => ({
         ...prev,
         width: ref.offsetWidth,
         height: ref.offsetHeight,
@@ -100,7 +100,7 @@ export default function ThumbnailGeneratorPage() {
         y: position.y,
       }));
     } else {
-      setCharacterImagePosition(prev => ({
+      setCharacterImagePosition((prev: { x: number; y: number; width: number; height: number }) => ({
         ...prev,
         width: ref.offsetWidth,
         height: ref.offsetHeight,
@@ -111,18 +111,18 @@ export default function ThumbnailGeneratorPage() {
   };
 
   // テキストの位置とサイズを更新するハンドラー
-  const handleTextDragStop = (e: any, d: DraggableData) => {
-    setTextPosition(prev => ({ ...prev, x: d.x, y: d.y }));
+  const handleTextDragStop = (e: MouseEvent, d: DraggableData) => {
+    setTextPosition((prev: { x: number; y: number; width: number; height: number }) => ({ ...prev, x: d.x, y: d.y }));
   };
 
   const handleTextResizeStop = (
-    e: any,
+    e: MouseEvent, // Changed any to MouseEvent
     dir: string,
     ref: HTMLElement,
     delta: ResizableDelta,
     position: Position
   ) => {
-    setTextPosition(prev => ({
+    setTextPosition((prev: { x: number; y: number; width: number; height: number }) => ({
       ...prev,
       width: ref.offsetWidth,
       height: ref.offsetHeight,

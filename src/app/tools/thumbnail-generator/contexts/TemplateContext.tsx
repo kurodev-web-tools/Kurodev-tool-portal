@@ -23,12 +23,12 @@ interface TemplateContextType {
   characterImageSrc: string | null;
   setCharacterImageSrc: (src: string | null) => void;
   backgroundImagePosition: ElementPositionType;
-  setBackgroundImagePosition: (position: ElementPositionType) => void;
+  setBackgroundImagePosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
   characterImagePosition: ElementPositionType;
-  setCharacterImagePosition: (position: ElementPositionType) => void;
+  setCharacterImagePosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
   // 新しく追加する状態
   textPosition: ElementPositionType;
-  setTextPosition: (position: ElementPositionType) => void;
+  setTextPosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
 }
 
 const TemplateContext = createContext<TemplateContextType>({

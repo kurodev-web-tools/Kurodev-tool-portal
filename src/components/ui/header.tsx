@@ -77,6 +77,7 @@ export function Header() {
 
   useEffect(() => {
     setActiveTab(initialActiveTab()); // useEffect 内でも更新ロジックを呼び出す
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   const getInitials = (name: string) => {
