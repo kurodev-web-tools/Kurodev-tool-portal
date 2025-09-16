@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
 
 import { useTemplate } from './contexts/TemplateContext';
 import TemplateSelector from './components/TemplateSelector';
@@ -36,6 +37,11 @@ export default function ThumbnailGeneratorPage() {
     setBackgroundImageSrc,
     characterImageSrc,
     setCharacterImageSrc,
+    // 新しく追加した状態
+    backgroundImagePosition,
+    setBackgroundImagePosition,
+    characterImagePosition,
+    setCharacterImagePosition,
   } = useTemplate();
 
   // デスクトップ表示ではサイドバーを常に開く
@@ -59,6 +65,46 @@ export default function ThumbnailGeneratorPage() {
         .catch((err) => {
           console.error('oops, something went wrong!', err);
         });
+    }
+  };
+
+  // 画像の位置とサイズを更新するハンドラー
+  const handleImageDragStop = (
+    type: 'background' | 'character',
+    e: any,
+    d: DraggableData
+  ) => {
+    if (type === 'background') {
+      setBackgroundImagePosition(prev => ({ ...prev, x: d.x, y: d.y }));
+    } else {
+      setCharacterImagePosition(prev => ({ ...prev, x: d.x, y: d.y }));
+    }
+  };
+
+  const handleImageResizeStop = (
+    type: 'background' | 'character',
+    e: any,
+    dir: any,
+    ref: HTMLDivElement,
+    delta: ResizableDelta,
+    position: Position
+  ) => {
+    if (type === 'background') {
+      setBackgroundImagePosition(prev => ({
+        ...prev,
+        width: ref.offsetWidth,
+        height: ref.offsetHeight,
+        x: position.x,
+        y: position.y,
+      }));
+    } else {
+      setCharacterImagePosition(prev => ({
+        ...prev,
+        width: ref.offsetWidth,
+        height: ref.offsetHeight,
+        x: position.x,
+        y: position.y,
+      }));
     }
   };
 
@@ -102,10 +148,34 @@ export default function ThumbnailGeneratorPage() {
               )}
             >
               {backgroundImageSrc && (
-                <ThumbnailImage src={backgroundImageSrc} alt="Background" width={1200} height={675} className="" />
+                <ThumbnailImage
+                  src={backgroundImageSrc}
+                  alt="Background"
+                  x={backgroundImagePosition.x}
+                  y={backgroundImagePosition.y}
+                  width={backgroundImagePosition.width}
+                  height={backgroundImagePosition.height}
+                  onDragStop={(e, d) => handleImageDragStop('background', e, d)}
+                  onResizeStop={(e, dir, ref, delta, position) =>
+                    handleImageResizeStop('background', e, dir, ref, delta, position)
+                  }
+                  className=""
+                />
               )}
               {characterImageSrc && (
-                <ThumbnailImage src={characterImageSrc} alt="Character" width={500} height={500} className="absolute bottom-0 right-0" />
+                <ThumbnailImage
+                  src={characterImageSrc}
+                  alt="Character"
+                  x={characterImagePosition.x}
+                  y={characterImagePosition.y}
+                  width={characterImagePosition.width}
+                  height={characterImagePosition.height}
+                  onDragStop={(e, d) => handleImageDragStop('character', e, d)}
+                  onResizeStop={(e, dir, ref, delta, position) =>
+                    handleImageResizeStop('character', e, dir, ref, delta, position)
+                  }
+                  className="" // absolute bottom-0 right-0 はThumbnailImage内でRndのpositionで制御されるため不要
+                />
               )}
               <ThumbnailText
                 text={currentText}
@@ -145,15 +215,17 @@ export default function ThumbnailGeneratorPage() {
             </Button>
           </div>
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-1">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="settings">設定</TabsTrigger>
+              <TabsTrigger value="tools">ツール</TabsTrigger>
             </TabsList>
             <TabsContent value="settings" className="mt-4 space-y-6">
               <TemplateSelector
                 onSelectTemplate={setSelectedTemplate}
                 selectedTemplateId={selectedTemplate.id}
               />
-
+            </TabsContent>
+            <TabsContent value="tools" className="mt-4 space-y-6">
               {/* テキスト編集 */}
               <div className="space-y-2">
                 <Label htmlFor="thumbnail-text">サムネイルテキスト</Label>
@@ -206,6 +278,8 @@ export default function ThumbnailGeneratorPage() {
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setBackgroundImageSrc(URL.createObjectURL(e.target.files[0]));
+                        // 背景画像がアップロードされたら、位置をリセット
+                        setBackgroundImagePosition(selectedTemplate.initialBackgroundImagePosition || { x: 0, y: 0, width: 1200, height: 675 });
                       }
                     }}
                   />
@@ -219,6 +293,8 @@ export default function ThumbnailGeneratorPage() {
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setCharacterImageSrc(URL.createObjectURL(e.target.files[0]));
+                        // キャラクター画像がアップロードされたら、位置をリセット
+                        setCharacterImagePosition(selectedTemplate.initialCharacterImagePosition || { x: 700, y: 175, width: 500, height: 500 });
                       }
                     }}
                   />
