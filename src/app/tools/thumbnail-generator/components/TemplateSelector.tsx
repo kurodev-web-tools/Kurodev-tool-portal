@@ -14,9 +14,10 @@ export interface ThumbnailTemplate {
   initialTextColor: string;
   initialFontSize: string;
   initialImageSrc?: string;
-  // 新しく追加
   initialBackgroundImagePosition?: { x: number; y: number; width: number; height: number };
   initialCharacterImagePosition?: { x: number; y: number; width: number; height: number };
+  // 新しく追加
+  initialTextPosition?: { x: number; y: number; width: number; height: number };
 }
 
 // テンプレートの定義
@@ -30,8 +31,9 @@ export const templates: ThumbnailTemplate[] = [
     initialText: 'VTuber配信タイトル',
     initialTextColor: 'white',
     initialFontSize: '2.5rem',
-    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 }, // デフォルト値
-    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 }, // デフォルトで右下
+    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
+    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
+    initialTextPosition: { x: 450, y: 287.5, width: 300, height: 100 }, // 中央に配置
   },
   {
     id: 'template-2',
@@ -42,8 +44,9 @@ export const templates: ThumbnailTemplate[] = [
     initialText: '今日の配信！',
     initialTextColor: 'white',
     initialFontSize: '3.5rem',
-    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 }, // デフォルト値
-    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 }, // デフォルトで右下
+    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
+    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
+    initialTextPosition: { x: 450, y: 287.5, width: 300, height: 100 }, // 中央に配置
   },
   {
     id: 'template-3',
@@ -54,9 +57,10 @@ export const templates: ThumbnailTemplate[] = [
     initialText: '見てね！',
     initialTextColor: 'black',
     initialFontSize: '2rem',
-    initialImageSrc: '/placeholder-bg.png', // 仮の背景画像
-    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 }, // デフォルト値
-    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 }, // デフォルトで右下
+    initialImageSrc: '/placeholder-bg.png',
+    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
+    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
+    initialTextPosition: { x: 16, y: 559, width: 300, height: 100 }, // 左下に配置 (padding-left: 16px, bottom: 16px)
   },
 ];
 
