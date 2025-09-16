@@ -11,11 +11,11 @@ interface ThumbnailTextProps {
   y: number;
   width: number;
   height: number;
-  onDragStop: (e: any, d: DraggableData) => void;
+  onDragStop: (e: MouseEvent | TouchEvent, data: DraggableData) => void;
   onResizeStop: (
-    e: any,
-    dir: any,
-    ref: HTMLDivElement,
+    e: MouseEvent | TouchEvent,
+    dir: string,
+    ref: HTMLElement,
     delta: ResizableDelta,
     position: Position
   ) => void;

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { toPng } from 'html-to-image';
-// import { DndContext, DragEndEvent } from '@dnd-kit/core'; // react-rnd を使うので不要
+import Image from 'next/image'; // Imageコンポーネントをインポート
 import { Button } from "@/components/ui/button";
 import { PanelLeftOpen, PanelLeftClose, Settings } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
+import { DraggableData, ResizableDelta, Position } from 'react-rnd'; // Rndは直接使わないので削除
 
 import { useTemplate } from './contexts/TemplateContext';
 import TemplateSelector from './components/TemplateSelector';
@@ -42,8 +42,8 @@ export default function ThumbnailGeneratorPage() {
     setBackgroundImagePosition,
     characterImagePosition,
     setCharacterImagePosition,
-    textPosition, // TemplateContextから取得
-    setTextPosition, // TemplateContextから取得
+    textPosition,
+    setTextPosition,
   } = useTemplate();
 
   // デスクトップ表示ではサイドバーを常に開く
@@ -73,7 +73,7 @@ export default function ThumbnailGeneratorPage() {
   // 画像の位置とサイズを更新するハンドラー
   const handleImageDragStop = (
     type: 'background' | 'character',
-    e: any,
+    e: MouseEvent | TouchEvent,
     d: DraggableData
   ) => {
     if (type === 'background') {
@@ -85,9 +85,9 @@ export default function ThumbnailGeneratorPage() {
 
   const handleImageResizeStop = (
     type: 'background' | 'character',
-    e: any,
-    dir: any,
-    ref: HTMLDivElement,
+    e: MouseEvent | TouchEvent,
+    dir: string,
+    ref: HTMLElement,
     delta: ResizableDelta,
     position: Position
   ) => {
@@ -111,14 +111,14 @@ export default function ThumbnailGeneratorPage() {
   };
 
   // テキストの位置とサイズを更新するハンドラー
-  const handleTextDragStop = (e: any, d: DraggableData) => {
+  const handleTextDragStop = (e: MouseEvent | TouchEvent, d: DraggableData) => {
     setTextPosition(prev => ({ ...prev, x: d.x, y: d.y }));
   };
 
   const handleTextResizeStop = (
-    e: any,
-    dir: any,
-    ref: HTMLDivElement,
+    e: MouseEvent | TouchEvent,
+    dir: string,
+    ref: HTMLElement,
     delta: ResizableDelta,
     position: Position
   ) => {
@@ -143,113 +143,106 @@ export default function ThumbnailGeneratorPage() {
   }
 
   return (
-    // <DndContext onDragEnd={handleDragEnd}> // react-rnd を使うので不要
-      <div className="relative flex flex-col lg:h-screen bg-gray-900 text-white font-sans">
-        <div className="absolute top-4 right-4 z-20 lg:hidden">
-          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
-            <PanelLeftOpen className="h-5 w-5" />
-          </Button>
-        </div>
+    <div className="relative flex flex-col lg:h-screen bg-gray-900 text-white font-sans">
+      <div className="absolute top-4 right-4 z-20 lg:hidden">
+        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
+          <PanelLeftOpen className="h-5 w-5" />
+        </Button>
+      </div>
 
-        <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
-          <main className="flex-grow p-4 w-full lg:w-auto">
-            <div className="flex flex-col h-full">
-              <header className="mb-4">
-                <h1 className="text-3xl font-bold tracking-tight text-white">サムネイル自動生成ツール (MVP)</h1>
-                <p className="text-gray-400 mt-2">
-                  テンプレートとテキスト入力で、簡易的なサムネイルを作成します。
-                </p>
-              </header>
-              <div
-                id="thumbnail-preview"
-                className={cn(
-                  "flex-grow relative overflow-hidden border border-gray-700 bg-gray-800",
-                  selectedTemplate.previewClass
-                )}
-              >
-                {backgroundImageSrc && (
-                  <ThumbnailImage
-                    src={backgroundImageSrc}
-                    alt="Background"
-                    x={backgroundImagePosition.x}
-                    y={backgroundImagePosition.y}
-                    width={backgroundImagePosition.width}
-                    height={backgroundImagePosition.height}
-                    onDragStop={(e, d) => handleImageDragStop('background', e, d)}
-                    onResizeStop={(e, dir, ref, delta, position) =>
-                      handleImageResizeStop('background', e, dir, ref, delta, position)
-                    }
-                    className=""
-                  />
-                )}
-                {characterImageSrc && (
-                  <ThumbnailImage
-                    src={characterImageSrc}
-                    alt="Character"
-                    x={characterImagePosition.x}
-                    y={characterImagePosition.y}
-                    width={characterImagePosition.width}
-                    height={characterImagePosition.height}
-                    onDragStop={(e, d) => handleImageDragStop('character', e, d)}
-                    onResizeStop={(e, dir, ref, delta, position) =>
-                      handleImageResizeStop('character', e, dir, ref, delta, position)
-                    }
-                    className=""
-                  />
-                )}
-                <ThumbnailText
-                  text={currentText}
-                  color={currentTextColor}
-                  fontSize={currentFontSize}
-                  x={textPosition.x}
-                  y={textPosition.y}
-                  width={textPosition.width}
-                  height={textPosition.height}
-                  onDragStop={handleTextDragStop}
-                  onResizeStop={handleTextResizeStop}
-                  className={selectedTemplate.textPositionClass}
-                />
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleDownloadThumbnail}>画像をダウンロード</Button>
-              </div>
-            </div>
-          </main>
-
-          {isSidebarOpen && (
+      <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
+        <main className="flex-grow p-4 w-full lg:w-auto">
+          <div className="flex flex-col h-full">
+            <header className="mb-4">
+              <h1 className="text-3xl font-bold tracking-tight text-white">サムネイル自動生成ツール (MVP)</h1>
+              <p className="text-gray-400 mt-2">
+                テンプレートとテキスト入力で、簡易的なサムネイルを作成します。
+              </p>
+            </header>
             <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-              onClick={() => setIsSidebarOpen(false)}
-            ></div>
-          )}
-
-          <aside
-            className={cn(
-              "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-background p-4 border-l z-40",
-              "transition-transform duration-300 ease-in-out",
-              isSidebarOpen ? 'translate-x-0' : 'translate-x-full',
-              "lg:static lg:w-1/4 lg:translate-x-0 lg:z-auto",
-              isSidebarOpen ? 'lg:block' : 'lg:hidden'
-            )}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">設定パネル</h2>
-              <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)}>
-                <PanelLeftClose className="h-5 w-5" />
-              </Button>
-            </div>
-            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="settings">設定</TabsTrigger>
-                <TabsTrigger value="tools">ツール</TabsTrigger>
-              </TabsList>
-              <TabsContent value="settings" className="mt-4 space-y-6">
-                <TemplateSelector
-                  onSelectTemplate={setSelectedTemplate}
-                  selectedTemplateId={selectedTemplate.id}
+              id="thumbnail-preview"
+              className={cn(
+                "flex-grow relative overflow-hidden border border-gray-700 bg-gray-800",
+                selectedTemplate.previewClass
+              )}
+            >
+              {backgroundImageSrc && (
+                <Image
+                  src={backgroundImageSrc}
+                  alt="Background"
+                  layout="fill"
+                  objectFit="cover"
+                  priority
                 />
-              </TabsContent>
-              <TabsContent value="tools" className="mt-4 space-y-6">
+              )}
+              {characterImageSrc && (
+                <ThumbnailImage
+                  src={characterImageSrc}
+                  alt="Character"
+                  x={characterImagePosition.x}
+                  y={characterImagePosition.y}
+                  width={characterImagePosition.width}
+                  height={characterImagePosition.height}
+                  onDragStop={(e, d) => handleImageDragStop('character', e, d)}
+                  onResizeStop={(e, dir, ref, delta, position) =>
+                    handleImageResizeStop('character', e, dir, ref, delta, position)
+                  }
+                  className=""
+                />
+              )}
+              <ThumbnailText
+                text={currentText}
+                color={currentTextColor}
+                fontSize={currentFontSize}
+                x={textPosition.x}
+                y={textPosition.y}
+                width={textPosition.width}
+                height={textPosition.height}
+                onDragStop={handleTextDragStop}
+                onResizeStop={handleTextResizeStop}
+                className={selectedTemplate.textPositionClass}
+              />
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button onClick={handleDownloadThumbnail}>画像をダウンロード</Button>
+            </div>
+          </div>
+        </main>
+
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
+
+        <aside
+          className={cn(
+            "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-background p-4 border-l z-40",
+            "transition-transform duration-300 ease-in-out",
+            isSidebarOpen ? 'translate-x-0' : 'translate-x-full',
+            "lg:static lg:w-1/4 lg:translate-x-0 lg:z-auto",
+            isSidebarOpen ? 'lg:block' : 'lg:hidden'
+          )}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">設定パネル</h2>
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)}>
+              <PanelLeftClose className="h-5 w-5" />
+            </Button>
+          </div>
+          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="settings">設定</TabsTrigger>
+              <TabsTrigger value="tools">ツール</TabsTrigger>
+            </TabsList>
+            <TabsContent value="settings" className="mt-4 space-y-6">
+              <TemplateSelector
+                onSelectTemplate={setSelectedTemplate}
+                selectedTemplateId={selectedTemplate.id}
+              />
+            </TabsContent>
+            <TabsContent value="tools" className="mt-4 space-y-6">
                 {/* テキスト編集 */}
                 <div className="space-y-2">
                   <Label htmlFor="thumbnail-text">サムネイルテキスト</Label>
@@ -339,6 +332,5 @@ export default function ThumbnailGeneratorPage() {
           )}
         </div>
       </div>
-    // </DndContext> // react-rnd を使うので不要
   );
 }
