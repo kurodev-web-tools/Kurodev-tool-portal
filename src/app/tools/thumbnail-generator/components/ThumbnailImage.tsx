@@ -37,6 +37,7 @@ const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
       onDragStop={onDragStop}
       onResizeStop={onResizeStop}
       bounds="parent"
+      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200" // 境界線をグレーに変更
     >
       <img
         src={src}
