@@ -37,11 +37,13 @@ export default function ThumbnailGeneratorPage() {
     setBackgroundImageSrc,
     characterImageSrc,
     setCharacterImageSrc,
-    // 新しく追加した状態
     backgroundImagePosition,
     setBackgroundImagePosition,
     characterImagePosition,
     setCharacterImagePosition,
+    // 新しく追加した状態
+    textPosition,
+    setTextPosition,
   } = useTemplate();
 
   // デスクトップ表示ではサイドバーを常に開く
@@ -106,6 +108,27 @@ export default function ThumbnailGeneratorPage() {
         y: position.y,
       }));
     }
+  };
+
+  // テキストの位置とサイズを更新するハンドラー
+  const handleTextDragStop = (e: any, d: DraggableData) => {
+    setTextPosition(prev => ({ ...prev, x: d.x, y: d.y }));
+  };
+
+  const handleTextResizeStop = (
+    e: any,
+    dir: any,
+    ref: HTMLDivElement,
+    delta: ResizableDelta,
+    position: Position
+  ) => {
+    setTextPosition(prev => ({
+      ...prev,
+      width: ref.offsetWidth,
+      height: ref.offsetHeight,
+      x: position.x,
+      y: position.y,
+    }));
   };
 
   // プリセットカラー
@@ -174,13 +197,19 @@ export default function ThumbnailGeneratorPage() {
                   onResizeStop={(e, dir, ref, delta, position) =>
                     handleImageResizeStop('character', e, dir, ref, delta, position)
                   }
-                  className="" // absolute bottom-0 right-0 はThumbnailImage内でRndのpositionで制御されるため不要
+                  className=""
                 />
               )}
               <ThumbnailText
                 text={currentText}
                 color={currentTextColor}
                 fontSize={currentFontSize}
+                x={textPosition.x}
+                y={textPosition.y}
+                width={textPosition.width}
+                height={textPosition.height}
+                onDragStop={handleTextDragStop}
+                onResizeStop={handleTextResizeStop}
                 className={selectedTemplate.textPositionClass}
               />
             </div>
@@ -278,7 +307,6 @@ export default function ThumbnailGeneratorPage() {
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setBackgroundImageSrc(URL.createObjectURL(e.target.files[0]));
-                        // 背景画像がアップロードされたら、位置をリセット
                         setBackgroundImagePosition(selectedTemplate.initialBackgroundImagePosition || { x: 0, y: 0, width: 1200, height: 675 });
                       }
                     }}
@@ -293,7 +321,6 @@ export default function ThumbnailGeneratorPage() {
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setCharacterImageSrc(URL.createObjectURL(e.target.files[0]));
-                        // キャラクター画像がアップロードされたら、位置をリセット
                         setCharacterImagePosition(selectedTemplate.initialCharacterImagePosition || { x: 700, y: 175, width: 500, height: 500 });
                       }
                     }}
