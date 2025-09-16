@@ -8,9 +8,9 @@ interface ThumbnailImageProps {
   height: number;
   x: number;
   y: number;
-  onDragStop: (e: MouseEvent | TouchEvent, data: DraggableData) => void;
+  onDragStop: (e: any, data: DraggableData) => void;
   onResizeStop: (
-    e: MouseEvent | TouchEvent,
+    e: any,
     dir: string,
     ref: HTMLElement,
     delta: ResizableDelta,

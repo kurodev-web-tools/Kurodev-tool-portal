@@ -73,7 +73,7 @@ export default function ThumbnailGeneratorPage() {
   // 画像の位置とサイズを更新するハンドラー
   const handleImageDragStop = (
     type: 'background' | 'character',
-    e: MouseEvent | TouchEvent,
+    e: any,
     d: DraggableData
   ) => {
     if (type === 'background') {
@@ -85,7 +85,7 @@ export default function ThumbnailGeneratorPage() {
 
   const handleImageResizeStop = (
     type: 'background' | 'character',
-    e: MouseEvent | TouchEvent,
+    e: any,
     dir: string,
     ref: HTMLElement,
     delta: ResizableDelta,
@@ -111,12 +111,12 @@ export default function ThumbnailGeneratorPage() {
   };
 
   // テキストの位置とサイズを更新するハンドラー
-  const handleTextDragStop = (e: MouseEvent | TouchEvent, d: DraggableData) => {
+  const handleTextDragStop = (e: any, d: DraggableData) => {
     setTextPosition(prev => ({ ...prev, x: d.x, y: d.y }));
   };
 
   const handleTextResizeStop = (
-    e: MouseEvent | TouchEvent,
+    e: any,
     dir: string,
     ref: HTMLElement,
     delta: ResizableDelta,
