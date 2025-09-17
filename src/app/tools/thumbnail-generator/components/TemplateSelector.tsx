@@ -9,6 +9,8 @@ export interface ThumbnailTemplate {
   initialText: string;
   initialTextColor: string;
   initialFontSize: string;
+  initialImageSrc?: string;
+  initialBackgroundImagePosition?: { x: number; y: number; width: number; height: number };
   initialCharacterImagePosition?: { x: number; y: number; width: number; height: number };
   initialTextPosition?: { x: number; y: number; width: number; height: number };
 }
