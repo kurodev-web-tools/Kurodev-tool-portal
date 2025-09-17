@@ -25,6 +25,9 @@ import { SimpleTemplate } from './components/templates/SimpleTemplate';
 import { CuteTemplate } from './components/templates/CuteTemplate';
 import { CoolTemplate } from './components/templates/CoolTemplate';
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 export default function ThumbnailGeneratorPage() {
   // UI状態管理
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -121,6 +124,59 @@ export default function ThumbnailGeneratorPage() {
   const handleTextResizeStop = React.useCallback((e: MouseEvent, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
     setTextPosition({ width: ref.offsetWidth, height: ref.offsetHeight, ...position });
   }, [setTextPosition]);
+
+  const handleBackgroundImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("ファイルサイズが大きすぎます", {
+        description: `10MB以下のファイルを選択してください。`,
+      });
+      return;
+    }
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("ファイル形式が無効です", {
+        description: "JPEG, PNG, WEBP形式の画像ファイルを選択してください。",
+      });
+      return;
+    }
+
+    setBackgroundImageSrc(URL.createObjectURL(file));
+  };
+
+  const handleCharacterImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("ファイルサイズが大きすぎます", {
+        description: `10MB以下のファイルを選択してください。`,
+      });
+      return;
+    }
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("ファイル形式が無効です", {
+        description: "JPEG, PNG, WEBP形式の画像ファイルを選択してください。",
+      });
+      return;
+    }
+
+    const src = URL.createObjectURL(file);
+    setCharacterImageSrc(src);
+    const img = new window.Image();
+    img.src = src;
+    img.onload = () => {
+      const initialWidth = selectedTemplate.initialCharacterImagePosition?.width || 500;
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      const height = initialWidth / aspectRatio;
+      const x = selectedTemplate.initialCharacterImagePosition?.x || 700;
+      const y = selectedTemplate.initialCharacterImagePosition?.y || 175;
+      setCharacterImagePosition({ x, y, width: initialWidth, height });
+    };
+  };
 
   // 表示するコンポーネントを定義 (useMemoでメモ化)
   const imageComponent = React.useMemo(() => characterImageSrc ? (
@@ -248,27 +304,11 @@ export default function ThumbnailGeneratorPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="background-image">背景画像</Label>
-                  <Input id="background-image" type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setBackgroundImageSrc(URL.createObjectURL(e.target.files[0]))} />
+                  <Input id="background-image" type="file" accept="image/*" onChange={handleBackgroundImageChange} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="character-image">キャラクター立ち絵</Label>
-                  <Input id="character-image" type="file" accept="image/*" onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      const file = e.target.files[0];
-                      const src = URL.createObjectURL(file);
-                      setCharacterImageSrc(src);
-                      const img = new window.Image();
-                      img.src = src;
-                      img.onload = () => {
-                        const initialWidth = selectedTemplate.initialCharacterImagePosition?.width || 500;
-                        const aspectRatio = img.naturalWidth / img.naturalHeight;
-                        const height = initialWidth / aspectRatio;
-                        const x = selectedTemplate.initialCharacterImagePosition?.x || 700;
-                        const y = selectedTemplate.initialCharacterImagePosition?.y || 175;
-                        setCharacterImagePosition({ x, y, width: initialWidth, height });
-                      };
-                    }
-                  }} />
+                  <Input id="character-image" type="file" accept="image/*" onChange={handleCharacterImageChange} />
                 </div>
               </div>
             </TabsContent>
