@@ -3,6 +3,7 @@
 import React from 'react';
 import { toPng } from 'html-to-image';
 import Image from 'next/image';
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PanelLeftOpen, PanelLeftClose, Settings } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,6 +93,9 @@ export default function ThumbnailGeneratorPage() {
         link.click();
       } catch (err) {
         console.error('サムネイルの生成に失敗しました', err);
+        toast.error("画像の生成に失敗しました", {
+          description: "時間をおいて再度お試しいただくか、別の画像でお試しください。",
+        });
       }
     }
   }, []);
