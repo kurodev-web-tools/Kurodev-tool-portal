@@ -178,7 +178,7 @@ export default function ThumbnailGeneratorPage() {
     <div className="relative flex flex-col lg:h-screen">
       {/* Mobile-only drawer open button */}
       <div className="absolute top-4 right-4 z-20 lg:hidden">
-        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
+        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} aria-label="設定パネルを開く">
           <PanelLeftOpen className="h-5 w-5" />
         </Button>
       </div>
@@ -220,7 +220,7 @@ export default function ThumbnailGeneratorPage() {
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">設定パネル</h2>
-            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)}>
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} aria-label="設定パネルを閉じる">
               <PanelLeftClose className="h-5 w-5" />
             </Button>
           </div>
@@ -238,8 +238,8 @@ export default function ThumbnailGeneratorPage() {
                 <Textarea id="thumbnail-text" value={currentText} onChange={(e) => setCurrentText(e.target.value)} className="h-24" />
               </div>
               <div className="space-y-2">
-                <Label>テキストカラー</Label>
-                <input type="color" value={currentTextColor} onChange={(e) => setCurrentTextColor(e.target.value)} className="w-full h-10 rounded-md" />
+                <Label htmlFor="text-color">テキストカラー</Label>
+                <input id="text-color" type="color" value={currentTextColor} onChange={(e) => setCurrentTextColor(e.target.value)} className="w-full h-10 rounded-md" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="font-size">フォントサイズ ({currentFontSize})</Label>
@@ -279,20 +279,20 @@ export default function ThumbnailGeneratorPage() {
         {!isSidebarOpen && isDesktop && (
           <div className="hidden lg:flex p-4 border-l flex-shrink-0 flex-col items-center justify-start space-y-4">
             <div className="flex flex-col items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="h-9 w-9 rounded-md hover:bg-muted">
+              <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="h-9 w-9 rounded-md hover:bg-muted" aria-label="設定パネルを開く">
                 <PanelLeftOpen className="h-[18px] w-[18px]" />
               </Button>
               <span className="text-xs text-muted-foreground">開く</span>
             </div>
             <div className="w-full border-t border-border"></div>
             <div className="flex flex-col items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => { setSelectedTab("settings"); setIsSidebarOpen(true); }} className="h-9 w-9 rounded-md hover:bg-muted">
+              <Button variant="ghost" size="icon" onClick={() => { setSelectedTab("settings"); setIsSidebarOpen(true); }} className="h-9 w-9 rounded-md hover:bg-muted" aria-label="設定タブを開く">
                 <Settings className="h-[18px] w-[18px]" />
               </Button>
               <span className="text-xs text-muted-foreground">設定</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => { setSelectedTab("tools"); setIsSidebarOpen(true); }} className="h-9 w-9 rounded-md hover:bg-muted">
+              <Button variant="ghost" size="icon" onClick={() => { setSelectedTab("tools"); setIsSidebarOpen(true); }} className="h-9 w-9 rounded-md hover:bg-muted" aria-label="ツールタブを開く">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 8V16M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
