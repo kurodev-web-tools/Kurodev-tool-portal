@@ -51,7 +51,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
         justifyContent: 'center',
       }}
     >
-      <p ref={nodeRef} className={cn("cursor-move", className)} style={{ color, fontSize, lineHeight: 1 }}>
+      <p ref={nodeRef} className={cn("cursor-move", className)} style={{ color, fontSize, lineHeight: 1, whiteSpace: 'pre-wrap' }}>
         {text}
       </p>
     </Rnd>

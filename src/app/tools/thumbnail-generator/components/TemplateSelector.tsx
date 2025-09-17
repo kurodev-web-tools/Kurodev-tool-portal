@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -7,16 +6,10 @@ import { cn } from '@/lib/utils';
 export interface ThumbnailTemplate {
   id: string;
   name: string;
-  description: string;
-  previewClass: string; // プレビュー用のCSSクラス
-  textPositionClass: string; // テキストの位置を決めるCSSクラス
   initialText: string;
   initialTextColor: string;
   initialFontSize: string;
-  initialImageSrc?: string;
-  initialBackgroundImagePosition?: { x: number; y: number; width: number; height: number };
   initialCharacterImagePosition?: { x: number; y: number; width: number; height: number };
-  // 新しく追加
   initialTextPosition?: { x: number; y: number; width: number; height: number };
 }
 
@@ -25,42 +18,47 @@ export const templates: ThumbnailTemplate[] = [
   {
     id: 'template-1',
     name: 'シンプル',
-    description: '基本的なレイアウト',
-    previewClass: 'bg-blue-500 text-white flex items-center justify-center',
-    textPositionClass: 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
     initialText: 'VTuber配信タイトル',
-    initialTextColor: 'white',
-    initialFontSize: '2.5rem',
-    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
-    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
-    initialTextPosition: { x: 450, y: 287.5, width: 300, height: 100 }, // 中央に配置
+    initialTextColor: '#333333',
+    initialFontSize: '4rem',
+    initialCharacterImagePosition: { x: 650, y: 100, width: 500, height: 500 },
+    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
   },
   {
     id: 'template-2',
-    name: 'モダン',
-    description: 'テキストが中央に大きく表示',
-    previewClass: 'bg-purple-600 text-white flex flex-col items-center justify-center',
-    textPositionClass: 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+    name: 'スタイリッシュ',
     initialText: '今日の配信！',
-    initialTextColor: 'white',
-    initialFontSize: '3.5rem',
-    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
-    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
-    initialTextPosition: { x: 450, y: 287.5, width: 300, height: 100 }, // 中央に配置
+    initialTextColor: '#FFFFFF',
+    initialFontSize: '5rem',
+    initialCharacterImagePosition: { x: 100, y: 150, width: 450, height: 450 },
+    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
   },
   {
     id: 'template-3',
-    name: 'ポップ',
-    description: '背景画像とテキスト',
-    previewClass: 'bg-yellow-400 text-gray-800 flex items-end justify-start p-4',
-    textPositionClass: 'absolute bottom-4 left-4',
-    initialText: '見てね！',
-    initialTextColor: 'black',
-    initialFontSize: '2rem',
-    initialImageSrc: '/placeholder-bg.png',
-    initialBackgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
+    name: 'かわいい',
+    initialText: 'みてね！',
+    initialTextColor: '#FF69B4',
+    initialFontSize: '4.5rem',
+    initialCharacterImagePosition: { x: 350, y: 100, width: 400, height: 400 },
+    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
+  },
+  {
+    id: 'template-4',
+    name: 'クール',
+    initialText: '緊急告知',
+    initialTextColor: '#E0E0E0',
+    initialFontSize: '6rem',
+    initialCharacterImagePosition: { x: 100, y: 100, width: 500, height: 500 },
+    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
+  },
+  {
+    id: 'template-5',
+    name: 'まっさら',
+    initialText: 'テキストを入力',
+    initialTextColor: '#000000',
+    initialFontSize: '4rem',
     initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
-    initialTextPosition: { x: 16, y: 559, width: 300, height: 100 }, // 左下に配置 (padding-left: 16px, bottom: 16px)
+    initialTextPosition: {  x: 340, y: 285, width: 600, height: 150 },
   },
 ];
 
@@ -87,10 +85,37 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
               <CardTitle className="text-base">{template.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={cn("w-full h-24 rounded-md", template.previewClass)}>
-                <p className="text-sm font-bold">{template.name}</p>
+              <div className={cn("w-full h-24 rounded-md flex items-center justify-center relative overflow-hidden", {
+                'simple-enhanced': template.id === 'template-1',
+                'stylish-enhanced': template.id === 'template-2',
+                'cute-enhanced': template.id === 'template-3',
+                'cool-enhanced': template.id === 'template-4',
+                'bg-gray-200': template.id === 'template-5',
+              })}>
+                {template.id === 'template-2' && (
+                  <>
+                    <div className="abstract-shape s1"></div>
+                    <div className="abstract-shape s2"></div>
+                  </>
+                )}
+                {template.id === 'template-3' && (
+                  <>
+                    <div className="dot-pattern"></div>
+                    <div className="blob b1"></div>
+                    <div className="blob b2"></div>
+                  </>
+                )}
+                {template.id === 'template-4' && (
+                  <>
+                    <div className="digital-overlay"></div>
+                    <div className="light-ray-1"></div>
+                    <div className="light-ray-2"></div>
+                  </>
+                )}
+                <p className="w-full h-full flex items-center justify-center text-sm font-bold z-10" style={{ color: template.initialTextColor }}>
+                  {template.initialText}
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">{template.description}</p>
             </CardContent>
           </Card>
         ))}

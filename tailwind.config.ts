@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import { fontFamily } from "tailwindcss/defaultTheme"
 
 export default {
   darkMode: "class",
@@ -18,6 +19,12 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-noto-sans-jp)", ...fontFamily.sans],
+        montserrat: ["var(--font-montserrat)"],
+        "m-plus-rounded-1c": ["var(--font-m-plus-rounded-1c)"],
+        "bebas-neue": ["var(--font-bebas-neue)"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
