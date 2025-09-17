@@ -81,7 +81,7 @@ export default function ThumbnailGeneratorPage() {
   }, [isDesktop]);
 
   // サムネイルのダウンロード処理
-  const handleDownloadThumbnail = async () => {
+  const handleDownloadThumbnail = React.useCallback(async () => {
     const thumbnailElement = document.getElementById('thumbnail-preview');
     if (thumbnailElement) {
       try {
@@ -94,36 +94,32 @@ export default function ThumbnailGeneratorPage() {
         console.error('サムネイルの生成に失敗しました', err);
       }
     }
-  };
+  }, []);
 
   // 画像のドラッグ＆リサイズハンドラー
-  const handleImageDragStop = (e: MouseEvent, d: DraggableData) => {
+  const handleImageDragStop = React.useCallback((e: MouseEvent, d: DraggableData) => {
     setCharacterImagePosition((prev) => ({ ...prev, x: d.x, y: d.y }));
-  };
+  }, [setCharacterImagePosition]);
 
-  const handleImageResize = (e: MouseEvent, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
+  const handleImageResize = React.useCallback((e: MouseEvent, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
     setCharacterImagePosition({
       width: ref.offsetWidth,
       height: ref.offsetHeight,
       ...position,
     });
-  };
+  }, [setCharacterImagePosition]);
 
   // テキストのドラッグ＆リサイズハンドラー
-  const handleTextDragStop = (e: MouseEvent, d: DraggableData) => {
+  const handleTextDragStop = React.useCallback((e: MouseEvent, d: DraggableData) => {
     setTextPosition((prev) => ({ ...prev, x: d.x, y: d.y }));
-  };
+  }, [setTextPosition]);
 
-  const handleTextResizeStop = (e: MouseEvent, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
+  const handleTextResizeStop = React.useCallback((e: MouseEvent, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
     setTextPosition({ width: ref.offsetWidth, height: ref.offsetHeight, ...position });
-  };
+  }, [setTextPosition]);
 
-  if (!selectedTemplate) {
-    return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
-  }
-
-  // 表示するコンポーネントを定義
-  const imageComponent = characterImageSrc ? (
+  // 表示するコンポーネントを定義 (useMemoでメモ化)
+  const imageComponent = React.useMemo(() => characterImageSrc ? (
     <ThumbnailImage
       src={characterImageSrc}
       alt="Character"
@@ -136,9 +132,9 @@ export default function ThumbnailGeneratorPage() {
       onResizeStop={handleImageResize}
       lockAspectRatio={isShiftKeyDown}
     />
-  ) : null;
+  ) : null, [characterImageSrc, characterImagePosition, handleImageDragStop, handleImageResize, isShiftKeyDown]);
 
-  const textComponent = (
+  const textComponent = React.useMemo(() => (
     <ThumbnailText
       text={currentText}
       color={currentTextColor}
@@ -150,10 +146,10 @@ export default function ThumbnailGeneratorPage() {
       onDragStop={handleTextDragStop}
       onResizeStop={handleTextResizeStop}
     />
-  );
+  ), [currentText, currentTextColor, currentFontSize, textPosition, handleTextDragStop, handleTextResizeStop]);
 
   // テンプレートを動的にレンダリング
-  const renderTemplate = () => {
+  const renderTemplate = React.useCallback(() => {
     const props = { imageComponent, textComponent };
     switch (selectedTemplate.id) {
       case 'template-1':
@@ -168,7 +164,11 @@ export default function ThumbnailGeneratorPage() {
       default:
         return <div className="w-full h-full relative">{imageComponent}{textComponent}</div>;
     }
-  };
+  }, [imageComponent, textComponent, selectedTemplate.id]);
+
+  if (!selectedTemplate) {
+    return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
+  }
 
   return (
     <div className="relative flex flex-col lg:h-screen">

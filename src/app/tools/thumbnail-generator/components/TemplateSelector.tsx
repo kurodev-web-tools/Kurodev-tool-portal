@@ -126,4 +126,4 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
   );
 };
 
-export default TemplateSelector;
+export default React.memo(TemplateSelector);

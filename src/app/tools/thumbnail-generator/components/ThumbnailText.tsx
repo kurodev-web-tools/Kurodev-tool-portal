@@ -58,5 +58,5 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   );
 };
 
-export default ThumbnailText;
+export default React.memo(ThumbnailText);
 /* eslint-enable @typescript-eslint/no-explicit-any */
