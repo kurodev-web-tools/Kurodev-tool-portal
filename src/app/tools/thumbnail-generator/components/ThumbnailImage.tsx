@@ -1,63 +1,62 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd'; // Added DraggableData, ResizableDelta, Position
+import { Rnd, DraggableData, ResizableDelta, Position, RndDragCallback, RndResizeCallback, RndDragEvent } from 'react-rnd';
 import Image from 'next/image';
 
 interface ThumbnailImageProps {
-  src: string;
+  src: string | null | undefined;
   alt: string;
-  width: number;
-  height: number;
   x: number;
   y: number;
-  onDragStop: (e: any, data: DraggableData) => void;
-  onResize: (e: any, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => void;
-  onResizeStop: (
-    e: any,
-    dir: string,
-    ref: HTMLElement,
-    delta: ResizableDelta,
-    position: Position
-  ) => void;
+  width: number;
+  height: number;
+  onDragStop: RndDragCallback;
+  onResize: (e: MouseEvent | TouchEvent, dir: any, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
+  onResizeStop: (e: MouseEvent | TouchEvent, dir: any, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
   lockAspectRatio: boolean;
-  className?: string;
+  enableResizing: boolean;
+  disableDragging: boolean;
 }
 
-const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
+export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   src,
   alt,
-  width,
-  height,
   x,
   y,
+  width,
+  height,
   onDragStop,
   onResize,
   onResizeStop,
   lockAspectRatio,
-  className,
+  enableResizing,
+  disableDragging,
 }) => {
   return (
     <Rnd
       size={{ width, height }}
       position={{ x, y }}
-      onDragStop={(e, data) => onDragStop(e, data)}
-      onResize={(e, dir, ref, delta, position) => onResize(e, dir, ref, delta, position)}
-      onResizeStop={(e, dir, ref, delta, position) => onResizeStop(e, dir, ref, delta, position)}
-      bounds="parent"
+      onDragStop={onDragStop}
+      onResize={onResize}
+      onResizeStop={onResizeStop}
       lockAspectRatio={lockAspectRatio}
+      enableResizing={enableResizing}
+      disableDragging={disableDragging}
       className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
     >
-      <Image
-        src={src}
-        alt={alt}
-        layout="fill"
-        objectFit="fill"
-        className={className}
-        draggable="false"
-      />
+      {src && (
+        <Image
+          src={src}
+          alt={alt}
+          layout="fill"
+          objectFit="cover"
+          priority
+        />
+      )}
     </Rnd>
   );
 };
+
 
 export default React.memo(ThumbnailImage);
 /* eslint-enable @typescript-eslint/no-explicit-any */

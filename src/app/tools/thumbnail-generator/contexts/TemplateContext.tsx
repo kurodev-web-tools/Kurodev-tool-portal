@@ -23,7 +23,7 @@ export interface Layer {
   width: number;
   height: number;
   // Type-specific properties
-  src?: string; // For image layers
+  src?: string | null; // For image layers, allow null
   text?: string; // For text layers
   color?: string; // For text layers
   fontSize?: string; // For text layers
@@ -152,7 +152,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         y: 0,
         width: 1200,
         height: 675,
-        src: selectedTemplate.initialImageSrc,
+        src: selectedTemplate.initialImageSrc || null,
       });
     }
     if (selectedTemplate.initialCharacterImagePosition) {
@@ -166,7 +166,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         y: selectedTemplate.initialCharacterImagePosition.y,
         width: selectedTemplate.initialCharacterImagePosition.width,
         height: selectedTemplate.initialCharacterImagePosition.height,
-        src: characterImageSrc || '', // characterImageSrcは別途管理されているため、初期値は空
+        src: characterImageSrc || null, // characterImageSrcがnullの場合、nullを渡す
       });
     }
     if (selectedTemplate.initialText) {

@@ -14,11 +14,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { DraggableData, ResizableDelta, Position } from 'react-rnd';
 
-import { useTemplate } from './contexts/TemplateContext';
+import { useTemplate, Layer } from './contexts/TemplateContext'; // Layerもインポート
 import TemplateSelector from './components/TemplateSelector';
 import ThumbnailText from './components/ThumbnailText';
 import ThumbnailImage from './components/ThumbnailImage';
-import { LayerPanel } from './components/LayerPanel'; // LayerPanelをインポート
+import { LayerPanel } from './components/LayerPanel';
 
 // テンプレートコンポーネントのインポート
 import { StylishTemplate } from './components/templates/StylishTemplate';
@@ -54,6 +54,10 @@ export default function ThumbnailGeneratorPage() {
     setCharacterImagePosition,
     textPosition,
     setTextPosition,
+    layers,
+    updateLayer,
+    selectedLayerId,
+    setSelectedLayerId,
   } = useTemplate();
 
   // キー入力のイベントハンドラー
@@ -104,31 +108,30 @@ export default function ThumbnailGeneratorPage() {
     }
   }, []);
 
-  // 画像のドラッグ＆リサイズハンドラー
-  const handleImageDragStop = React.useCallback((e: MouseEvent, d: DraggableData) => {
-    setCharacterImagePosition((prev) => ({ ...prev, x: d.x, y: d.y }));
-  }, [setCharacterImagePosition]);
+  // レイヤーのドラッグ＆リサイズハンドラー
+  const handleLayerDragStop = React.useCallback((id: string, d: DraggableData) => {
+    updateLayer(id, { x: d.x, y: d.y });
+  }, [updateLayer]);
 
-  const handleImageResize = React.useCallback((e: MouseEvent, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
-    setCharacterImagePosition({
+  const handleLayerResize = React.useCallback((id: string, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
+    updateLayer(id, {
       width: ref.offsetWidth,
       height: ref.offsetHeight,
-      ...position,
+      x: position.x,
+      y: position.y,
     });
-  }, [setCharacterImagePosition]);
-
-  // テキストのドラッグ＆リサイズハンドラー
-  const handleTextDragStop = React.useCallback((e: MouseEvent, d: DraggableData) => {
-    setTextPosition((prev) => ({ ...prev, x: d.x, y: d.y }));
-  }, [setTextPosition]);
-
-  const handleTextResizeStop = React.useCallback((e: MouseEvent, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
-    setTextPosition({ width: ref.offsetWidth, height: ref.offsetHeight, ...position });
-  }, [setTextPosition]);
+  }, [updateLayer]);
 
   const handleBackgroundImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      // ファイルが選択されていない場合、背景画像レイヤーのsrcをnullにする
+      const backgroundLayer = layers.find(layer => layer.name === '背景画像' && layer.type === 'image');
+      if (backgroundLayer) {
+        updateLayer(backgroundLayer.id, { src: null });
+      }
+      return;
+    }
 
     if (file.size > MAX_FILE_SIZE) {
       toast.error("ファイルサイズが大きすぎます", {
@@ -144,7 +147,16 @@ export default function ThumbnailGeneratorPage() {
       return;
     }
 
-    setBackgroundImageSrc(URL.createObjectURL(file));
+    // 背景画像レイヤーを更新または追加
+    const backgroundLayer = layers.find(layer => layer.name === '背景画像' && layer.type === 'image');
+    const src = URL.createObjectURL(file);
+    if (backgroundLayer) {
+      updateLayer(backgroundLayer.id, { src });
+    } else {
+      // 新しい背景画像レイヤーを追加
+      // TODO: 適切な初期位置とサイズを設定する
+      // addLayer({ type: 'image', name: '背景画像', visible: true, locked: false, x: 0, y: 0, width: 1200, height: 675, src });
+    }
   };
 
   const handleCharacterImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,66 +178,16 @@ export default function ThumbnailGeneratorPage() {
     }
 
     const src = URL.createObjectURL(file);
-    setCharacterImageSrc(src);
-    const img = new window.Image();
-    img.src = src;
-    img.onload = () => {
-      const initialWidth = selectedTemplate.initialCharacterImagePosition?.width || 500;
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
-      const height = initialWidth / aspectRatio;
-      const x = selectedTemplate.initialCharacterImagePosition?.x || 700;
-      const y = selectedTemplate.initialCharacterImagePosition?.y || 175;
-      setCharacterImagePosition({ x, y, width: initialWidth, height });
-    };
-  };
-
-  // 表示するコンポーネントを定義 (useMemoでメモ化)
-  const imageComponent = React.useMemo(() => characterImageSrc ? (
-    <ThumbnailImage
-      src={characterImageSrc}
-      alt="Character"
-      x={characterImagePosition.x}
-      y={characterImagePosition.y}
-      width={characterImagePosition.width}
-      height={characterImagePosition.height}
-      onDragStop={handleImageDragStop}
-      onResize={handleImageResize}
-      onResizeStop={handleImageResize}
-      lockAspectRatio={isShiftKeyDown}
-    />
-  ) : null, [characterImageSrc, characterImagePosition, handleImageDragStop, handleImageResize, isShiftKeyDown]);
-
-  const textComponent = React.useMemo(() => (
-    <ThumbnailText
-      text={currentText}
-      color={currentTextColor}
-      fontSize={currentFontSize}
-      x={textPosition.x}
-      y={textPosition.y}
-      width={textPosition.width}
-      height={textPosition.height}
-      onDragStop={handleTextDragStop}
-      onResizeStop={handleTextResizeStop}
-    />
-  ), [currentText, currentTextColor, currentFontSize, textPosition, handleTextDragStop, handleTextResizeStop]);
-
-  // テンプレートを動的にレンダリング
-  const renderTemplate = React.useCallback(() => {
-    const props = { imageComponent, textComponent };
-    switch (selectedTemplate.id) {
-      case 'template-1':
-        return <SimpleTemplate {...props} />;
-      case 'template-2':
-        return <StylishTemplate {...props} />;
-      case 'template-3':
-        return <CuteTemplate {...props} />;
-      case 'template-4':
-        return <CoolTemplate {...props} />;
-      case 'template-5':
-      default:
-        return <div className="w-full h-full relative">{imageComponent}{textComponent}</div>;
+    // キャラクター画像レイヤーを更新または追加
+    const characterLayer = layers.find(layer => layer.name === 'キャラクター' && layer.type === 'image');
+    if (characterLayer) {
+      updateLayer(characterLayer.id, { src });
+    } else {
+      // 新しいキャラクター画像レイヤーを追加
+      // TODO: 適切な初期位置とサイズを設定する
+      // addLayer({ type: 'image', name: 'キャラクター', visible: true, locked: false, x: 700, y: 175, width: 500, height: 500, src });
     }
-  }, [imageComponent, textComponent, selectedTemplate.id]);
+  };
 
   if (!selectedTemplate) {
     return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
@@ -248,8 +210,52 @@ export default function ThumbnailGeneratorPage() {
               <p className="text-muted-foreground mt-2">テンプレートと要素を組み合わせて、オリジナルのサムネイルを作成します。</p>
             </header>
             <div id="thumbnail-preview" className="aspect-video w-full bg-card relative border rounded-md">
-              {backgroundImageSrc && <Image src={backgroundImageSrc} alt="Background" layout="fill" objectFit="cover" priority />}
-              {renderTemplate()}
+              {/* レイヤーを逆順にマップして、z-indexのように振る舞わせる */}
+              {layers.slice().reverse().map((layer) => {
+                const isSelected = layer.id === selectedLayerId;
+                const isDraggable = isSelected && !layer.locked;
+                const isResizable = isSelected && !layer.locked;
+
+                if (!layer.visible) return null;
+
+                if (layer.type === 'image') {
+                  return (
+                    <ThumbnailImage
+                      key={layer.id}
+                      src={layer.src || ''}
+                      alt={layer.name}
+                      x={layer.x}
+                      y={layer.y}
+                      width={layer.width}
+                      height={layer.height}
+                      onDragStop={(e, d) => handleLayerDragStop(layer.id, d)}
+                      onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                      onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                      lockAspectRatio={isShiftKeyDown}
+                      enableResizing={isResizable}
+                      disableDragging={!isDraggable}
+                    />
+                  );
+                } else if (layer.type === 'text') {
+                  return (
+                    <ThumbnailText
+                      key={layer.id}
+                      text={layer.text || ''}
+                      color={layer.color || '#000000'}
+                      fontSize={layer.fontSize || '1rem'}
+                      x={layer.x}
+                      y={layer.y}
+                      width={layer.width}
+                      height={layer.height}
+                      onDragStop={(e, d) => handleLayerDragStop(layer.id, d)}
+                      onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                      enableResizing={isResizable}
+                      disableDragging={!isDraggable}
+                    />
+                  );
+                }
+                return null;
+              })}
             </div>
             <div className="mt-4 flex justify-end">
               <Button onClick={handleDownloadThumbnail}>画像をダウンロード</Button>

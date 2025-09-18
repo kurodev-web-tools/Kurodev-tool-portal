@@ -20,6 +20,8 @@ interface ThumbnailTextProps {
     delta: ResizableDelta,
     position: Position
   ) => void;
+  enableResizing: boolean;
+  disableDragging: boolean;
 }
 
 const ThumbnailText: React.FC<ThumbnailTextProps> = ({
@@ -33,6 +35,8 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   height,
   onDragStop,
   onResizeStop,
+  enableResizing,
+  disableDragging,
 }) => {
   const nodeRef = useRef(null);
   return (
@@ -44,6 +48,8 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
       bounds="parent"
       minWidth={50}
       minHeight={20}
+      enableResizing={enableResizing}
+      disableDragging={disableDragging}
       className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
       style={{
         display: 'flex',
