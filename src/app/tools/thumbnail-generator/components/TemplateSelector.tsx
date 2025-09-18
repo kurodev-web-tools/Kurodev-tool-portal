@@ -24,7 +24,7 @@ export const templates: ThumbnailTemplate[] = [
     initialTextColor: '#333333',
     initialFontSize: '4rem',
     initialCharacterImagePosition: { x: 650, y: 100, width: 500, height: 500 },
-    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
+    initialTextPosition: { x: 50, y: 280, width: 600, height: 150 },
   },
   {
     id: 'template-2',
@@ -33,7 +33,7 @@ export const templates: ThumbnailTemplate[] = [
     initialTextColor: '#FFFFFF',
     initialFontSize: '5rem',
     initialCharacterImagePosition: { x: 100, y: 150, width: 450, height: 450 },
-    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
+    initialTextPosition: { x: 600, y: 250, width: 550, height: 200 },
   },
   {
     id: 'template-3',
@@ -42,7 +42,7 @@ export const templates: ThumbnailTemplate[] = [
     initialTextColor: '#FF69B4',
     initialFontSize: '4.5rem',
     initialCharacterImagePosition: { x: 350, y: 100, width: 400, height: 400 },
-    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
+    initialTextPosition: { x: 50, y: 450, width: 400, height: 150 },
   },
   {
     id: 'template-4',
@@ -51,7 +51,7 @@ export const templates: ThumbnailTemplate[] = [
     initialTextColor: '#E0E0E0',
     initialFontSize: '6rem',
     initialCharacterImagePosition: { x: 100, y: 100, width: 500, height: 500 },
-    initialTextPosition: { x: -300, y: -100, width: 600, height: 150 },
+    initialTextPosition: { x: 650, y: 280, width: 500, height: 150 },
   },
   {
     id: 'template-5',
@@ -59,7 +59,6 @@ export const templates: ThumbnailTemplate[] = [
     initialText: 'テキストを入力',
     initialTextColor: '#000000',
     initialFontSize: '4rem',
-    initialCharacterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
     initialTextPosition: {  x: 340, y: 285, width: 600, height: 150 },
   },
 ];
@@ -87,7 +86,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
               <CardTitle className="text-base">{template.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={cn("w-full h-24 rounded-md flex items-center justify-center relative overflow-hidden", {
+              <div className={cn("w-full rounded-md flex items-center justify-center relative overflow-hidden", {
                 'simple-enhanced': template.id === 'template-1',
                 'stylish-enhanced': template.id === 'template-2',
                 'cute-enhanced': template.id === 'template-3',

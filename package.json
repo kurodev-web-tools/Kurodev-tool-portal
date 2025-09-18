@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://kurodev-web-tools.github.io/Kurodev-tools-portal/",
+  "homepage": "https://kurodev-web-tools.github.io/Kurodev-tool-portal/",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

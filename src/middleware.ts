@@ -12,7 +12,7 @@ const {
     }
     return secret || 'a-very-secret-and-long-string-for-development';
   },
-  getSessionIdentifier: (req) => {
+  getSessionIdentifier: () => {
     return 'placeholder-session-id';
   },
   cookieName: 'csrf.token',

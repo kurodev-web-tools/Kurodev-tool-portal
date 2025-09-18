@@ -10,7 +10,8 @@ interface ElementPositionType {
   height: number;
 }
 
-export type LayerType = 'image' | 'text';
+export type LayerType = 'image' | 'text' | 'shape';
+export type ShapeType = 'rectangle' | 'circle';
 
 export interface Layer {
   id: string;
@@ -23,10 +24,14 @@ export interface Layer {
   width: number;
   height: number;
   // Type-specific properties
-  src?: string | null; // For image layers, allow null
-  text?: string; // For text layers
-  color?: string; // For text layers
-  fontSize?: string; // For text layers
+  src?: string | null;
+  text?: string;
+  color?: string;
+  fontSize?: string;
+  shapeType?: ShapeType;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
 }
 
 interface TemplateContextType {
@@ -40,8 +45,6 @@ interface TemplateContextType {
   setCurrentFontSize: (fontSize: string) => void;
   backgroundImageSrc: string | null;
   setBackgroundImageSrc: (src: string | null) => void;
-  characterImageSrc: string | null;
-  setCharacterImageSrc: (src: string | null) => void;
   backgroundImagePosition: ElementPositionType;
   setBackgroundImagePosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
   characterImagePosition: ElementPositionType;
@@ -56,6 +59,7 @@ interface TemplateContextType {
   selectedLayerId: string | null;
   setSelectedLayerId: (id: string | null) => void;
   reorderLayers: (startIndex: number, endIndex: number) => void;
+  duplicateLayer: (id: string) => void;
 }
 
 const TemplateContext = createContext<TemplateContextType>({
@@ -69,8 +73,6 @@ const TemplateContext = createContext<TemplateContextType>({
   setCurrentFontSize: () => {},
   backgroundImageSrc: templates[0].initialImageSrc || null,
   setBackgroundImageSrc: () => {},
-  characterImageSrc: null,
-  setCharacterImageSrc: () => {},
   backgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
   setBackgroundImagePosition: () => {},
   characterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
@@ -85,6 +87,7 @@ const TemplateContext = createContext<TemplateContextType>({
   selectedLayerId: null,
   setSelectedLayerId: () => {},
   reorderLayers: () => {},
+  duplicateLayer: () => {},
 });
 
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -93,7 +96,6 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [currentTextColor, setCurrentTextColor] = useState<string>(templates[0].initialTextColor);
   const [currentFontSize, setCurrentFontSize] = useState<string>(templates[0].initialFontSize);
   const [backgroundImageSrc, setBackgroundImageSrc] = useState<string | null>(templates[0].initialImageSrc || null);
-  const [characterImageSrc, setCharacterImageSrc] = useState<string | null>(null);
   const [backgroundImagePosition, setBackgroundImagePosition] = useState<ElementPositionType>({ x: 0, y: 0, width: 1200, height: 675 });
   const [characterImagePosition, setCharacterImagePosition] = useState<ElementPositionType>({ x: 700, y: 175, width: 500, height: 500 });
   const [textPosition, setTextPosition] = useState<ElementPositionType>({ x: 0, y: 0, width: 300, height: 100 });
@@ -129,12 +131,29 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
   };
 
+  const duplicateLayer = (id: string) => {
+    setLayers((prevLayers) => {
+      const layerToDuplicate = prevLayers.find((layer) => layer.id === id);
+      if (!layerToDuplicate) {
+        return prevLayers;
+      }
+      const duplicatedLayer: Layer = {
+        ...layerToDuplicate,
+        id: uuidv4(),
+        name: `${layerToDuplicate.name}のコピー`,
+      };
+      const index = prevLayers.findIndex((layer) => layer.id === id);
+      const newLayers = [...prevLayers];
+      newLayers.splice(index + 1, 0, duplicatedLayer);
+      return newLayers;
+    });
+  };
+
   useEffect(() => {
     setCurrentText(selectedTemplate.initialText);
     setCurrentTextColor(selectedTemplate.initialTextColor);
     setCurrentFontSize(selectedTemplate.initialFontSize);
     setBackgroundImageSrc(selectedTemplate.initialImageSrc || null);
-    setCharacterImageSrc(null);
     setBackgroundImagePosition(selectedTemplate.initialBackgroundImagePosition || { x: 0, y: 0, width: 1200, height: 675 });
     setCharacterImagePosition(selectedTemplate.initialCharacterImagePosition || { x: 700, y: 175, width: 500, height: 500 });
     setTextPosition(selectedTemplate.initialTextPosition || { x: 0, y: 0, width: 300, height: 100 });
@@ -152,21 +171,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         y: 0,
         width: 1200,
         height: 675,
-        src: selectedTemplate.initialImageSrc || null,
-      });
-    }
-    if (selectedTemplate.initialCharacterImagePosition) {
-      initialLayers.push({
-        id: uuidv4(),
-        type: 'image',
-        name: 'キャラクター',
-        visible: true,
-        locked: false,
-        x: selectedTemplate.initialCharacterImagePosition.x,
-        y: selectedTemplate.initialCharacterImagePosition.y,
-        width: selectedTemplate.initialCharacterImagePosition.width,
-        height: selectedTemplate.initialCharacterImagePosition.height,
-        src: characterImageSrc || null, // characterImageSrcがnullの場合、nullを渡す
+        src: selectedTemplate.initialImageSrc,
       });
     }
     if (selectedTemplate.initialText) {
@@ -203,8 +208,6 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCurrentFontSize,
         backgroundImageSrc,
         setBackgroundImageSrc,
-        characterImageSrc,
-        setCharacterImageSrc,
         backgroundImagePosition,
         setBackgroundImagePosition,
         characterImagePosition,
@@ -219,6 +222,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         selectedLayerId,
         setSelectedLayerId,
         reorderLayers,
+        duplicateLayer,
       }}
     >
       {children}

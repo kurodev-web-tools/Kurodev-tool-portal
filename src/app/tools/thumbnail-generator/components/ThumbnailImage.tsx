@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
-import { Rnd, DraggableData, ResizableDelta, Position, RndDragCallback, RndResizeCallback, RndDragEvent } from 'react-rnd';
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
+import { Rnd, ResizableDelta, Position, RndDragCallback } from 'react-rnd';
 
 interface ThumbnailImageProps {
   src: string | null | undefined;
@@ -32,27 +31,35 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   enableResizing,
   disableDragging,
 }) => {
+  const [position, setPosition] = useState({ x, y });
+
+  useEffect(() => {
+    setPosition({ x, y });
+  }, [x, y]);
+
+  const imageStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    backgroundImage: src ? `url(${src})` : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  };
+
   return (
     <Rnd
       size={{ width, height }}
-      position={{ x, y }}
+      position={position}
+      onDrag={(e, d) => setPosition({ x: d.x, y: d.y })}
       onDragStop={onDragStop}
       onResize={onResize}
       onResizeStop={onResizeStop}
       lockAspectRatio={lockAspectRatio}
       enableResizing={enableResizing}
       disableDragging={disableDragging}
+      bounds="parent"
       className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
     >
-      {src && (
-        <Image
-          src={src}
-          alt={alt}
-          layout="fill"
-          objectFit="cover"
-          priority
-        />
-      )}
+      <div style={imageStyle} />
     </Rnd>
   );
 };
