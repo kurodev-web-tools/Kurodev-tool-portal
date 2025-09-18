@@ -5,7 +5,7 @@ import { toPng } from 'html-to-image';
 import Image from 'next/image';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { PanelLeftOpen, PanelLeftClose, Settings } from "lucide-react";
+import { PanelLeftOpen, PanelLeftClose, Settings, Layers } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,7 @@ import { useTemplate } from './contexts/TemplateContext';
 import TemplateSelector from './components/TemplateSelector';
 import ThumbnailText from './components/ThumbnailText';
 import ThumbnailImage from './components/ThumbnailImage';
+import { LayerPanel } from './components/LayerPanel'; // LayerPanelをインポート
 
 // テンプレートコンポーネントのインポート
 import { StylishTemplate } from './components/templates/StylishTemplate';
@@ -281,9 +282,10 @@ export default function ThumbnailGeneratorPage() {
             </Button>
           </div>
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="settings">設定</TabsTrigger>
               <TabsTrigger value="tools">ツール</TabsTrigger>
+              <TabsTrigger value="layers">レイヤー</TabsTrigger>
             </TabsList>
             <TabsContent value="settings" className="mt-4 space-y-6">
               <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
@@ -312,6 +314,9 @@ export default function ThumbnailGeneratorPage() {
                 </div>
               </div>
             </TabsContent>
+            <TabsContent value="layers" className="mt-4 space-y-6">
+              <LayerPanel />
+            </TabsContent>
           </Tabs>
         </aside>
 
@@ -338,6 +343,12 @@ export default function ThumbnailGeneratorPage() {
                 </svg>
               </Button>
               <span className="text-xs text-muted-foreground">ツール</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={() => { setSelectedTab("layers"); setIsSidebarOpen(true); }} className="h-9 w-9 rounded-md hover:bg-muted" aria-label="レイヤータブを開く">
+                <Layers className="h-[18px] w-[18px]" />
+              </Button>
+              <span className="text-xs text-muted-foreground">レイヤー</span>
             </div>
           </div>
         )}
