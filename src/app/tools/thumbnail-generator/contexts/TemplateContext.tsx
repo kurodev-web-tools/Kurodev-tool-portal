@@ -55,6 +55,7 @@ interface TemplateContextType {
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   selectedLayerId: string | null;
   setSelectedLayerId: (id: string | null) => void;
+  reorderLayers: (startIndex: number, endIndex: number) => void;
 }
 
 const TemplateContext = createContext<TemplateContextType>({
@@ -83,6 +84,7 @@ const TemplateContext = createContext<TemplateContextType>({
   updateLayer: () => {},
   selectedLayerId: null,
   setSelectedLayerId: () => {},
+  reorderLayers: () => {},
 });
 
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -116,6 +118,15 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     setLayers((prevLayers) =>
       prevLayers.map((layer) => (layer.id === id ? { ...layer, ...updates } : layer))
     );
+  };
+
+  const reorderLayers = (startIndex: number, endIndex: number) => {
+    setLayers((prevLayers) => {
+      const newLayers = Array.from(prevLayers);
+      const [removed] = newLayers.splice(startIndex, 1);
+      newLayers.splice(endIndex, 0, removed);
+      return newLayers;
+    });
   };
 
   useEffect(() => {
@@ -207,6 +218,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         updateLayer,
         selectedLayerId,
         setSelectedLayerId,
+        reorderLayers,
       }}
     >
       {children}
