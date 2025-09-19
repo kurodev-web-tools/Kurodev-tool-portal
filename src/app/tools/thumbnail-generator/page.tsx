@@ -151,10 +151,32 @@ export default function ThumbnailGeneratorPage() {
 
   const handleAddShape = (shapeType: ShapeType) => {
     const offset = layers.filter(l => l.type === 'shape').length * 20;
+    const shapeCount = layers.filter(l => l.shapeType === shapeType).length + 1;
+    let name = '';
+    let height = 300;
+    const borderWidth = 5;
+
+    switch (shapeType) {
+      case 'rectangle':
+        name = `四角 ${shapeCount}`;
+        break;
+      case 'circle':
+        name = `円 ${shapeCount}`;
+        break;
+      case 'line':
+        name = `線 ${shapeCount}`;
+        height = borderWidth;
+        break;
+      case 'arrow':
+        name = `矢印 ${shapeCount}`;
+        height = borderWidth;
+        break;
+    }
+
     addLayer({
       type: 'shape',
       shapeType,
-      name: `${shapeType === 'rectangle' ? '四角' : '円'} ${layers.filter(l => l.type === 'shape').length + 1}`,
+      name,
       visible: true,
       locked: false,
       x: 550 + offset,
@@ -348,6 +370,8 @@ export default function ThumbnailGeneratorPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <Button variant="outline" onClick={() => handleAddShape('rectangle')}>四角を追加</Button>
                       <Button variant="outline" onClick={() => handleAddShape('circle')}>円を追加</Button>
+                      <Button variant="outline" onClick={() => handleAddShape('line')}>線を追加</Button>
+                      <Button variant="outline" onClick={() => handleAddShape('arrow')}>矢印を追加</Button>
                     </div>
                   </AccordionContent>
                 </AccordionItem>

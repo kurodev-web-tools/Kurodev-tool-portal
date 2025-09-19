@@ -40,6 +40,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
 }) => {
   const nodeRef = useRef(null);
   const [position, setPosition] = useState({ x, y });
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     setPosition({ x, y });
@@ -57,12 +58,12 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
       minHeight={20}
       enableResizing={enableResizing}
       disableDragging={disableDragging}
-      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={cn(
+        'flex items-center justify-center',
+        isHovered && 'border border-dashed border-gray-500'
+      )}
     >
       <p ref={nodeRef} className={cn("cursor-move", className)} style={{ color, fontSize, lineHeight: 1, whiteSpace: 'pre-wrap' }}>
         {text}

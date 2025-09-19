@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { Rnd, ResizableDelta, Position, RndDragCallback } from 'react-rnd';
+import { cn } from '@/lib/utils';
 
 interface ThumbnailImageProps {
   src: string | null | undefined;
@@ -32,6 +33,7 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   disableDragging,
 }) => {
   const [position, setPosition] = useState({ x, y });
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     setPosition({ x, y });
@@ -57,7 +59,9 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
       enableResizing={enableResizing}
       disableDragging={disableDragging}
       bounds="parent"
-      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={cn(isHovered && 'border border-dashed border-gray-500')}
     >
       <div style={imageStyle} />
     </Rnd>

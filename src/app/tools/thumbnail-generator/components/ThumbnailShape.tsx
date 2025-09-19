@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Rnd, RndDragCallback, ResizableDelta, Position } from 'react-rnd';
 import { ShapeType } from '../contexts/TemplateContext';
+import { cn } from '@/lib/utils';
 
 interface ThumbnailShapeProps {
   shapeType: ShapeType;
@@ -36,17 +37,74 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   height,
 }) => {
   const [position, setPosition] = useState({ x: x || 0, y: y || 0 });
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     setPosition({ x: x || 0, y: y || 0 });
   }, [x, y]);
 
-  const shapeStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    backgroundColor,
-    border: `${borderWidth}px solid ${borderColor}`,
-    borderRadius: shapeType === 'circle' ? '50%' : '0',
+  const renderShape = () => {
+    const commonSvgProps = {
+      width: '100%',
+      height: '100%',
+      style: { overflow: 'visible' },
+    };
+
+    switch (shapeType) {
+      case 'line':
+        return (
+          <svg {...commonSvgProps}>
+            <line
+              x1={0}
+              y1={height / 2}
+              x2={width}
+              y2={height / 2}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'arrow':
+        return (
+          <svg {...commonSvgProps}>
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="7"
+                refX="0"
+                refY="3.5"
+                orient="auto"
+              >
+                <polygon points="0 0, 10 3.5, 0 7" fill={borderColor} />
+              </marker>
+            </defs>
+            <line
+              x1={0}
+              y1={height / 2}
+              x2={width - 10} // Adjust for arrowhead size
+              y2={height / 2}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+              markerEnd="url(#arrowhead)"
+            />
+          </svg>
+        );
+      case 'rectangle':
+      case 'circle':
+      default:
+        return (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor,
+              border: `${borderWidth}px solid ${borderColor}`,
+              borderRadius: shapeType === 'circle' ? '50%' : '0',
+            }}
+          />
+        );
+    }
   };
 
   return (
@@ -61,8 +119,11 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
       enableResizing={enableResizing}
       disableDragging={disableDragging}
       bounds="parent"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={cn(isHovered && 'border border-dashed border-gray-500')}
     >
-      <div style={shapeStyle} />
+      {renderShape()}
     </Rnd>
   );
 };

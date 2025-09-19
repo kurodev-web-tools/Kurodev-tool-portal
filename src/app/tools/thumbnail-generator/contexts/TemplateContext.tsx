@@ -11,7 +11,7 @@ interface ElementPositionType {
 }
 
 export type LayerType = 'image' | 'text' | 'shape';
-export type ShapeType = 'rectangle' | 'circle';
+export type ShapeType = 'rectangle' | 'circle' | 'line' | 'arrow';
 
 export interface Layer {
   id: string;
@@ -60,6 +60,8 @@ interface TemplateContextType {
   setSelectedLayerId: (id: string | null) => void;
   reorderLayers: (startIndex: number, endIndex: number) => void;
   duplicateLayer: (id: string) => void;
+  moveLayerUp: (id: string) => void;
+  moveLayerDown: (id: string) => void;
 }
 
 const TemplateContext = createContext<TemplateContextType>({
@@ -88,6 +90,8 @@ const TemplateContext = createContext<TemplateContextType>({
   setSelectedLayerId: () => {},
   reorderLayers: () => {},
   duplicateLayer: () => {},
+  moveLayerUp: () => {},
+  moveLayerDown: () => {},
 });
 
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -145,6 +149,28 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
       const index = prevLayers.findIndex((layer) => layer.id === id);
       const newLayers = [...prevLayers];
       newLayers.splice(index + 1, 0, duplicatedLayer);
+      return newLayers;
+    });
+  };
+
+  const moveLayerUp = (id: string) => {
+    setLayers((prevLayers) => {
+      const index = prevLayers.findIndex((layer) => layer.id === id);
+      if (index <= 0) return prevLayers;
+      const newLayers = [...prevLayers];
+      const [movedLayer] = newLayers.splice(index, 1);
+      newLayers.splice(index - 1, 0, movedLayer);
+      return newLayers;
+    });
+  };
+
+  const moveLayerDown = (id: string) => {
+    setLayers((prevLayers) => {
+      const index = prevLayers.findIndex((layer) => layer.id === id);
+      if (index < 0 || index >= prevLayers.length - 1) return prevLayers;
+      const newLayers = [...prevLayers];
+      const [movedLayer] = newLayers.splice(index, 1);
+      newLayers.splice(index + 1, 0, movedLayer);
       return newLayers;
     });
   };
@@ -223,6 +249,8 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         setSelectedLayerId,
         reorderLayers,
         duplicateLayer,
+        moveLayerUp,
+        moveLayerDown,
       }}
     >
       {children}
