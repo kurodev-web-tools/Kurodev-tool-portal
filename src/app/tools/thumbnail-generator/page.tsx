@@ -249,12 +249,15 @@ export default function ThumbnailGeneratorPage() {
                   return (
                     <ThumbnailImage
                       key={layer.id}
+                      id={layer.id}
+                      isSelected={isSelected}
                       src={layer.src || ''}
                       alt={layer.name}
                       x={layer.x}
                       y={layer.y}
                       width={layer.width}
                       height={layer.height}
+                      rotation={layer.rotation}
                       onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                       onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                       onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
@@ -267,6 +270,8 @@ export default function ThumbnailGeneratorPage() {
                   return (
                     <ThumbnailText
                       key={layer.id}
+                      id={layer.id}
+                      isSelected={isSelected}
                       text={layer.text || ''}
                       color={layer.color || '#000000'}
                       fontSize={layer.fontSize || '1rem'}
@@ -274,6 +279,7 @@ export default function ThumbnailGeneratorPage() {
                       y={layer.y}
                       width={layer.width}
                       height={layer.height}
+                      rotation={layer.rotation}
                       onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                       onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                       enableResizing={isResizable}
@@ -284,6 +290,8 @@ export default function ThumbnailGeneratorPage() {
                   return (
                     <ThumbnailShape
                       key={layer.id}
+                      id={layer.id}
+                      isSelected={isSelected}
                       shapeType={layer.shapeType}
                       backgroundColor={layer.backgroundColor || '#cccccc'}
                       borderColor={layer.borderColor || '#000000'}
@@ -292,6 +300,7 @@ export default function ThumbnailGeneratorPage() {
                       y={layer.y}
                       width={layer.width}
                       height={layer.height}
+                      rotation={layer.rotation}
                       onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                       onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                       onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}

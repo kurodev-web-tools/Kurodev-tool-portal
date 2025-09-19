@@ -23,6 +23,7 @@ export interface Layer {
   y: number;
   width: number;
   height: number;
+  rotation: number;
   // Type-specific properties
   src?: string | null;
   text?: string;
@@ -53,7 +54,7 @@ interface TemplateContextType {
   setTextPosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
   layers: Layer[];
   setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
-  addLayer: (layer: Omit<Layer, 'id'>) => void;
+  addLayer: (layer: Omit<Layer, 'id' | 'rotation'>) => void;
   removeLayer: (id: string) => void;
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   selectedLayerId: string | null;
@@ -107,8 +108,8 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
-  const addLayer = (layer: Omit<Layer, 'id'>) => {
-    const newLayer: Layer = { ...layer, id: uuidv4() };
+  const addLayer = (layer: Omit<Layer, 'id' | 'rotation'>) => {
+    const newLayer: Layer = { ...layer, id: uuidv4(), rotation: 0 };
     setLayers((prevLayers) => [newLayer, ...prevLayers]); // 新しいレイヤーを一番上に追加
     setSelectedLayerId(newLayer.id);
   };
@@ -197,6 +198,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         y: 0,
         width: 1200,
         height: 675,
+        rotation: 0,
         src: selectedTemplate.initialImageSrc,
       });
     }
@@ -211,6 +213,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         y: selectedTemplate.initialTextPosition?.y || 0,
         width: selectedTemplate.initialTextPosition?.width || 300,
         height: selectedTemplate.initialTextPosition?.height || 100,
+        rotation: 0,
         text: selectedTemplate.initialText,
         color: selectedTemplate.initialTextColor,
         fontSize: selectedTemplate.initialFontSize,
