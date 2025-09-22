@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { useTemplate } from '../contexts/TemplateContext';
@@ -50,22 +50,25 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   const [position, setPosition] = useState({ x, y });
   const [isRotating, setIsRotating] = useState(false);
   const nodeRef = useRef<Rnd>(null);
+  const rotateHandleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setPosition({ x, y });
   }, [x, y]);
 
-  const handleRotateStart = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleRotateStartMouse = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsRotating(true);
 
     const rndElement = nodeRef.current?.getSelfElement();
     if (!rndElement) return;
+    const parentElement = rndElement.parentElement;
+    if (!parentElement) return;
 
-    const rect = rndElement.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    const parentRect = parentElement.getBoundingClientRect();
+    const centerX = parentRect.left + position.x + width / 2;
+    const centerY = parentRect.top + position.y + height / 2;
 
     const handleRotating = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - centerX;
@@ -84,43 +87,101 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
     window.addEventListener('mouseup', handleRotateEnd);
   };
 
+  const handleRotateStartTouch = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsRotating(true);
+
+    const rndElement = nodeRef.current?.getSelfElement();
+    if (!rndElement) return;
+    const parentElement = rndElement.parentElement;
+    if (!parentElement) return;
+
+    const parentRect = parentElement.getBoundingClientRect();
+    const centerX = parentRect.left + position.x + width / 2;
+    const centerY = parentRect.top + position.y + height / 2;
+
+    const handleRotating = (moveEvent: TouchEvent) => {
+      if (moveEvent.touches.length === 0) return;
+      const dx = moveEvent.touches[0].clientX - centerX;
+      const dy = moveEvent.touches[0].clientY - centerY;
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+      updateLayer(id, { rotation: angle });
+    };
+
+    const handleRotateEnd = () => {
+      setIsRotating(false);
+      window.removeEventListener('touchmove', handleRotating);
+      window.removeEventListener('touchend', handleRotateEnd);
+    };
+
+    window.addEventListener('touchmove', handleRotating);
+    window.addEventListener('touchend', handleRotateEnd);
+  }, [id, updateLayer, position.x, position.y, width, height]);
+
+  useEffect(() => {
+    const handle = rotateHandleRef.current;
+    if (handle) {
+      handle.addEventListener('touchstart', handleRotateStartTouch, { passive: false });
+      return () => {
+        handle.removeEventListener('touchstart', handleRotateStartTouch);
+      };
+    }
+  }, [handleRotateStartTouch]);
+
   return (
-    <Rnd
-      ref={nodeRef}
-      size={{ width, height }}
-      position={position}
-      onDrag={(e, d) => setPosition({ x: d.x, y: d.y })}
-      onDragStop={onDragStop}
-      onResizeStop={onResizeStop}
-      bounds="parent"
-      minWidth={50}
-      minHeight={20}
-      enableResizing={enableResizing}
-      disableDragging={disableDragging || isRotating}
-      className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <div
-        className="w-full h-full flex items-center justify-center"
-        style={{ transform: `rotate(${rotation}deg)` }}
+    <>
+      <Rnd
+        ref={nodeRef}
+        size={{ width, height }}
+        position={position}
+        onDragStart={() => {
+          if (isRotating) {
+            return false;
+          }
+        }}
+        onDrag={(e, d) => {
+          if (!isRotating) {
+            setPosition({ x: d.x, y: d.y });
+          }
+        }}
+        onDragStop={onDragStop}
+        onResizeStop={onResizeStop}
+        minWidth={50}
+        minHeight={20}
+        enableResizing={enableResizing}
+        disableDragging={disableDragging || isRotating}
+        className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
-        <p className={cn("cursor-move", className)} style={{ color, fontSize, lineHeight: 1, whiteSpace: 'pre-wrap' }}>
-          {text}
-        </p>
-      </div>
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}
+        >
+          <p className={cn("cursor-move", className)} style={{ color, fontSize, lineHeight: 1, whiteSpace: 'pre-wrap' }}>
+            {text}
+          </p>
+        </div>
+      </Rnd>
       {isSelected && (
         <div
-          onMouseDown={handleRotateStart}
-          className="absolute -top-6 left-1/2 -translate-x-1/2 cursor-grab bg-white border rounded-full p-1 shadow z-10"
+          ref={rotateHandleRef}
+          onMouseDown={handleRotateStartMouse}
+          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-10"
+          style={{
+            left: position.x + width / 2,
+            top: position.y - 30,
+            transform: 'translateX(-50%)',
+          }}
         >
           <RotateCw className="h-4 w-4" />
         </div>
       )}
-    </Rnd>
+    </>
   );
 };
 
