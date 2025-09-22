@@ -6,15 +6,15 @@ const suites = [
     id: "suite-1",
     title: "企画準備",
     description: "配信の企画から準備までをサポートするツール群。",
-    status: "released",
+    status: "beta",
     href: "/tools/schedule-calendar", // スケジュールカレンダーへのリンクを追加
+    feedbackMessage: "フィードバックお待ちしております！",
   },
   {
     id: "suite-2",
     title: "動画公開",
     description: "動画の公開と視聴者へのリーチを最大化するツール群。",
-    status: "beta",
-    feedbackMessage: "フィードバックお待ちしております！",
+    status: "development",
   },
   {
     id: "suite-3",
