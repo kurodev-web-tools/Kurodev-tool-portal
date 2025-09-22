@@ -1,26 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Rnd, ResizableDelta, Position, RndDragCallback } from 'react-rnd';
+import { Rnd, ResizableDelta, RndDragCallback } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { useTemplate } from '../contexts/TemplateContext';
 import { RotateCw } from 'lucide-react';
+import {
+  BaseThumbnailComponentProps,
+  ResizeDirection,
+  Position,
+} from '../types/component-types';
 
-interface ThumbnailImageProps {
-  id: string;
-  isSelected: boolean;
+interface ThumbnailImageProps extends Omit<BaseThumbnailComponentProps, 'onResize' | 'onResizeStop' | 'onDragStop'> {
   src: string | null | undefined;
   alt: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
   onDragStop: RndDragCallback;
-  onResize: (e: MouseEvent | TouchEvent, dir: any, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
-  onResizeStop: (e: MouseEvent | TouchEvent, dir: any, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
+  onResize: (e: MouseEvent | TouchEvent, dir: ResizeDirection, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
+  onResizeStop: (e: MouseEvent | TouchEvent, dir: ResizeDirection, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
   lockAspectRatio: boolean;
-  enableResizing: boolean;
   disableDragging: boolean;
+  isDraggable: boolean; // 追加
 }
 
 export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
@@ -36,9 +33,15 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   onDragStop,
   onResize,
   onResizeStop,
+  onSelect, // 追加
+  isLocked, // 追加
+  isDraggable, // 追加
   lockAspectRatio,
   enableResizing,
   disableDragging,
+  onRotateStart, // 追加
+  onRotate, // 追加
+  onRotateStop, // 追加
 }) => {
   const { updateLayer } = useTemplate();
   const [position, setPosition] = useState({ x, y });

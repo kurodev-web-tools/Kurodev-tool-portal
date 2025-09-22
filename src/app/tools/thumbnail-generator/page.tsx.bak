@@ -230,12 +230,6 @@ export default function ThumbnailGeneratorPage() {
                 onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                 onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                 lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                onSelect={() => setSelectedLayerId(layer.id)} // 追加
-                isLocked={layer.locked} // 追加
-                isDraggable={isDraggable} // 追加
-                onRotateStart={() => {}} // 追加
-                onRotate={() => {}} // 追加
-                onRotateStop={() => {}} // 追加
               />
             );
           } else if (layer.type === 'text') {
