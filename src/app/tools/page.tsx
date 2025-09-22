@@ -38,6 +38,7 @@ const tools = [
     title: "動画タイトル・概要欄自動生成AI",
     description: "AIが動画のタイトルと概要欄を自動生成。",
     status: "development",
+    href: "/tools/title-generator",
   },
     {
     id: "tool-12",
