@@ -47,6 +47,7 @@ const tools = [
     title: "企画・台本サポートAI",
     description: "配信の企画や台本作成をAIがサポート。",
     status: "released",
+    href: "/tools/script-generator", // リンクを追加
   },
   {
     id: "tool-8",

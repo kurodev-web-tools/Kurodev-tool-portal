@@ -456,13 +456,18 @@ export default function ThumbnailGeneratorPage() {
         </Button>
       )}
       {isDesktop && !isSidebarOpen && (
-         <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30">
-            <Button
-              variant="secondary"
-              className="rounded-r-none"
-              onClick={() => setIsSidebarOpen(true)}
-            >
+         <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md">
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
               <PanelLeftOpen className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("settings"); }}>
+              <Settings className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("tools"); }}>
+              <Construction className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("layers"); }}>
+              <Layers className="h-5 w-5" />
             </Button>
          </div>
       )}

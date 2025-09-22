@@ -83,8 +83,8 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* Icon bar for PC when sidebar is closed */}
-        {!isSidebarOpen && (
-          <div className="hidden lg:flex p-4 border-l flex-shrink-0 flex-col items-center justify-start space-y-4">
+        {isDesktop && !isSidebarOpen && (
+          <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md">
             <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
               <PanelLeftOpen className="h-5 w-5" />
             </Button>
