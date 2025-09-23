@@ -45,6 +45,7 @@ const tools = [
     title: "配信スケジュール自動調整",
     description: "コラボ相手との配信スケジュールを自動調整。",
     status: "development",
+    href: "/tools/schedule-adjuster",
   },
   {
     id: "tool-13",
