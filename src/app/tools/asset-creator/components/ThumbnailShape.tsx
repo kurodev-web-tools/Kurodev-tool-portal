@@ -12,6 +12,7 @@ interface ThumbnailShapeProps {
   borderColor: string;
   borderWidth: number;
   rotation: number;
+  zIndex: number; // zIndexプロパティを追加
   onDragStop: RndDragCallback;
   onResize: (e: MouseEvent | TouchEvent, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
   onResizeStop: (e: MouseEvent | TouchEvent, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
@@ -20,8 +21,8 @@ interface ThumbnailShapeProps {
   disableDragging: boolean;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  width: number | string;
+  height: number | string;
 }
 
 const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
@@ -32,6 +33,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   borderColor,
   borderWidth,
   rotation,
+  zIndex,
   onDragStop,
   onResize,
   onResizeStop,
@@ -64,8 +66,8 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const centerX = parentRect.left + position.x + (width as number) / 2;
+    const centerY = parentRect.top + position.y + (height as number) / 2;
 
     const handleRotating = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - centerX;
@@ -95,8 +97,8 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const centerX = parentRect.left + position.x + (width as number) / 2;
+    const centerY = parentRect.top + position.y + (height as number) / 2;
 
     const handleRotating = (moveEvent: TouchEvent) => {
       if (moveEvent.touches.length === 0) return;
@@ -139,9 +141,9 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
           <svg {...commonSvgProps}>
             <line
               x1={0}
-              y1={height / 2}
-              x2={width}
-              y2={height / 2}
+              y1={(height as number) / 2}
+              x2={width as number}
+              y2={(height as number) / 2}
               stroke={borderColor}
               strokeWidth={borderWidth}
             />
@@ -165,9 +167,9 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
             </defs>
             <line
               x1={0}
-              y1={height / 2}
-              x2={width - 10} // 矢印の先端分短くする
-              y2={height / 2}
+              y1={(height as number) / 2}
+              x2={(width as number) - 10} // 矢印の先端分短くする
+              y2={(height as number) / 2}
               stroke={borderColor}
               strokeWidth={borderWidth}
               markerEnd={`url(#arrowhead-${id})`}
@@ -214,6 +216,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         enableResizing={enableResizing}
         disableDragging={disableDragging || isRotating}
         className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
+        style={{ zIndex }}
       >
         <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
           {renderShape()}
@@ -223,9 +226,9 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         <div
           ref={rotateHandleRef}
           onMouseDown={handleRotateStartMouse}
-          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-10"
+          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50"
           style={{
-            left: position.x + width / 2,
+            left: position.x + (width as number) / 2,
             top: position.y - 30,
             transform: 'translateX(-50%)',
           }}

@@ -21,9 +21,11 @@ export interface Layer {
   locked: boolean;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  width: number | string; // string型を追加して'100%'などを許容
+  height: number | string;
   rotation: number;
+  zIndex: number; // zIndexプロパティを追加
+  isBackground?: boolean; // 背景画像フラグを追加
   // Type-specific properties
   src?: string | null;
   text?: string;
@@ -40,21 +42,9 @@ interface TemplateContextType {
   setSelectedTemplate: (template: ThumbnailTemplate) => void;
   currentText: string;
   setCurrentText: (text: string) => void;
-  currentTextColor: string;
-  setCurrentTextColor: (color: string) => void;
-  currentFontSize: string;
-  setCurrentFontSize: (fontSize: string) => void;
-  backgroundImageSrc: string | null;
-  setBackgroundImageSrc: (src: string | null) => void;
-  backgroundImagePosition: ElementPositionType;
-  setBackgroundImagePosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
-  characterImagePosition: ElementPositionType;
-  setCharacterImagePosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
-  textPosition: ElementPositionType;
-  setTextPosition: React.Dispatch<React.SetStateAction<ElementPositionType>>;
   layers: Layer[];
   setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
-  addLayer: (layer: Omit<Layer, 'id' | 'rotation'>) => void;
+  addLayer: (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => void;
   removeLayer: (id: string) => void;
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   selectedLayerId: string | null;
@@ -69,58 +59,26 @@ interface TemplateContextType {
   setCustomAspectRatio: (aspect: { width: number; height: number }) => void;
 }
 
-const TemplateContext = createContext<TemplateContextType>({
-  selectedTemplate: templates[0],
-  setSelectedTemplate: () => {},
-  currentText: templates[0].initialText,
-  setCurrentText: () => {},
-  currentTextColor: templates[0].initialTextColor,
-  setCurrentTextColor: () => {},
-  currentFontSize: templates[0].initialFontSize,
-  setCurrentFontSize: () => {},
-  backgroundImageSrc: templates[0].initialImageSrc || null,
-  setBackgroundImageSrc: () => {},
-  backgroundImagePosition: { x: 0, y: 0, width: 1200, height: 675 },
-  setBackgroundImagePosition: () => {},
-  characterImagePosition: { x: 700, y: 175, width: 500, height: 500 },
-  setCharacterImagePosition: () => {},
-  textPosition: { x: 0, y: 0, width: 300, height: 100 }, // 仮の初期値
-  setTextPosition: () => {},
-  layers: [],
-  setLayers: () => {},
-  addLayer: () => {},
-  removeLayer: () => {},
-  updateLayer: () => {},
-  selectedLayerId: null,
-  setSelectedLayerId: () => {},
-  reorderLayers: () => {},
-  duplicateLayer: () => {},
-  moveLayerUp: () => {},
-  moveLayerDown: () => {},
-  aspectRatio: '16:9',
-  setAspectRatio: () => {},
-  customAspectRatio: { width: 16, height: 9 },
-  setCustomAspectRatio: () => {},
-});
+const TemplateContext = createContext<TemplateContextType | null>(null);
 
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<ThumbnailTemplate>(templates[0]);
   const [currentText, setCurrentText] = useState<string>(templates[0].initialText);
-  const [currentTextColor, setCurrentTextColor] = useState<string>(templates[0].initialTextColor);
-  const [currentFontSize, setCurrentFontSize] = useState<string>(templates[0].initialFontSize);
-  const [backgroundImageSrc, setBackgroundImageSrc] = useState<string | null>(templates[0].initialImageSrc || null);
-  const [backgroundImagePosition, setBackgroundImagePosition] = useState<ElementPositionType>({ x: 0, y: 0, width: 1200, height: 675 });
-  const [characterImagePosition, setCharacterImagePosition] = useState<ElementPositionType>({ x: 700, y: 175, width: 500, height: 500 });
-  const [textPosition, setTextPosition] = useState<ElementPositionType>({ x: 0, y: 0, width: 300, height: 100 });
   const [aspectRatio, setAspectRatio] = useState('16:9');
-  const [customAspectRatio, setCustomAspectRatio] = useState({ width: 16, height: 9 }); // 初期値を比率に変更
+  const [customAspectRatio, setCustomAspectRatio] = useState({ width: 16, height: 9 });
 
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
-  const addLayer = (layer: Omit<Layer, 'id' | 'rotation'>) => {
-    const newLayer: Layer = { ...layer, id: uuidv4(), rotation: 0 };
-    setLayers((prevLayers) => [newLayer, ...prevLayers]); // 新しいレイヤーを一番上に追加
+  const addLayer = (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
+    const maxZIndex = layers.reduce((max, l) => Math.max(max, l.zIndex), -1);
+    const newLayer: Layer = { 
+      ...layer, 
+      id: uuidv4(), 
+      rotation: 0, 
+      zIndex: maxZIndex + 1 
+    };
+    setLayers((prevLayers) => [...prevLayers, newLayer]);
     setSelectedLayerId(newLayer.id);
   };
 
@@ -142,76 +100,84 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
       const newLayers = Array.from(prevLayers);
       const [removed] = newLayers.splice(startIndex, 1);
       newLayers.splice(endIndex, 0, removed);
-      return newLayers;
+      // zIndexを再割り当て
+      return newLayers.map((layer, index) => ({ ...layer, zIndex: index }));
     });
   };
 
   const duplicateLayer = (id: string) => {
-    setLayers((prevLayers) => {
-      const layerToDuplicate = prevLayers.find((layer) => layer.id === id);
-      if (!layerToDuplicate) {
-        return prevLayers;
-      }
-      const duplicatedLayer: Layer = {
-        ...layerToDuplicate,
-        id: uuidv4(),
-        name: `${layerToDuplicate.name}のコピー`,
-      };
-      const index = prevLayers.findIndex((layer) => layer.id === id);
-      const newLayers = [...prevLayers];
-      newLayers.splice(index + 1, 0, duplicatedLayer);
-      return newLayers;
+    const layerToDuplicate = layers.find((layer) => layer.id === id);
+    if (!layerToDuplicate) return;
+
+    const duplicatedLayer: Layer = {
+      ...layerToDuplicate,
+      id: uuidv4(),
+      name: `${layerToDuplicate.name}のコピー`,
+      x: layerToDuplicate.x + 20,
+      y: layerToDuplicate.y + 20,
+      zIndex: layers.length, // 必ず一番上にくるように
+    };
+
+    const index = layers.findIndex((layer) => layer.id === id);
+    const newLayers = [...layers];
+    newLayers.splice(index + 1, 0, duplicatedLayer);
+    setLayers(newLayers.map((l, i) => ({ ...l, zIndex: i }))); // zIndex再割当て
+  };
+
+  const moveLayer = (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => {
+    setLayers(prev => {
+        const newLayers = [...prev];
+        const index = newLayers.findIndex(l => l.id === id);
+        if (index === -1) return prev;
+
+        const [item] = newLayers.splice(index, 1);
+
+        switch (direction) {
+            case 'up':
+                if (index < newLayers.length) {
+                    newLayers.splice(index + 1, 0, item);
+                }
+                break;
+            case 'down':
+                if (index > 0) {
+                    newLayers.splice(index - 1, 0, item);
+                }
+                break;
+            case 'top':
+                newLayers.push(item);
+                break;
+            case 'bottom':
+                newLayers.unshift(item);
+                break;
+        }
+        return newLayers.map((l, i) => ({ ...l, zIndex: i }));
     });
   };
 
-  const moveLayerUp = (id: string) => {
-    setLayers((prevLayers) => {
-      const index = prevLayers.findIndex((layer) => layer.id === id);
-      if (index <= 0) return prevLayers;
-      const newLayers = [...prevLayers];
-      const [movedLayer] = newLayers.splice(index, 1);
-      newLayers.splice(index - 1, 0, movedLayer);
-      return newLayers;
-    });
-  };
-
-  const moveLayerDown = (id: string) => {
-    setLayers((prevLayers) => {
-      const index = prevLayers.findIndex((layer) => layer.id === id);
-      if (index < 0 || index >= prevLayers.length - 1) return prevLayers;
-      const newLayers = [...prevLayers];
-      const [movedLayer] = newLayers.splice(index, 1);
-      newLayers.splice(index + 1, 0, movedLayer);
-      return newLayers;
-    });
-  };
+  const moveLayerUp = (id: string) => moveLayer(id, 'up');
+  const moveLayerDown = (id: string) => moveLayer(id, 'down');
 
   useEffect(() => {
-    setCurrentText(selectedTemplate.initialText);
-    setCurrentTextColor(selectedTemplate.initialTextColor);
-    setCurrentFontSize(selectedTemplate.initialFontSize);
-    setBackgroundImageSrc(selectedTemplate.initialImageSrc || null);
-    setBackgroundImagePosition(selectedTemplate.initialBackgroundImagePosition || { x: 0, y: 0, width: 1200, height: 675 });
-    setCharacterImagePosition(selectedTemplate.initialCharacterImagePosition || { x: 700, y: 175, width: 500, height: 500 });
-    setTextPosition(selectedTemplate.initialTextPosition || { x: 0, y: 0, width: 300, height: 100 });
-
-    // テンプレート変更時に既存のレイヤーをクリアし、テンプレートの初期要素をレイヤーとして追加
     const initialLayers: Layer[] = [];
+
     if (selectedTemplate.initialImageSrc) {
       initialLayers.push({
-        id: uuidv4(),
+        id: 'background-image', // 固定IDに変更
         type: 'image',
         name: '背景画像',
         visible: true,
         locked: false,
         x: 0,
         y: 0,
-        width: 1200,
-        height: 675,
+        width: '100%', // 100%に変更
+        height: '100%', // 100%に変更
         rotation: 0,
         src: selectedTemplate.initialImageSrc,
+        zIndex: 0, // zIndexを明示的に設定
+        isBackground: true, // 背景フラグを設定
       });
     }
+
     if (selectedTemplate.initialText) {
       initialLayers.push({
         id: uuidv4(),
@@ -219,18 +185,20 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         name: 'テキスト',
         visible: true,
         locked: false,
-        x: selectedTemplate.initialTextPosition?.x || 0,
-        y: selectedTemplate.initialTextPosition?.y || 0,
+        x: selectedTemplate.initialTextPosition?.x || 50,
+        y: selectedTemplate.initialTextPosition?.y || 50,
         width: selectedTemplate.initialTextPosition?.width || 300,
         height: selectedTemplate.initialTextPosition?.height || 100,
         rotation: 0,
         text: selectedTemplate.initialText,
         color: selectedTemplate.initialTextColor,
         fontSize: selectedTemplate.initialFontSize,
+        zIndex: 1, // zIndexを明示的に設定
       });
     }
+
     setLayers(initialLayers);
-    setSelectedLayerId(initialLayers.length > 0 ? initialLayers[0].id : null); // 最初のレイヤーを選択状態にする
+    setSelectedLayerId(initialLayers.length > 1 ? initialLayers[1].id : initialLayers[0]?.id || null);
 
   }, [selectedTemplate]);
 
@@ -241,18 +209,6 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         setSelectedTemplate,
         currentText,
         setCurrentText,
-        currentTextColor,
-        setCurrentTextColor,
-        currentFontSize,
-        setCurrentFontSize,
-        backgroundImageSrc,
-        setBackgroundImageSrc,
-        backgroundImagePosition,
-        setBackgroundImagePosition,
-        characterImagePosition,
-        setCharacterImagePosition,
-        textPosition,
-        setTextPosition,
         layers,
         setLayers,
         addLayer,

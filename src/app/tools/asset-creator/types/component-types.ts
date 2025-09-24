@@ -28,8 +28,8 @@ export interface BaseThumbnailComponentProps {
   id: string;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  width: number | string; // 型をnumber | stringに変更
+  height: number | string; // 型をnumber | stringに変更
   rotation: number;
   isSelected: boolean;
   isLocked: boolean;

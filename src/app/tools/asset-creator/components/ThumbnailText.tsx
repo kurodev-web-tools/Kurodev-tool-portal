@@ -14,9 +14,10 @@ interface ThumbnailTextProps {
   className?: string;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  width: number | string;
+  height: number | string;
   rotation: number;
+  zIndex: number;
   onDragStop: (e: any, data: DraggableData) => void;
   onResizeStop: (
     e: any,
@@ -41,6 +42,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   width,
   height,
   rotation,
+  zIndex,
   onDragStop,
   onResizeStop,
   enableResizing,
@@ -67,8 +69,8 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const centerX = parentRect.left + position.x + (width as number) / 2;
+    const centerY = parentRect.top + position.y + (height as number) / 2;
 
     const handleRotating = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - centerX;
@@ -98,8 +100,8 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const centerX = parentRect.left + position.x + (width as number) / 2;
+    const centerY = parentRect.top + position.y + (height as number) / 2;
 
     const handleRotating = (moveEvent: TouchEvent) => {
       if (moveEvent.touches.length === 0) return;
@@ -156,6 +158,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: zIndex,
         }}
       >
         <div
@@ -171,9 +174,9 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
         <div
           ref={rotateHandleRef}
           onMouseDown={handleRotateStartMouse}
-          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-10"
+          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50"
           style={{
-            left: position.x + width / 2,
+            left: position.x + (width as number) / 2,
             top: position.y - 30,
             transform: 'translateX(-50%)',
           }}

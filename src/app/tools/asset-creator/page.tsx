@@ -81,8 +81,8 @@ export default function ThumbnailGeneratorPage() {
 
   // サムネイルのダウンロード処理
   const handleDownloadThumbnail = React.useCallback(async (qualityLevel: 'normal' | 'high' | 'super') => {
-    const thumbnailElement = document.getElementById('thumbnail-preview');
-    if (thumbnailElement) {
+    const downloadElement = document.getElementById('download-target');
+    if (downloadElement) {
       try {
         let baseHeight: number;
         switch (qualityLevel) {
@@ -107,7 +107,7 @@ export default function ThumbnailGeneratorPage() {
         const downloadWidth = Math.round(baseHeight * parsedAspectRatio);
         const downloadHeight = baseHeight;
 
-        const dataUrl = await toPng(thumbnailElement, { 
+        const dataUrl = await toPng(downloadElement, { 
           cacheBust: true,
           width: downloadWidth,
           height: downloadHeight,
@@ -240,70 +240,63 @@ export default function ThumbnailGeneratorPage() {
         <div 
           id="thumbnail-preview" 
           style={{ aspectRatio: getAspectRatio() }}
-          className={cn("w-full bg-card relative border rounded-md", {
-            'simple-enhanced': selectedTemplate.id === 'template-1',
-            'stylish-enhanced': selectedTemplate.id === 'template-2',
-            'cute-enhanced': selectedTemplate.id === 'template-3',
-            'cool-enhanced': selectedTemplate.id === 'template-4',
-            'bg-gray-200': selectedTemplate.id === 'template-5',
-          })}
+          className="w-full bg-card relative border rounded-md"
         >
-          {selectedTemplate.id === 'template-4' && (
-            <>
-              <div className="digital-overlay"></div>
-              <div className="light-ray-1"></div>
-              <div className="light-ray-2"></div>
-            </>
-          )}
-          {layers.slice().reverse().map((layer) => {
-            const isSelected = layer.id === selectedLayerId;
-            const isDraggable = isSelected && !layer.locked;
-            const isResizable = isSelected && !layer.locked;
+          <div id="download-target" className="w-full h-full relative overflow-hidden">
+            {layers.map((layer) => {
+              const isSelected = layer.id === selectedLayerId;
+              const isDraggable = isSelected && !layer.locked;
+              const isResizable = isSelected && !layer.locked;
 
-            if (!layer.visible) return null;
+              if (!layer.visible) return null;
 
-            if (layer.type === 'image') {
-              return (
-                <ThumbnailImage
-                  key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
-                  x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
-                  onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                  onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                  onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                  lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                  onSelect={() => setSelectedLayerId(layer.id)} // 追加
-                  isLocked={layer.locked} // 追加
-                  isDraggable={isDraggable} // 追加
-                  onRotateStart={() => {}} // 追加
-                  onRotate={() => {}} // 追加
-                  onRotateStop={() => {}} // 追加
-                />
-              );
-            } else if (layer.type === 'text') {
-              return (
-                <ThumbnailText
-                  key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color || '#000000'}
-                  fontSize={layer.fontSize || '1rem'} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                  rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                  onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                  enableResizing={isResizable} disableDragging={!isDraggable}
-                />
-              );
-            } else if (layer.type === 'shape' && layer.shapeType) {
-              return (
-                <ThumbnailShape
-                  key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType}
-                  backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
-                  borderWidth={layer.borderWidth || 0} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                  rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                  onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                  onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                  lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                />
-              );
-            }
-            return null;
-          })}
+              if (layer.type === 'image') {
+                return (
+                  <ThumbnailImage
+                    key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
+                    x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
+                    onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                    onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                    onSelect={() => setSelectedLayerId(layer.id)}
+                    isLocked={layer.locked}
+                    isDraggable={isDraggable}
+                    onRotateStart={() => {}} 
+                    onRotate={() => {}} 
+                    onRotateStop={() => {}}
+                    isBackground={layer.isBackground}
+                    zIndex={layer.zIndex}
+                  />
+                );
+              } else if (layer.type === 'text') {
+                return (
+                  <ThumbnailText
+                    key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color || '#000000'}
+                    fontSize={layer.fontSize || '1rem'} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                    rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                    onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    enableResizing={isResizable} disableDragging={!isDraggable}
+                    zIndex={layer.zIndex}
+                  />
+                );
+              } else if (layer.type === 'shape' && layer.shapeType) {
+                return (
+                  <ThumbnailShape
+                    key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType}
+                    backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
+                    borderWidth={layer.borderWidth || 0} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                    rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                    onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                    zIndex={layer.zIndex}
+                  />
+                );
+              }
+              return null;
+            })}
+          </div>
         </div>
         <div className="mt-4 flex justify-end">
           <Button onClick={() => handleDownloadThumbnail('normal')}>通常画質でダウンロード</Button>
