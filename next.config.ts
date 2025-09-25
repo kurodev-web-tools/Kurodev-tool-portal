@@ -4,9 +4,8 @@ import type { NextConfig } from "next";
 const isProd = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
 
 const nextConfig: NextConfig = {
-  // 一時的にoutput: 'export'を無効化してビルドエラーを解決
-  // output: 'export',
-  // distDir: 'out',
+  output: 'export',
+  distDir: 'out',
   // 本番環境またはGitHub ActionsではbasePathとassetPrefixを適用
   basePath: isProd ? '/Kurodev-tool-portal' : '',
   assetPrefix: isProd ? '/Kurodev-tool-portal/' : '',
