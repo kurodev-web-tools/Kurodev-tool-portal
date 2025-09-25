@@ -17,29 +17,25 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
-      <body>
-        <div className="flex items-center justify-center min-h-screen bg-background">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>予期せぬエラーが発生しました</CardTitle>
-              <CardDescription>
-                申し訳ありません。アプリケーションの処理中に問題が発生しました。
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                この問題が繰り返し発生する場合は、開発者にご連絡ください。
-              </p>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={() => reset()} className="w-full">
-                再試行
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </body>
-    </html>
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>予期せぬエラーが発生しました</CardTitle>
+          <CardDescription>
+            申し訳ありません。アプリケーションの処理中に問題が発生しました。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            この問題が繰り返し発生する場合は、開発者にご連絡ください。
+          </p>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={() => reset()} className="w-full">
+            再試行
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }

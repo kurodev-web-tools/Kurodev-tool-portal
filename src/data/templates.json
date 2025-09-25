@@ -7,7 +7,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_001.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -19,7 +19,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_002.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -31,7 +31,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_003.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -43,7 +43,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_004.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -55,7 +55,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_005.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -67,7 +67,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_006.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -79,7 +79,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_007.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_007.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -91,7 +91,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_008.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_008.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -103,7 +103,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/1x1/cool_1x1_009.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/1x1/cool_1x1_009.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -115,7 +115,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_001.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -127,7 +127,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_002.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -139,7 +139,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_003.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -151,7 +151,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_004.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -163,7 +163,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_005.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -175,7 +175,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_006.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -187,7 +187,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_007.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_007.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -199,7 +199,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_008.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_008.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -211,7 +211,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/4x3/cool_4x3_009.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/4x3/cool_4x3_009.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -223,7 +223,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/9x16/cool_9x16_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/9x16/cool_9x16_001.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -235,7 +235,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/9x16/cool_9x16_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/9x16/cool_9x16_002.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -247,7 +247,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/9x16/cool_9x16_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/9x16/cool_9x16_003.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -259,7 +259,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/9x16/cool_9x16_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/9x16/cool_9x16_004.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -271,7 +271,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/9x16/cool_9x16_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/9x16/cool_9x16_005.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -283,7 +283,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/9x16/cool_9x16_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/9x16/cool_9x16_006.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -295,7 +295,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/9x16/cool_9x16_007.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/9x16/cool_9x16_007.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -307,7 +307,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_001.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -319,7 +319,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_002.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -331,7 +331,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_003.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -343,7 +343,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_004.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -355,7 +355,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_005.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -367,7 +367,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_006.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -379,7 +379,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_007.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_007.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -391,7 +391,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_008.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_008.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -403,7 +403,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_009.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_009.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -415,7 +415,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cool/16x9/cool_16x9_010.jpg",
+      "initialImageSrc": "/templates/asset-creator/cool/16x9/cool_16x9_010.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -427,7 +427,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/1x1/cute_1x1_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/1x1/cute_1x1_001.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -439,7 +439,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/1x1/cute_1x1_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/1x1/cute_1x1_002.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -451,7 +451,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/1x1/cute_1x1_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/1x1/cute_1x1_003.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -463,7 +463,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/1x1/cute_1x1_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/1x1/cute_1x1_004.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -475,7 +475,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/1x1/cute_1x1_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/1x1/cute_1x1_005.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -487,7 +487,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/1x1/cute_1x1_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/1x1/cute_1x1_006.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -499,7 +499,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/4x3/cute_4x3_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/4x3/cute_4x3_001.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -511,7 +511,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/4x3/cute_4x3_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/4x3/cute_4x3_002.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -523,7 +523,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/4x3/cute_4x3_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/4x3/cute_4x3_003.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -535,7 +535,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/4x3/cute_4x3_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/4x3/cute_4x3_004.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -547,7 +547,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/4x3/cute_4x3_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/4x3/cute_4x3_005.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -559,7 +559,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/4x3/cute_4x3_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/4x3/cute_4x3_006.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -571,7 +571,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/9x16/cute_9x16_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/9x16/cute_9x16_001.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -583,7 +583,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/9x16/cute_9x16_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/9x16/cute_9x16_002.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -595,7 +595,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/9x16/cute_9x16_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/9x16/cute_9x16_003.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -607,7 +607,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/9x16/cute_9x16_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/9x16/cute_9x16_004.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -619,7 +619,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/9x16/cute_9x16_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/9x16/cute_9x16_005.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -631,7 +631,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/9x16/cute_9x16_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/9x16/cute_9x16_006.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -643,7 +643,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_001.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -655,7 +655,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_002.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -667,7 +667,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_003.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -679,7 +679,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_004.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -691,7 +691,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_005.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -703,7 +703,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_006.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -715,7 +715,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_007.jpg",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_007.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -727,7 +727,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/cute/16x9/cute_16x9_008.png",
+      "initialImageSrc": "/templates/asset-creator/cute/16x9/cute_16x9_008.png",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -739,7 +739,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/elegant/1x1/test_001.png",
+      "initialImageSrc": "/templates/asset-creator/elegant/1x1/test_001.png",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -751,7 +751,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/elegant/4x3/test_002.png",
+      "initialImageSrc": "/templates/asset-creator/elegant/4x3/test_002.png",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -763,7 +763,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/elegant/16x9/test_003.png",
+      "initialImageSrc": "/templates/asset-creator/elegant/16x9/test_003.png",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -775,7 +775,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/modern/1x1/test_001.png",
+      "initialImageSrc": "/templates/asset-creator/modern/1x1/test_001.png",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -787,7 +787,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/1x1/simple_1x1_001.png",
+      "initialImageSrc": "/templates/asset-creator/simple/1x1/simple_1x1_001.png",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -799,7 +799,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/1x1/simple_1x1_002.png",
+      "initialImageSrc": "/templates/asset-creator/simple/1x1/simple_1x1_002.png",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -811,7 +811,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/1x1/simple_1x1_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/1x1/simple_1x1_003.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -823,7 +823,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/1x1/simple_1x1_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/1x1/simple_1x1_004.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -835,7 +835,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/1x1/simple_1x1_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/1x1/simple_1x1_005.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -847,7 +847,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/1x1/simple_1x1_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/1x1/simple_1x1_006.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -859,7 +859,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/1x1/simple_1x1_007.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/1x1/simple_1x1_007.jpg",
       "supportedAspectRatios": [
         "1:1"
       ]
@@ -871,7 +871,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/4x3/simple_4x3_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/4x3/simple_4x3_001.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -883,7 +883,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/4x3/simple_4x3_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/4x3/simple_4x3_002.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -895,7 +895,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/4x3/simple_4x3_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/4x3/simple_4x3_003.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -907,7 +907,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/4x3/simple_4x3_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/4x3/simple_4x3_004.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -919,7 +919,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/4x3/simple_4x3_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/4x3/simple_4x3_005.jpg",
       "supportedAspectRatios": [
         "4:3"
       ]
@@ -931,7 +931,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/9x16/simple_9x16_001.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/9x16/simple_9x16_001.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -943,7 +943,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/9x16/simple_9x16_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/9x16/simple_9x16_002.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -955,7 +955,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/9x16/simple_9x16_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/9x16/simple_9x16_003.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -967,7 +967,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/9x16/simple_9x16_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/9x16/simple_9x16_004.jpg",
       "supportedAspectRatios": [
         "9:16"
       ]
@@ -979,7 +979,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_001.png",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_001.png",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -991,7 +991,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_002.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_002.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -1003,7 +1003,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_003.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_003.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -1015,7 +1015,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_004.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_004.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -1027,7 +1027,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_005.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_005.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -1039,7 +1039,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_006.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_006.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -1051,7 +1051,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_007.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_007.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -1063,7 +1063,7 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_008.jpg",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_008.jpg",
       "supportedAspectRatios": [
         "16:9"
       ]
@@ -1075,14 +1075,14 @@
       "initialText": "テキスト",
       "initialTextColor": "#000000",
       "initialFontSize": "4rem",
-      "initialImageSrc": "/Kurodev-tool-portal/templates/asset-creator/simple/16x9/simple_16x9_009.png",
+      "initialImageSrc": "/templates/asset-creator/simple/16x9/simple_16x9_009.png",
       "supportedAspectRatios": [
         "16:9"
       ]
     }
   ],
   "metadata": {
-    "generatedAt": "2025-09-25T12:44:01.776Z",
+    "generatedAt": "2025-09-25T14:20:37.379Z",
     "totalTemplates": 90,
     "invalidTemplates": 0,
     "duplicates": 0,

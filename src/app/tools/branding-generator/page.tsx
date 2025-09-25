@@ -1,11 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+import { useState } from "react";
+// Resizable components are not used in this refactored version
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -18,14 +14,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { PanelLeftOpen, PanelLeftClose } from "lucide-react";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useSidebar } from "@/hooks/use-sidebar";
+import { useErrorHandler } from "@/hooks/use-error-handler";
+// validateRequired is imported but not used in this simplified version
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Sidebar, SidebarToggle } from "@/components/layouts/Sidebar";
 
 type ActivityStatus = "active" | "pre-activity";
 
@@ -33,22 +31,29 @@ export default function BrandingGeneratorPage() {
   const [activityStatus, setActivityStatus] = useState<ActivityStatus | null>(
     null
   );
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true); // 右パネルの開閉状態 (デスクトップ用)
+  const { isOpen: isRightPanelOpen, setIsOpen: setIsRightPanelOpen, isDesktop } = useSidebar({
+    defaultOpen: true,
+    desktopDefaultOpen: true,
+  });
   const [activeTab, setActiveTab] = useState("settings"); // モバイル用タブの状態
-  const isDesktop = useMediaQuery("(min-width: 1024px)"); // デスクトップ判定
-
-  useEffect(() => {
-    if (isDesktop) {
-      setIsRightPanelOpen(true); // デスクトップではデフォルトでサイドバーを開く
-    }
-  }, [isDesktop]);
+  const { handleAsyncError } = useErrorHandler();
 
   // 分析開始ボタンがクリックされたら、モバイルでは結果タブに切り替える
-  const handleAnalyzeClick = () => {
-    // ここに分析ロジックを呼び出す処理が入る
-    if (!isDesktop) {
-      setActiveTab("results");
+  const handleAnalyzeClick = async () => {
+    // バリデーション（例：活動状況が選択されているか）
+    if (!activityStatus) {
+      console.error('活動状況を選択してください');
+      return;
     }
+
+    await handleAsyncError(async () => {
+      // ここに分析ロジックを呼び出す処理が入る
+      await new Promise(resolve => setTimeout(resolve, 1000)); // モック処理
+      
+      if (!isDesktop) {
+        setActiveTab("results");
+      }
+    }, "分析中にエラーが発生しました");
   };
 
   // T-02: 活動状況選択画面
@@ -87,7 +92,7 @@ export default function BrandingGeneratorPage() {
           className="absolute top-4 right-4 z-10"
           onClick={() => setIsRightPanelOpen(false)}
         >
-          <PanelLeftClose className="h-5 w-5" />
+          ×
         </Button>
       )}
       <h2 className="text-2xl font-semibold">コントロールパネル</h2>
@@ -215,26 +220,20 @@ export default function BrandingGeneratorPage() {
           </main>
 
           {/* サイドバーが閉じている場合の開くボタン */}
-          {!isRightPanelOpen && (
-            <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md">
-              <Button variant="ghost" size="icon" onClick={() => setIsRightPanelOpen(true)}>
-                <PanelLeftOpen className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
+          <SidebarToggle 
+            onOpen={() => setIsRightPanelOpen(true)}
+            isDesktop={isDesktop}
+          />
 
           {/* サイドバー */}
-          <aside
-            className={[
-              "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-background p-4 border-l z-40",
-              "transition-transform duration-300 ease-in-out",
-              isRightPanelOpen ? 'translate-x-0' : 'translate-x-full',
-              "lg:static lg:w-1/4 lg:translate-x-0 lg:z-auto",
-              isRightPanelOpen ? 'lg:block' : 'lg:hidden'
-            ].join(' ')}
+          <Sidebar
+            isOpen={isRightPanelOpen}
+            onClose={() => setIsRightPanelOpen(false)}
+            title="コントロールパネル"
+            isDesktop={isDesktop}
           >
             {controlPanelContent}
-          </aside>
+          </Sidebar>
         </>
       ) : (
         <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">

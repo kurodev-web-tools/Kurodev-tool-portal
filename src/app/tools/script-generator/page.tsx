@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, PanelLeftOpen, PanelLeftClose, Sparkles, UserCircle, History, Construction } from 'lucide-react';
-import { useMediaQuery } from '@/hooks/use-media-query';
-import { cn } from '@/lib/utils';
+import { Lightbulb, Construction } from 'lucide-react';
+import { useSidebar } from '@/hooks/use-sidebar';
+import { useErrorHandler } from '@/hooks/use-error-handler';
+// validateRequired and cn are imported but not used in this simplified version
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 
 interface Idea {
   id: number;
@@ -50,19 +52,20 @@ const dummyScript = {
 export default function ScriptGeneratorPage() {
   const [generatedIdeas, setGeneratedIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<number | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
+    defaultOpen: false,
+    desktopDefaultOpen: true,
+  });
   const [selectedTab, setSelectedTab] = useState("generate");
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const { handleAsyncError } = useErrorHandler();
 
-  useEffect(() => {
-    if (isDesktop) {
-      setIsSidebarOpen(true);
-    }
-  }, [isDesktop]);
-
-  const handleGenerate = () => {
-    setGeneratedIdeas(dummyIdeas);
-    setSelectedIdeaId(null);
+  const handleGenerate = async () => {
+    await handleAsyncError(async () => {
+      // モック処理
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setGeneratedIdeas(dummyIdeas);
+      setSelectedIdeaId(null);
+    }, "企画案生成中にエラーが発生しました");
   };
 
   const handleCardClick = (id: number) => {
@@ -220,41 +223,21 @@ export default function ScriptGeneratorPage() {
       )}
 
       {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-background p-4 border-l z-40",
-          "transition-transform duration-300 ease-in-out lg:static lg:w-96 lg:translate-x-0 lg:z-auto lg:flex-shrink-0",
-          isSidebarOpen ? 'translate-x-0' : 'translate-x-full',
-          !isDesktop && 'hidden', // Hide on mobile, use the accordion instead
-          isDesktop && !isSidebarOpen && 'lg:hidden'
-        )}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        title="コントロールパネル"
+        isDesktop={isDesktop}
+        className={!isDesktop ? 'hidden' : ''}
       >
-        <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">コントロールパネル</h2>
-            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)}>
-                <PanelLeftClose className="h-5 w-5" />
-            </Button>
-        </div>
         {renderControlPanel()}
-      </aside>
+      </Sidebar>
 
       {/* Sidebar Toggle Button for Desktop */}
-      {isDesktop && !isSidebarOpen && (
-        <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md">
-          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
-            <PanelLeftOpen className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("generate"); }}>
-            <Sparkles className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("persona"); }}>
-            <UserCircle className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("history"); }}>
-            <History className="h-5 w-5" />
-          </Button>
-        </div>
-      )}
+      <SidebarToggle 
+        onOpen={() => setIsSidebarOpen(true)}
+        isDesktop={isDesktop}
+      />
     </div>
   );
 }

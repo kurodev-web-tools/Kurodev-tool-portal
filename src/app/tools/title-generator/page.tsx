@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -8,42 +8,55 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
+  // CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { PanelLeftOpen, PanelLeftClose } from "lucide-react";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useSidebar } from "@/hooks/use-sidebar";
+import { useErrorHandler } from "@/hooks/use-error-handler";
+import { validateTitle, validateDescription } from "@/lib/validation";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton"; // Skeletonコンポーネントをインポート
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sidebar, SidebarToggle } from "@/components/layouts/Sidebar";
 
 export default function TitleGeneratorPage() {
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true); // 右パネルの開閉状態 (デスクトップ用)
+  const { isOpen: isRightPanelOpen, setIsOpen: setIsRightPanelOpen, isDesktop } = useSidebar({
+    defaultOpen: true,
+    desktopDefaultOpen: true,
+  });
   const [activeTab, setActiveTab] = useState("settings"); // モバイル用タブの状態
-  const isDesktop = useMediaQuery("(min-width: 1024px)"); // デスクトップ判定
   const [isLoading, setIsLoading] = useState(false); // ローディング状態
   const [finalTitle, setFinalTitle] = useState(""); // 最終タイトル
   const [finalDescription, setFinalDescription] = useState(""); // 最終概要欄
   const [aiTitles, setAiTitles] = useState<string[]>([]); // AI提案タイトル案
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
-
-  useEffect(() => {
-    if (isDesktop) {
-      setIsRightPanelOpen(true); // デスクトップではデフォルトでサイドバーを開く
-    }
-  }, [isDesktop]);
+  const { handleAsyncError } = useErrorHandler();
 
   // T-04: フロントエンド内でのUIロジック実装
-  const handleGenerateClick = () => {
+  const handleGenerateClick = async () => {
+    // バリデーション
+    const titleError = validateTitle(finalTitle);
+    const descriptionError = validateDescription(finalDescription);
+    
+    if (titleError || descriptionError) {
+      // エラーメッセージを表示（実際の実装では適切なエラー表示を行う）
+      console.error('バリデーションエラー:', titleError || descriptionError);
+      return;
+    }
+
     setIsLoading(true);
-    // ここに生成ロジックを呼び出す処理が入る（今回はモック）
-    setTimeout(() => {
+    
+    // 非同期処理をエラーハンドリングでラップ
+    await handleAsyncError(async () => {
+      // ここに生成ロジックを呼び出す処理が入る（今回はモック）
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const generatedTitles = [
         "AIが生成したタイトル案1",
         "AIが生成したタイトル案2",
@@ -53,13 +66,14 @@ export default function TitleGeneratorPage() {
 
       setAiTitles(generatedTitles);
       setAiDescription(generatedDescription);
-      setFinalDescription(generatedDescription); // ページ読み込み時（または生成時）に最終概要欄にコピー
-      setIsLoading(false);
-
+      setFinalDescription(generatedDescription);
+      
       if (!isDesktop) {
         setActiveTab("results"); // モバイルでは結果タブに切り替える
       }
-    }, 1500); // 1.5秒のローディングをシミュレート
+    }, "生成中にエラーが発生しました");
+    
+    setIsLoading(false);
   };
 
   const handleTitleSelect = (title: string) => {
@@ -75,7 +89,7 @@ export default function TitleGeneratorPage() {
           className="absolute top-4 right-4 z-10"
           onClick={() => setIsRightPanelOpen(false)}
         >
-          <PanelLeftClose className="h-5 w-5" />
+          ×
         </Button>
       )}
       <h2 className="text-2xl font-semibold">コントロールパネル</h2>
@@ -209,26 +223,20 @@ export default function TitleGeneratorPage() {
           </main>
 
           {/* サイドバーが閉じている場合の開くボタン */}
-          {!isRightPanelOpen && (
-            <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md">
-              <Button variant="ghost" size="icon" onClick={() => setIsRightPanelOpen(true)}>
-                <PanelLeftOpen className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
+          <SidebarToggle 
+            onOpen={() => setIsRightPanelOpen(true)}
+            isDesktop={isDesktop}
+          />
 
           {/* サイドバー */}
-          <aside
-            className={[
-              "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-background p-4 border-l z-40",
-              "transition-transform duration-300 ease-in-out",
-              isRightPanelOpen ? 'translate-x-0' : 'translate-x-full',
-              "lg:static lg:w-1/4 lg:translate-x-0 lg:z-auto",
-              isRightPanelOpen ? 'lg:block' : 'lg:hidden'
-            ].join(' ')}
+          <Sidebar
+            isOpen={isRightPanelOpen}
+            onClose={() => setIsRightPanelOpen(false)}
+            title="コントロールパネル"
+            isDesktop={isDesktop}
           >
             {controlPanelContent}
-          </aside>
+          </Sidebar>
         </>
       ) : (
         <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
