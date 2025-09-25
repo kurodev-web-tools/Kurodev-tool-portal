@@ -124,38 +124,19 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     setLayers(newLayers.map((l, i) => ({ ...l, zIndex: i }))); // zIndex再割当て
   };
 
-  const moveLayer = (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => {
-    setLayers(prev => {
-        const newLayers = [...prev];
-        const index = newLayers.findIndex(l => l.id === id);
-        if (index === -1) return prev;
-
-        const [item] = newLayers.splice(index, 1);
-
-        switch (direction) {
-            case 'up':
-                if (index < newLayers.length) {
-                    newLayers.splice(index + 1, 0, item);
-                }
-                break;
-            case 'down':
-                if (index > 0) {
-                    newLayers.splice(index - 1, 0, item);
-                }
-                break;
-            case 'top':
-                newLayers.push(item);
-                break;
-            case 'bottom':
-                newLayers.unshift(item);
-                break;
-        }
-        return newLayers.map((l, i) => ({ ...l, zIndex: i }));
-    });
+  const moveLayerUp = (id: string) => {
+    const index = layers.findIndex((layer) => layer.id === id);
+    if (index > 0) {
+      reorderLayers(index, index - 1);
+    }
   };
 
-  const moveLayerUp = (id: string) => moveLayer(id, 'up');
-  const moveLayerDown = (id: string) => moveLayer(id, 'down');
+  const moveLayerDown = (id: string) => {
+    const index = layers.findIndex((layer) => layer.id === id);
+    if (index < layers.length - 1 && index !== -1) {
+      reorderLayers(index, index + 1);
+    }
+  };
 
   useEffect(() => {
     const initialLayers: Layer[] = [];
