@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { ThumbnailTemplate, templates } from '../components/TemplateSelector';
+import { ThumbnailTemplate } from '../components/TemplateSelector';
+import { loadTemplates } from '@/lib/templateLoader';
 import { v4 as uuidv4 } from 'uuid';
 
 // ElementPositionTypeを定義
@@ -38,8 +39,8 @@ export interface Layer {
 }
 
 interface TemplateContextType {
-  selectedTemplate: ThumbnailTemplate;
-  setSelectedTemplate: (template: ThumbnailTemplate) => void;
+  selectedTemplate: ThumbnailTemplate | null;
+  setSelectedTemplate: (template: ThumbnailTemplate | null) => void;
   currentText: string;
   setCurrentText: (text: string) => void;
   layers: Layer[];
@@ -62,13 +63,25 @@ interface TemplateContextType {
 const TemplateContext = createContext<TemplateContextType | null>(null);
 
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [selectedTemplate, setSelectedTemplate] = useState<ThumbnailTemplate>(templates[0]);
-  const [currentText, setCurrentText] = useState<string>(templates[0].initialText);
+  const [selectedTemplate, setSelectedTemplate] = useState<ThumbnailTemplate | null>(null);
+  const [currentText, setCurrentText] = useState<string>('');
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [customAspectRatio, setCustomAspectRatio] = useState({ width: 16, height: 9 });
 
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+
+  // 初期テンプレートのロード
+  useEffect(() => {
+    const load = async () => {
+      const templates = await loadTemplates();
+      if (templates.length > 0) {
+        setSelectedTemplate(templates[0]);
+        setCurrentText(templates[0].initialText);
+      }
+    };
+    load();
+  }, []);
 
   const addLayer = (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
     const maxZIndex = layers.reduce((max, l) => Math.max(max, l.zIndex), -1);
@@ -140,6 +153,11 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   useEffect(() => {
     const initialLayers: Layer[] = [];
+    if (!selectedTemplate) {
+      setLayers([]);
+      setSelectedLayerId(null);
+      return;
+    }
 
     if (selectedTemplate.initialImageSrc) {
       initialLayers.push({

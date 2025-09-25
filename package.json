@@ -6,9 +6,12 @@
   "homepage": "https://kurodev-web-tools.github.io/Kurodev-tool-portal/",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "dev:watch": "concurrently \"next dev\" \"tsx scripts/watchTemplates.ts\"",
+    "build": "npm run generate-templates && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate-templates": "tsx scripts/generateTemplates.ts",
+    "watch-templates": "tsx scripts/watchTemplates.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -62,9 +65,12 @@
     "@types/react-dom": "^19",
     "@types/react-rnd": "^8.0.0",
     "autoprefixer": "^10.4.21",
+    "chokidar": "^4.0.3",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",
+    "tsx": "^4.7.0",
     "typescript": "^5"
   }
 }

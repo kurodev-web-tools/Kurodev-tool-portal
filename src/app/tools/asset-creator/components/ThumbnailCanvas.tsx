@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ResizableDelta, Position, DraggableData } from 'react-rnd';
+import { ResizableDelta, Position } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { Layer } from '../contexts/TemplateContext'; // Layerのimport元を修正
 import ThumbnailImage from './ThumbnailImage';

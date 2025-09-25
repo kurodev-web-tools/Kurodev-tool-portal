@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTemplate } from '../contexts/TemplateContext';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, Lock, Unlock, Trash2, Copy, ArrowUp, ArrowDown } from 'lucide-react';
+import { Eye, EyeOff, Trash2, Copy, ArrowUp, ArrowDown } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -12,9 +12,6 @@ export const LayerPanel: React.FC = () => {
     updateLayer(id, { visible: !layers.find(layer => layer.id === id)?.visible });
   };
 
-  const handleToggleLock = (id: string) => {
-    updateLayer(id, { locked: !layers.find(layer => layer.id === id)?.locked });
-  };
 
   const handleRemoveLayer = (id: string) => {
     removeLayer(id);

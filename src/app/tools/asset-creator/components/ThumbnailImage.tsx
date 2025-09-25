@@ -11,7 +11,7 @@ import {
 
 interface ThumbnailImageProps extends Omit<BaseThumbnailComponentProps, 'onResize' | 'onResizeStop' | 'onDragStop'> {
   src: string | null | undefined;
-  alt: string;
+  alt: string; // altプロパティを追加（アクセシビリティ用）
   onDragStop: RndDragCallback;
   onResize: (e: MouseEvent | TouchEvent, dir: ResizeDirection, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
   onResizeStop: (e: MouseEvent | TouchEvent, dir: ResizeDirection, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
@@ -43,9 +43,6 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   lockAspectRatio,
   enableResizing,
   disableDragging,
-  onRotateStart,
-  onRotate,
-  onRotateStop,
   isBackground,
   zIndex,
 }) => {
@@ -171,7 +168,7 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
         style={{ zIndex }}
       >
         <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
-          <div style={imageStyle} />
+          <div style={imageStyle} title={alt} />
         </div>
       </Rnd>
       {isSelected && !isLocked && !isBackground && (
