@@ -41,7 +41,9 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build Next.js project
-        run: pnpm run build
+        run: NODE_ENV=production pnpm run build
+        env:
+          NODE_ENV: production
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

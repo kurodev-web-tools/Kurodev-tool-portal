@@ -202,8 +202,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
                               <Image
                                 src={template.initialImageSrc}
                                 alt={template.name}
-                                layout="fill"
-                                objectFit="cover"
+                                fill
+                                style={{ objectFit: 'cover' }}
                                 className="transition-transform duration-300 group-hover:scale-105"
                               />
                             </div>

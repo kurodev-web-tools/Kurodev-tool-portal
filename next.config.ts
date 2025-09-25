@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
 
-const isProd = process.env.NODE_ENV === 'production'; // 本番環境かどうかを判定
+// GitHub Pagesでのデプロイ時は常にbasePathを適用
+const isProd = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
 
 const nextConfig: NextConfig = {
   output: 'export',
-  // 開発環境ではbasePathとassetPrefixを無効にする
+  // 本番環境またはGitHub ActionsではbasePathとassetPrefixを適用
   basePath: isProd ? '/Kurodev-tool-portal' : '',
   assetPrefix: isProd ? '/Kurodev-tool-portal/' : '',
   images: {
