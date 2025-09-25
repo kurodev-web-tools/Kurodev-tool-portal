@@ -34,11 +34,13 @@ const validateTemplates = (templates: ThumbnailTemplate[]): { valid: ThumbnailTe
   const invalid: ThumbnailTemplate[] = [];
   
   for (const template of templates) {
-    const imagePath = path.join(process.cwd(), 'public', template.initialImageSrc);
+    // basePathを除いた実際のファイルパスで存在確認
+    const actualImagePath = template.initialImageSrc.replace(/^\/Kurodev-tool-portal/, '');
+    const imagePath = path.join(process.cwd(), 'public', actualImagePath);
     if (fs.existsSync(imagePath)) {
       valid.push(template);
     } else {
-      console.warn(`Template image not found: ${template.initialImageSrc}`);
+      console.warn(`Template image not found: ${template.initialImageSrc} (checked: ${imagePath})`);
       invalid.push(template);
     }
   }
@@ -64,7 +66,9 @@ const checkDataConsistency = (scannedTemplates: ThumbnailTemplate[], existingTem
   // 不足しているファイルの特定
   const missingFiles: string[] = [];
   for (const template of scannedTemplates) {
-    const imagePath = path.join(process.cwd(), 'public', template.initialImageSrc);
+    // basePathを除いた実際のファイルパスで存在確認
+    const actualImagePath = template.initialImageSrc.replace(/^\/Kurodev-tool-portal/, '');
+    const imagePath = path.join(process.cwd(), 'public', actualImagePath);
     if (!fs.existsSync(imagePath)) {
       missingFiles.push(template.initialImageSrc);
     }

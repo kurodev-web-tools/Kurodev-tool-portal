@@ -8,12 +8,16 @@ export const scanTemplates = async (): Promise<ThumbnailTemplate[]> => {
   const templates: ThumbnailTemplate[] = [];
   const aspectRatios = ['1x1', '4x3', '9x16', '16x9'];
 
+  // basePathを環境変数から取得（本番環境では'/Kurodev-tool-portal'）
+  const basePath = process.env.NODE_ENV === 'production' ? '/Kurodev-tool-portal' : '';
+
   // ジャンルディレクトリを動的に検出
   const genres = fs.readdirSync(TEMPLATES_BASE_DIR, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name);
 
   console.log(`検出されたジャンル: ${genres.join(', ')}`);
+  console.log(`BasePath: ${basePath}`);
 
   for (const genre of genres) {
     for (const aspectRatio of aspectRatios) {
@@ -25,7 +29,7 @@ export const scanTemplates = async (): Promise<ThumbnailTemplate[]> => {
           if (['.png', '.jpg', '.jpeg'].includes(ext)) {
             const id = path.basename(file, ext);
             const name = `${genre} ${aspectRatio} ${id.split('_').pop()}`; // 例: simple 1x1 001
-            const initialImageSrc = `/templates/asset-creator/${genre}/${aspectRatio}/${file}`;
+            const initialImageSrc = `${basePath}/templates/asset-creator/${genre}/${aspectRatio}/${file}`;
 
             templates.push({
               id,
