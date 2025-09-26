@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
   // 静的エクスポート時のエラーページ処理を無効化
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
+  // 静的エクスポート時のエラーページ生成を無効化
+  ...(isProd && {
+    generateBuildId: async () => {
+      return 'build-' + Date.now();
+    },
+  }),
   // ESLintを無効化（一時的）
   eslint: {
     ignoreDuringBuilds: true,
@@ -24,6 +30,10 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    ...(isProd && {
+      skipTrailingSlashRedirect: true,
+      skipMiddlewareUrlNormalize: true,
+    }),
   },
   // バンドル分析
   webpack: (config, { dev, isServer }) => {
