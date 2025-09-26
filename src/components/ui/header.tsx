@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 
 const PROFILE_SETTINGS_KEY = "vtuber-tools-profile-settings";
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''; // 環境変数から取得するか、デフォルト値を設定
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''; // 環境変数から取得、ローカルでは空文字
 
 interface Tool {
   id: string;
@@ -119,14 +119,15 @@ export function Header() {
   // activeTab の初期値を設定するロジック
   const initialActiveTab = () => {
     if (BASE_PATH) {
+      // GitHub Pages用のパス判定
       if (pathname === BASE_PATH || pathname === `${BASE_PATH}/`) {
         return "suites";
       }
-      // ここを修正
-      if (pathname.startsWith(`${BASE_PATH}/tools`)) { // 修正箇所
+      if (pathname.startsWith(`${BASE_PATH}/tools`)) {
         return "tools";
       }
     } else {
+      // ローカル環境用のパス判定
       if (pathname === "/") {
         return "suites";
       }
@@ -175,25 +176,29 @@ export function Header() {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     if (value === "suites") {
-      router.push("/");
+      router.push(BASE_PATH ? `${BASE_PATH}/` : "/");
     } else if (value === "tools") {
-      router.push("/tools");
+      router.push(BASE_PATH ? `${BASE_PATH}/tools` : "/tools");
     }
   };
 
   // 現在のツールを特定
-  const currentTool = tools.find(tool => pathname === tool.href);
-  const isToolPage = pathname.startsWith('/tools/') && currentTool;
+  const currentTool = tools.find(tool => 
+    BASE_PATH ? pathname === `${BASE_PATH}${tool.href}` : pathname === tool.href
+  );
+  const isToolPage = BASE_PATH 
+    ? pathname.startsWith(`${BASE_PATH}/tools/`) && currentTool
+    : pathname.startsWith('/tools/') && currentTool;
 
   // タブを表示すべきかどうかを判定するヘルパー関数
   const shouldShowTabs = () => {
     if (BASE_PATH) {
-      const fullBasePath = BASE_PATH;
-      const fullToolsPath = `${BASE_PATH}/tools`;
-
-      return pathname === fullBasePath || pathname === `${fullBasePath}/` || pathname === fullToolsPath;
+      // GitHub Pages用のパス判定
+      return pathname === BASE_PATH || pathname === `${BASE_PATH}/` || pathname === `${BASE_PATH}/tools`;
+    } else {
+      // ローカル環境用のパス判定
+      return pathname === "/" || pathname === "/tools";
     }
-    return pathname === "/" || pathname === "/tools";
   };
 
   return (
@@ -201,13 +206,13 @@ export function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* 左側: ロゴと現在のツール表示 */}
         <div className="flex items-center space-x-4">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href={BASE_PATH ? `${BASE_PATH}/` : "/"} className="flex items-center space-x-2">
             <Wrench className="h-6 w-6" />
             <span className="text-2xl font-bold">Kurodev Tools</span>
           </Link>
           
           {/* 現在のツール表示（ツールページの場合） */}
-          {isToolPage && (
+          {isToolPage && currentTool && (
             <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
               <span>/</span>
               <currentTool.icon className="h-4 w-4" />
@@ -228,10 +233,10 @@ export function Header() {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList>
                 <TabsTrigger value="suites" asChild>
-                  <Link href="/">スイート</Link>
+                  <Link href={BASE_PATH ? `${BASE_PATH}/` : "/"}>スイート</Link>
                 </TabsTrigger>
                 <TabsTrigger value="tools" asChild>
-                  <Link href="/tools">ツール</Link>
+                  <Link href={BASE_PATH ? `${BASE_PATH}/tools` : "/tools"}>ツール</Link>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -252,7 +257,7 @@ export function Header() {
                 {tools.map((tool) => (
                   <DropdownMenuItem key={tool.id} asChild>
                     <Link 
-                      href={tool.href}
+                      href={BASE_PATH ? `${BASE_PATH}${tool.href}` : tool.href}
                       className="flex items-center space-x-3 p-3 w-full"
                     >
                       <tool.icon className="h-5 w-5 flex-shrink-0" />
@@ -292,16 +297,16 @@ export function Header() {
                 <DropdownMenuContent className="w-56">
                   <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href="/settings/profile">プロフィール編集</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href="/settings/account">アカウント設定</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href="/settings/notifications">通知設定</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href={BASE_PATH ? `${BASE_PATH}/settings/profile` : "/settings/profile"}>プロフィール編集</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href={BASE_PATH ? `${BASE_PATH}/settings/account` : "/settings/account"}>アカウント設定</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href={BASE_PATH ? `${BASE_PATH}/settings/notifications` : "/settings/notifications"}>通知設定</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel>テーマ</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => setTheme("light")}>ライト</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTheme("dark")}>ダーク</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTheme("system")}>システム</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href="/settings/ai">AI設定</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href={BASE_PATH ? `${BASE_PATH}/settings/ai` : "/settings/ai"}>AI設定</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>ログアウト</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -309,7 +314,7 @@ export function Header() {
             </>
           ) : (
             <Button asChild>
-              <Link href="/login">ログイン</Link>
+              <Link href={BASE_PATH ? `${BASE_PATH}/login` : "/login"}>ログイン</Link>
             </Button>
           )}
         </div>
