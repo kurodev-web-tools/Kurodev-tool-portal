@@ -114,16 +114,13 @@ export function Header() {
   const { setTheme } = useTheme();
   const { user, logout } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | undefined>(undefined);
-  const [basePath, setBasePath] = useState<string>('');
 
-  // basePathを動的に判定
-  useEffect(() => {
-    if (pathname.startsWith('/Kurodev-tool-portal')) {
-      setBasePath('/Kurodev-tool-portal');
-    } else {
-      setBasePath(process.env.NEXT_PUBLIC_BASE_PATH || '');
-    }
-  }, [pathname]);
+  // GitHub Pages用のbasePathを直接判定
+  const isGitHubPages = pathname.startsWith('/Kurodev-tool-portal');
+  const basePath = isGitHubPages ? '/Kurodev-tool-portal' : '';
+
+  // デバッグ用ログ
+  console.log('Header Debug:', { pathname, isGitHubPages, basePath });
 
   // activeTab の初期値を設定するロジック
   const initialActiveTab = () => {
@@ -198,6 +195,9 @@ export function Header() {
   const isToolPage = basePath 
     ? pathname.startsWith(`${basePath}/tools/`) && currentTool
     : pathname.startsWith('/tools/') && currentTool;
+
+  // デバッグ用ログ
+  console.log('Tool Page Debug:', { currentTool, isToolPage, tools: tools.map(t => ({ id: t.id, href: t.href, fullPath: basePath ? `${basePath}${t.href}` : t.href })) });
 
   // タブを表示すべきかどうかを判定するヘルパー関数
   const shouldShowTabs = () => {
