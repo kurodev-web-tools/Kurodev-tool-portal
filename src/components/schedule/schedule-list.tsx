@@ -49,27 +49,31 @@ export function ScheduleList() {
     ? schedules.filter(s => isSameDay(parseISO(s.date), selectedDate))
     : [];
 
-  // 未来の予定（今日以降）
-  const futureSchedules = schedules
-    .filter(s => isFuture(parseISO(s.date)) || isSameDay(parseISO(s.date), today))
-    .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
-
-  // 過去の予定
-  const pastSchedules = schedules
-    .filter(s => isPast(parseISO(s.date)) && !isSameDay(parseISO(s.date), today))
-    .sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+  // 全予定を日付順でソート（近い日付から降順）
+  const allSchedules = schedules
+    .sort((a, b) => {
+      const dateA = parseISO(a.date);
+      const dateB = parseISO(b.date);
+      const todayTime = today.getTime();
+      
+      // 今日からの距離でソート（近い日付から降順）
+      const distanceA = Math.abs(dateA.getTime() - todayTime);
+      const distanceB = Math.abs(dateB.getTime() - todayTime);
+      
+      return distanceA - distanceB;
+    });
 
   const renderScheduleItem = (schedule: ScheduleItem) => (
-    <div key={schedule.id} className="border p-2 rounded-md text-sm">
-      <p className="font-bold">{schedule.title || '(タイトルなし)'}</p>
-      <p>{format(parseISO(schedule.date), 'M月d日 (E)', { locale: ja })} {schedule.time}</p>
-      <p className="text-xs text-gray-500">{schedule.category} / {schedule.platform}</p>
-      <div className="flex justify-end mt-2 space-x-2">
+    <div key={schedule.id} className="border p-2 rounded-md text-sm hover:bg-accent/50 transition-colors">
+      <p className="font-bold truncate">{schedule.title || '(タイトルなし)'}</p>
+      <p className="text-xs">{format(parseISO(schedule.date), 'M月d日 (E)', { locale: ja })} {schedule.time}</p>
+      <p className="text-xs text-muted-foreground truncate">{schedule.category} / {schedule.platform}</p>
+      <div className="flex justify-end mt-2 space-x-1">
         <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleEdit(schedule)}>
-          <Edit className="h-4 w-4" />
+          <Edit className="h-3 w-3" />
         </Button>
         <Button variant="destructive" size="icon" className="h-6 w-6" onClick={() => setScheduleIdToDelete(schedule.id)}>
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3 w-3" />
         </Button>
       </div>
     </div>
@@ -80,38 +84,26 @@ export function ScheduleList() {
       <div className="space-y-6 mt-6">
         {/* 選択日の予定 */}
         <div>
-          <h3 className="font-semibold mb-2">
+          <h3 className="font-semibold mb-2 text-sm">
             {selectedDate ? format(selectedDate, 'M月d日 (E)', { locale: ja }) : '日付を選択'} の予定
           </h3>
           <div className="space-y-2">
             {selectedDaySchedules.length > 0 ? (
               selectedDaySchedules.map(renderScheduleItem)
             ) : (
-              <p className="text-sm text-gray-500">予定はありません。</p>
+              <p className="text-xs text-muted-foreground">予定はありません。</p>
             )}
           </div>
         </div>
 
-        {/* これからの予定 */}
+        {/* スケジュール一覧 */}
         <div>
-          <h3 className="font-semibold mb-2">これからの予定</h3>
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-            {futureSchedules.length > 0 ? (
-              futureSchedules.map(renderScheduleItem)
+          <h3 className="font-semibold mb-2 text-sm">スケジュール一覧</h3>
+          <div className="space-y-2 max-h-[34rem] overflow-y-auto pr-2">
+            {allSchedules.length > 0 ? (
+              allSchedules.map(renderScheduleItem)
             ) : (
-              <p className="text-sm text-gray-500">予定はありません。</p>
-            )}
-          </div>
-        </div>
-
-        {/* 過去の予定 */}
-        <div>
-          <h3 className="font-semibold mb-2">過去の予定</h3>
-          <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-            {pastSchedules.length > 0 ? (
-              pastSchedules.map(renderScheduleItem)
-            ) : (
-              <p className="text-sm text-gray-500">表示できる過去の予定はありません。</p>
+              <p className="text-xs text-muted-foreground">予定はありません。</p>
             )}
           </div>
         </div>

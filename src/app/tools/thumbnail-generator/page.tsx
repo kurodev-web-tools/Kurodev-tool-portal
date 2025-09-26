@@ -4,9 +4,11 @@ import React from 'react';
 import { toPng } from 'html-to-image';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { PanelLeftOpen, PanelLeftClose, Settings, Layers, Construction } from "lucide-react";
+import { Settings, Layers, Construction } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { useSidebar } from '@/hooks/use-sidebar';
+import { useErrorHandler } from '@/hooks/use-error-handler';
+import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -32,10 +34,14 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 
 export default function ThumbnailGeneratorPage() {
   // UI状態管理
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
+    defaultOpen: false,
+    desktopDefaultOpen: true,
+  });
   const [selectedTab, setSelectedTab] = React.useState("settings");
   const [isShiftKeyDown, setIsShiftKeyDown] = React.useState(false);
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  const { handleAsyncError } = useErrorHandler();
 
   // テンプレートと要素の状態をコンテキストから取得
   const {
@@ -78,23 +84,31 @@ export default function ThumbnailGeneratorPage() {
   }, [isDesktop]);
 
   // サムネイルのダウンロード処理
-  const handleDownloadThumbnail = React.useCallback(async () => {
+  const handleDownloadThumbnail = React.useCallback(async (quality: 'standard' | 'high' | 'ultra' = 'standard') => {
     const thumbnailElement = document.getElementById('thumbnail-preview');
     if (thumbnailElement) {
-      try {
-        const dataUrl = await toPng(thumbnailElement, { cacheBust: true });
+      await handleAsyncError(async () => {
+        // 画質に応じて設定を変更
+        const qualitySettings = {
+          standard: { pixelRatio: 1, quality: 0.8 },
+          high: { pixelRatio: 2, quality: 0.9 },
+          ultra: { pixelRatio: 3, quality: 1.0 }
+        };
+        
+        const settings = qualitySettings[quality];
+        const dataUrl = await toPng(thumbnailElement, { 
+          cacheBust: true,
+          pixelRatio: settings.pixelRatio,
+          quality: settings.quality
+        });
+        
         const link = document.createElement('a');
-        link.download = 'thumbnail.png';
+        link.download = `thumbnail-${quality}.png`;
         link.href = dataUrl;
         link.click();
-      } catch (err) {
-        console.error('サムネイルの生成に失敗しました', err);
-        toast.error("画像の生成に失敗しました", {
-          description: "時間をおいて再度お試しいただくか、別の画像でお試しください。",
-        });
-      }
+      }, "画像の生成に失敗しました");
     }
-  }, []);
+  }, [handleAsyncError]);
 
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
@@ -198,78 +212,6 @@ export default function ThumbnailGeneratorPage() {
     return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
   }
 
-  const renderPreview = () => (
-    <>
-      <div id="thumbnail-preview" className={cn("aspect-video w-full bg-card relative border rounded-md", {
-          'simple-enhanced': selectedTemplate.id === 'template-1',
-          'stylish-enhanced': selectedTemplate.id === 'template-2',
-          'cute-enhanced': selectedTemplate.id === 'template-3',
-          'cool-enhanced': selectedTemplate.id === 'template-4',
-          'bg-gray-200': selectedTemplate.id === 'template-5',
-        })}>
-        {selectedTemplate.id === 'template-4' && (
-          <>
-            <div className="digital-overlay"></div>
-            <div className="light-ray-1"></div>
-            <div className="light-ray-2"></div>
-          </>
-        )}
-        {layers.slice().reverse().map((layer) => {
-          const isSelected = layer.id === selectedLayerId;
-          const isDraggable = isSelected && !layer.locked;
-          const isResizable = isSelected && !layer.locked;
-
-          if (!layer.visible) return null;
-
-          if (layer.type === 'image') {
-            return (
-              <ThumbnailImage
-                key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
-                x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
-                onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                onSelect={() => setSelectedLayerId(layer.id)} // 追加
-                isLocked={layer.locked} // 追加
-                isDraggable={isDraggable} // 追加
-                onRotateStart={() => {}} // 追加
-                onRotate={() => {}} // 追加
-                onRotateStop={() => {}} // 追加
-              />
-            );
-          } else if (layer.type === 'text') {
-            return (
-              <ThumbnailText
-                key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color || '#000000'}
-                fontSize={layer.fontSize || '1rem'} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                enableResizing={isResizable} disableDragging={!isDraggable}
-              />
-            );
-          } else if (layer.type === 'shape' && layer.shapeType) {
-            return (
-              <ThumbnailShape
-                key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType}
-                backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
-                borderWidth={layer.borderWidth || 0} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-              />
-            );
-          }
-          return null;
-        })}
-      </div>
-      <div className="mt-4 flex justify-end">
-        <Button onClick={handleDownloadThumbnail}>画像をダウンロード</Button>
-      </div>
-    </>
-  );
-
   const renderToolsPanel = () => (
     <Accordion type="multiple" className="w-full" defaultValue={['text']}>
       <AccordionItem value="text">
@@ -341,69 +283,127 @@ export default function ThumbnailGeneratorPage() {
     </Accordion>
   );
 
-  const renderSidebar = () => (
-    <aside
-      className={cn(
-        "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-background p-4 border-l z-40",
-        "transition-transform duration-300 ease-in-out lg:static lg:w-96 lg:translate-x-0 lg:z-auto",
-        isSidebarOpen ? 'translate-x-0' : 'translate-x-full',
-        isDesktop ? (isSidebarOpen ? 'lg:block' : 'lg:hidden') : ''
-      )}
-    >
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">設定パネル</h2>
-        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} aria-label="設定パネルを閉じる">
-          <PanelLeftClose className="h-5 w-5" />
-        </Button>
-      </div>
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="settings">設定</TabsTrigger>
-          <TabsTrigger value="tools">ツール</TabsTrigger>
-          <TabsTrigger value="layers">レイヤー</TabsTrigger>
-        </TabsList>
-        <TabsContent value="settings" className="mt-4 space-y-6">
-          <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
-        </TabsContent>
-        <TabsContent value="tools" className="mt-4">
-          {renderToolsPanel()}
-        </TabsContent>
-        <TabsContent value="layers" className="mt-4 space-y-6">
-          <LayerPanel />
-        </TabsContent>
-      </Tabs>
-    </aside>
+  // サイドバーコンテンツ
+  const sidebarContent = (
+    <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="settings">テンプレート</TabsTrigger>
+        <TabsTrigger value="tools">ツール</TabsTrigger>
+        <TabsTrigger value="layers">レイヤー</TabsTrigger>
+      </TabsList>
+      <TabsContent value="settings" className="mt-4">
+        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+      </TabsContent>
+      <TabsContent value="tools" className="mt-4">
+        {renderToolsPanel()}
+      </TabsContent>
+      <TabsContent value="layers" className="mt-4">
+        <LayerPanel />
+      </TabsContent>
+    </Tabs>
   );
 
-  const renderMobileSidebar = () => (
-    <aside
-      className={cn(
-        "fixed top-0 right-0 h-full w-4/5 max-w-xs bg-background p-4 border-l z-40",
-        "transition-transform duration-300 ease-in-out",
-        isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-      )
-    }>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">設定</h2>
-        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} aria-label="設定パネルを閉じる">
-          <PanelLeftClose className="h-5 w-5" />
-        </Button>
+  // モバイル用のサイドバーコンテンツ（テンプレートのみ）
+  const mobileSidebarContent = (
+    <div className="w-full">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">テンプレート選択</h3>
       </div>
       <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
-    </aside>
+    </div>
+  );
+
+  const renderPreview = () => (
+    <>
+      <div id="thumbnail-preview" className={cn("aspect-video w-full bg-card relative border rounded-md", {
+          'simple-enhanced': selectedTemplate.id === 'template-1',
+          'stylish-enhanced': selectedTemplate.id === 'template-2',
+          'cute-enhanced': selectedTemplate.id === 'template-3',
+          'cool-enhanced': selectedTemplate.id === 'template-4',
+          'bg-gray-200': selectedTemplate.id === 'template-5',
+        })}>
+        {selectedTemplate.id === 'template-4' && (
+          <>
+            <div className="digital-overlay"></div>
+            <div className="light-ray-1"></div>
+            <div className="light-ray-2"></div>
+          </>
+        )}
+        {layers.slice().reverse().map((layer) => {
+          const isSelected = layer.id === selectedLayerId;
+          const isDraggable = isSelected && !layer.locked;
+          const isResizable = isSelected && !layer.locked;
+
+          if (!layer.visible) return null;
+
+          if (layer.type === 'image') {
+            return (
+              <ThumbnailImage
+                key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
+                x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
+                onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                onSelect={() => setSelectedLayerId(layer.id)} // 追加
+                isLocked={layer.locked} // 追加
+                isDraggable={isDraggable} // 追加
+                onRotateStart={() => {}} // 追加
+                onRotate={() => {}} // 追加
+                onRotateStop={() => {}} // 追加
+              />
+            );
+          } else if (layer.type === 'text') {
+            return (
+              <ThumbnailText
+                key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color || '#000000'}
+                fontSize={layer.fontSize || '1rem'} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                enableResizing={isResizable} disableDragging={!isDraggable}
+              />
+            );
+          } else if (layer.type === 'shape' && layer.shapeType) {
+            return (
+              <ThumbnailShape
+                key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType}
+                backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
+                borderWidth={layer.borderWidth || 0} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+              />
+            );
+          }
+          return null;
+        })}
+      </div>
+      <div className="mt-4 flex justify-end space-x-2">
+        <Button onClick={() => handleDownloadThumbnail('standard')} size="sm">
+          標準画質
+        </Button>
+        <Button onClick={() => handleDownloadThumbnail('high')} size="sm">
+          高画質
+        </Button>
+        <Button onClick={() => handleDownloadThumbnail('ultra')} size="sm">
+          最高画質
+        </Button>
+      </div>
+    </>
   );
 
   const renderMobileControls = () => (
-    <div className="p-4 space-y-6">
+    <div className="p-2 lg:p-4 space-y-4">
       <Accordion type="single" collapsible className="w-full" defaultValue='tools'>
         <AccordionItem value="tools">
-          <AccordionTrigger className="text-lg font-semibold">
+          <AccordionTrigger className="text-base font-semibold">
             <div className="flex items-center gap-2">
-              <Construction className="h-5 w-5" />
+              <Construction className="h-4 w-4" />
               <span>ツール</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pt-4">
+          <AccordionContent className="pt-2">
             {renderToolsPanel()}
           </AccordionContent>
         </AccordionItem>
@@ -415,62 +415,54 @@ export default function ThumbnailGeneratorPage() {
   );
 
   return (
-    <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-3.5rem)]">
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-4 pt-14 lg:p-6">
-          {renderPreview()}
-        </div>
-        {/* --- Mobile Controls --- */}
-        <div className="lg:hidden">
-          {renderMobileControls()}
-        </div>
-      </main>
-
-      {/* Overlay for mobile sidebar */}
-      {!isDesktop && isSidebarOpen && (
+    <div className="relative flex flex-col lg:h-screen">
+      {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
+      {isSidebarOpen && !isDesktop && (
         <div
-          className="fixed inset-0 bg-black/50 z-30"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* --- Sidebar --- */}
-      <div className="hidden lg:block">
-        {renderSidebar()}
-      </div>
-      <div className="lg:hidden">
-        {renderMobileSidebar()}
-      </div>
+      <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-2 pt-20 lg:p-6 lg:pt-6">
+            {renderPreview()}
+          </div>
+          {/* モバイル用コントロール */}
+          <div className="lg:hidden">
+            {renderMobileControls()}
+          </div>
+        </main>
 
-      {/* --- Sidebar Toggle Buttons --- */}
-      {!isDesktop && !isSidebarOpen && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed top-18 right-4 z-30"
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="設定パネルを開く"
+        {/* サイドバーが閉じている場合の開くボタン */}
+        {!isSidebarOpen && (
+          <SidebarToggle
+            onOpen={() => setIsSidebarOpen(true)}
+            isDesktop={isDesktop}
+            tabs={[
+              { id: "settings", label: "テンプレート", icon: <Settings className="h-4 w-4" /> },
+              { id: "tools", label: "ツール", icon: <Construction className="h-4 w-4" /> },
+              { id: "layers", label: "レイヤー", icon: <Layers className="h-4 w-4" /> }
+            ]}
+            onTabClick={(tabId) => {
+              // タブの状態管理が必要な場合はここで実装
+              console.log('Tab clicked:', tabId);
+            }}
+          />
+        )}
+
+        {/* サイドバー */}
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          title=""
+          isDesktop={isDesktop}
+          className="lg:w-96"
         >
-          <Settings className="h-5 w-5" />
-        </Button>
-      )}
-      {isDesktop && !isSidebarOpen && (
-         <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md">
-            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
-              <PanelLeftOpen className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("settings"); }}>
-              <Settings className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("tools"); }}>
-              <Construction className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("layers"); }}>
-              <Layers className="h-5 w-5" />
-            </Button>
-         </div>
-      )}
+          {isDesktop ? sidebarContent : mobileSidebarContent}
+        </Sidebar>
+      </div>
     </div>
   );
 }

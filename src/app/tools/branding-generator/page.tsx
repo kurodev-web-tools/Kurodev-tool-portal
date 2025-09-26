@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 // Resizable components are not used in this refactored version
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2, Palette, Target, Users } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -31,6 +33,8 @@ export default function BrandingGeneratorPage() {
   const [activityStatus, setActivityStatus] = useState<ActivityStatus | null>(
     null
   );
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
   const { isOpen: isRightPanelOpen, setIsOpen: setIsRightPanelOpen, isDesktop } = useSidebar({
     defaultOpen: true,
     desktopDefaultOpen: true,
@@ -39,33 +43,44 @@ export default function BrandingGeneratorPage() {
   const { handleAsyncError } = useErrorHandler();
 
   // 分析開始ボタンがクリックされたら、モバイルでは結果タブに切り替える
-  const handleAnalyzeClick = async () => {
+  const handleAnalyzeClick = useCallback(async () => {
     // バリデーション（例：活動状況が選択されているか）
     if (!activityStatus) {
       console.error('活動状況を選択してください');
       return;
     }
 
+    setIsAnalyzing(true);
     await handleAsyncError(async () => {
       // ここに分析ロジックを呼び出す処理が入る
-      await new Promise(resolve => setTimeout(resolve, 1000)); // モック処理
+      await new Promise(resolve => setTimeout(resolve, 2000)); // モック処理
+      
+      // モックの分析結果
+      setAnalysisResults({
+        brandPersonality: "親しみやすく、エネルギッシュ",
+        targetAudience: "10-20代のゲーム好きな若者",
+        colorPalette: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"],
+        keyMessages: ["楽しい", "親しみやすい", "信頼できる", "面白い"]
+      });
       
       if (!isDesktop) {
         setActiveTab("results");
       }
     }, "分析中にエラーが発生しました");
-  };
+    setIsAnalyzing(false);
+  }, [activityStatus, handleAsyncError, isDesktop]);
 
   // T-02: 活動状況選択画面
   if (!activityStatus) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-6">
         <h1 className="text-3xl font-bold">あなたの現在の活動状況は？</h1>
-        <div className="flex gap-4">
+        <div className="flex flex-col space-y-6">
           <Button
             size="lg"
             onClick={() => setActivityStatus("active")}
             variant="outline"
+            className="h-16 text-lg font-semibold"
           >
             既に活動している / 準備中
           </Button>
@@ -73,6 +88,7 @@ export default function BrandingGeneratorPage() {
             size="lg"
             onClick={() => setActivityStatus("pre-activity")}
             variant="outline"
+            className="h-16 text-lg font-semibold"
           >
             これから活動を始める（準備前）
           </Button>
@@ -84,18 +100,6 @@ export default function BrandingGeneratorPage() {
   // T-03 & T-04: メインの編集・表示画面
   const controlPanelContent = (
     <div className="flex flex-col h-full p-6 space-y-4 relative">
-      {/* パネル開閉ボタンをコントロールパネル内に移動 */}
-      {isDesktop && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-4 right-4 z-10"
-          onClick={() => setIsRightPanelOpen(false)}
-        >
-          ×
-        </Button>
-      )}
-      <h2 className="text-2xl font-semibold">コントロールパネル</h2>
       <Separator />
       <div className="flex-grow space-y-4 overflow-auto">
         {activityStatus === "active" && (
@@ -137,8 +141,15 @@ export default function BrandingGeneratorPage() {
             </CardContent>
           </Card>
         )}
-        <Button size="lg" className="w-full" onClick={handleAnalyzeClick}>
-          分析を開始する
+        <Button size="lg" className="w-full" onClick={handleAnalyzeClick} disabled={isAnalyzing}>
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              分析中...
+            </>
+          ) : (
+            '分析を開始する'
+          )}
         </Button>
       </div>
     </div>
@@ -149,64 +160,129 @@ export default function BrandingGeneratorPage() {
       <h2 className="text-2xl font-semibold">分析・提案結果</h2>
       <Separator />
       <div className="flex-grow space-y-4 overflow-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>個性・強みのサマリー</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              ここにAIが分析したあなたの個性や強みがキーワードやグラフで表示されます。
-            </p>
-          </CardContent>
-        </Card>
-        <h3 className="text-xl font-semibold">コンセプト提案</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="cursor-pointer hover:border-primary">
-            <CardHeader>
-              <CardTitle>癒し系ゲーマー</CardTitle>
-              <CardDescription>キーワード: 丁寧, 落ち着き, ゲーム</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>穏やかな声と丁寧なプレイスタイルで、視聴者に癒やしを提供するコンセプトです。</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>知的な解説系</CardTitle>
-              <CardDescription>キーワード: 解説, 分析, 専門知識</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>物事を深く分析し、視聴者に新しい発見を提供するコンセプトです。</p>
-            </CardContent>
-          </Card>
-        </div>
-        <h3 className="text-xl font-semibold">カラーパレット提案</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="cursor-pointer hover:border-primary">
-            <CardHeader>
-              <CardTitle>パステルポップ</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-2">
-              <div className="w-10 h-10 rounded-full bg-pink-300"></div>
-              <div className="w-10 h-10 rounded-full bg-blue-300"></div>
-              <div className="w-10 h-10 rounded-full bg-green-300"></div>
-              <div className="w-10 h-10 rounded-full bg-yellow-300"></div>
-              <div className="w-10 h-10 rounded-full bg-purple-300"></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>サイバークール</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-2">
-              <div className="w-10 h-10 rounded-full bg-cyan-400"></div>
-              <div className="w-10 h-10 rounded-full bg-fuchsia-500"></div>
-              <div className="w-10 h-10 rounded-full bg-slate-800"></div>
-              <div className="w-10 h-10 rounded-full bg-white"></div>
-              <div className="w-10 h-10 rounded-full bg-gray-400"></div>
-            </CardContent>
-          </Card>
-        </div>
+        {isAnalyzing ? (
+          <div className="space-y-4">
+            <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+              <Loader2 className="w-16 h-16 text-gray-400 mb-4 animate-spin" aria-hidden="true" />
+              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">ブランディングを分析中...</h3>
+              <p className="text-gray-500 mt-2">AIがあなたの個性や強みを分析しています。しばらくお待ちください。</p>
+            </div>
+            {/* ローディング中のスケルトン */}
+            <div className="space-y-4" role="status" aria-label="ブランディング分析中">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-4 w-2/3 mb-2" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : analysisResults ? (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  ブランドパーソナリティ
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-lg font-medium">{analysisResults.brandPersonality}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  ターゲットオーディエンス
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-lg font-medium">{analysisResults.targetAudience}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  推奨カラーパレット
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 flex-wrap">
+                  {analysisResults.colorPalette.map((color: string, index: number) => (
+                    <div
+                      key={index}
+                      className="w-12 h-12 rounded-md border-2 border-gray-300"
+                      style={{ backgroundColor: color }}
+                      aria-label={`カラー ${index + 1}: ${color}`}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>キーメッセージ</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {analysisResults.keyMessages.map((message: string, index: number) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium"
+                    >
+                      {message}
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>個性・強みのサマリー</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  ここにAIが分析したあなたの個性や強みがキーワードやグラフで表示されます。
+                </p>
+              </CardContent>
+            </Card>
+            <h3 className="text-xl font-semibold">コンセプト提案</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="cursor-pointer hover:border-primary">
+                <CardHeader>
+                  <CardTitle>癒し系ゲーマー</CardTitle>
+                  <CardDescription>キーワード: 丁寧, 落ち着き, ゲーム</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>穏やかな声と丁寧なプレイスタイルで、視聴者に癒やしを提供するコンセプトです。</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>知的な解説系</CardTitle>
+                  <CardDescription>キーワード: 解説, 分析, 専門知識</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>物事を深く分析し、視聴者に新しい発見を提供するコンセプトです。</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -220,16 +296,18 @@ export default function BrandingGeneratorPage() {
           </main>
 
           {/* サイドバーが閉じている場合の開くボタン */}
-          <SidebarToggle 
-            onOpen={() => setIsRightPanelOpen(true)}
-            isDesktop={isDesktop}
-          />
+          {!isRightPanelOpen && (
+            <SidebarToggle 
+              onOpen={() => setIsRightPanelOpen(true)}
+              isDesktop={isDesktop}
+            />
+          )}
 
           {/* サイドバー */}
           <Sidebar
             isOpen={isRightPanelOpen}
             onClose={() => setIsRightPanelOpen(false)}
-            title="コントロールパネル"
+            title=""
             isDesktop={isDesktop}
           >
             {controlPanelContent}

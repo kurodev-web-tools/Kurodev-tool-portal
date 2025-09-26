@@ -4,7 +4,10 @@ import React from 'react';
 import { toPng } from 'html-to-image';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { PanelLeftOpen, PanelLeftClose, Settings, Layers, Construction } from "lucide-react";
+import { Settings, Layers, Construction } from "lucide-react";
+import { useSidebar } from '@/hooks/use-sidebar';
+import { useErrorHandler } from '@/hooks/use-error-handler';
+import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,10 +35,13 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 
 export default function ThumbnailGeneratorPage() {
   // UI状態管理
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
+    defaultOpen: false,
+    desktopDefaultOpen: true,
+  });
   const [selectedTab, setSelectedTab] = React.useState("settings");
   const [isShiftKeyDown, setIsShiftKeyDown] = React.useState(false);
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const { handleAsyncError } = useErrorHandler();
 
   // テンプレートと要素の状態をコンテキストから取得
   const {
@@ -81,49 +87,46 @@ export default function ThumbnailGeneratorPage() {
 
   // サムネイルのダウンロード処理
   const handleDownloadThumbnail = React.useCallback(async (qualityLevel: 'normal' | 'high' | 'super') => {
-    const downloadElement = document.getElementById('download-target');
-    if (downloadElement) {
-      try {
-        let baseHeight: number;
-        switch (qualityLevel) {
-          case 'normal': baseHeight = 720; break;
-          case 'high': baseHeight = 1080; break;
-          case 'super': baseHeight = 2160; break;
-          default: baseHeight = 720; break;
-        }
-
-        let parsedAspectRatio = 16 / 9; // デフォルト
-        if (aspectRatio === 'custom') {
-          if (customAspectRatio.width > 0 && customAspectRatio.height > 0) {
-            parsedAspectRatio = customAspectRatio.width / customAspectRatio.height;
-          }
-        } else {
-          const [w, h] = aspectRatio.split(':').map(Number);
-          if (w > 0 && h > 0) {
-            parsedAspectRatio = w / h;
-          }
-        }
-
-        const downloadWidth = Math.round(baseHeight * parsedAspectRatio);
-        const downloadHeight = baseHeight;
-
-        const dataUrl = await toPng(downloadElement, { 
-          cacheBust: true,
-          width: downloadWidth,
-          height: downloadHeight,
-        });
-        const link = document.createElement('a');
-        link.download = `creative_${qualityLevel}.png`;
-        link.href = dataUrl;
-        link.click();
-      } catch (err) {
-        console.error('画像の生成に失敗しました', err);
-        toast.error("画像の生成に失敗しました", {
-          description: "時間をおいて再度お試しいただくか、別の画像でお試しください。",
-        });
+    await handleAsyncError(async () => {
+      const downloadElement = document.getElementById('download-target');
+      if (!downloadElement) {
+        throw new Error('ダウンロード対象の要素が見つかりません');
       }
-    }
-  }, [aspectRatio, customAspectRatio]);
+
+      let baseHeight: number;
+      switch (qualityLevel) {
+        case 'normal': baseHeight = 720; break;
+        case 'high': baseHeight = 1080; break;
+        case 'super': baseHeight = 2160; break;
+        default: baseHeight = 720; break;
+      }
+
+      let parsedAspectRatio = 16 / 9; // デフォルト
+      if (aspectRatio === 'custom') {
+        if (customAspectRatio.width > 0 && customAspectRatio.height > 0) {
+          parsedAspectRatio = customAspectRatio.width / customAspectRatio.height;
+        }
+      } else {
+        const [w, h] = aspectRatio.split(':').map(Number);
+        if (w > 0 && h > 0) {
+          parsedAspectRatio = w / h;
+        }
+      }
+
+      const downloadWidth = Math.round(baseHeight * parsedAspectRatio);
+      const downloadHeight = baseHeight;
+
+      const dataUrl = await toPng(downloadElement, { 
+        cacheBust: true,
+        width: downloadWidth,
+        height: downloadHeight,
+      });
+      const link = document.createElement('a');
+      link.download = `creative_${qualityLevel}.png`;
+      link.href = dataUrl;
+      link.click();
+    }, `画像の生成に失敗しました`);
+  }, [aspectRatio, customAspectRatio, handleAsyncError]);
 
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
@@ -227,6 +230,103 @@ export default function ThumbnailGeneratorPage() {
     return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
   }
 
+  // サイドバーコンテンツ
+  const sidebarContent = (
+    <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="settings">テンプレート</TabsTrigger>
+        <TabsTrigger value="tools">ツール</TabsTrigger>
+        <TabsTrigger value="layers">レイヤー</TabsTrigger>
+      </TabsList>
+      <TabsContent value="settings" className="mt-4">
+        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+      </TabsContent>
+      <TabsContent value="tools" className="mt-4">
+        <Accordion type="multiple" className="w-full" defaultValue={['text']}>
+          <AccordionItem value="text">
+            <AccordionTrigger>テキスト</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="thumbnail-text">テキスト内容</Label>
+                <Textarea id="thumbnail-text" value={currentText} onChange={(e) => setCurrentText(e.target.value)} className="h-24" />
+              </div>
+              <div className="pt-4">
+                <Button variant="outline" className="w-full" onClick={handleAddText}>テキストを追加</Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="images">
+            <AccordionTrigger>画像</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="add-images">画像を追加</Label>
+                <Input id="add-images" type="file" accept="image/*" multiple onChange={handleImageUpload} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="shapes">
+            <AccordionTrigger>図形</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => handleAddShape('rectangle')}>四角を追加</Button>
+                <Button variant="outline" onClick={() => handleAddShape('circle')}>円を追加</Button>
+                <Button variant="outline" onClick={() => handleAddShape('line')}>線を追加</Button>
+                <Button variant="outline" onClick={() => handleAddShape('arrow')}>矢印を追加</Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="style">
+            <AccordionTrigger>スタイル</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              {!selectedLayer && <p className="text-sm text-muted-foreground">レイヤーを選択してください</p>}
+              {selectedLayer?.type === 'text' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="text-color">テキストカラー</Label>
+                    <input id="text-color" type="color" value={selectedLayer.color} onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })} className="w-full h-10 rounded-md" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="font-size">フォントサイズ ({selectedLayer.fontSize})</Label>
+                    <Slider id="font-size" min={1} max={8} step={0.1} value={[parseFloat(selectedLayer.fontSize || '1')]} onValueChange={(v) => updateLayer(selectedLayer.id, { fontSize: `${v[0]}rem` })} />
+                  </div>
+                </>
+              )}
+              {selectedLayer?.type === 'shape' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="shape-fill">塗りつぶし</Label>
+                    <input id="shape-fill" type="color" value={selectedLayer.backgroundColor} onChange={(e) => updateLayer(selectedLayer.id, { backgroundColor: e.target.value })} className="w-full h-10 rounded-md" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shape-stroke">枠線</Label>
+                    <input id="shape-stroke" type="color" value={selectedLayer.borderColor} onChange={(e) => updateLayer(selectedLayer.id, { borderColor: e.target.value })} className="w-full h-10 rounded-md" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shape-stroke-width">枠線の太さ ({selectedLayer.borderWidth}px)</Label>
+                    <Slider id="shape-stroke-width" min={0} max={20} step={1} value={[selectedLayer.borderWidth || 0]} onValueChange={(v) => updateLayer(selectedLayer.id, { borderWidth: v[0] })} />
+                  </div>
+                </>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </TabsContent>
+      <TabsContent value="layers" className="mt-4">
+        <LayerPanel />
+      </TabsContent>
+    </Tabs>
+  );
+
+  // モバイル用のサイドバーコンテンツ（テンプレートのみ）
+  const mobileSidebarContent = (
+    <div className="w-full">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">テンプレート選択</h3>
+      </div>
+      <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+    </div>
+  );
+
   const renderPreview = () => {
     const getAspectRatio = () => {
       if (aspectRatio === 'custom') {
@@ -298,10 +398,16 @@ export default function ThumbnailGeneratorPage() {
             })}
           </div>
         </div>
-        <div className="mt-4 flex justify-end">
-          <Button onClick={() => handleDownloadThumbnail('normal')}>通常画質でダウンロード</Button>
-          <Button onClick={() => handleDownloadThumbnail('high')}>高画質でダウンロード</Button>
-          <Button onClick={() => handleDownloadThumbnail('super')}>最高画質でダウンロード</Button>
+        <div className="mt-4 flex justify-end space-x-2">
+          <Button onClick={() => handleDownloadThumbnail('normal')} size="sm">
+            通常画質
+          </Button>
+          <Button onClick={() => handleDownloadThumbnail('high')} size="sm">
+            高画質
+          </Button>
+          <Button onClick={() => handleDownloadThumbnail('super')} size="sm">
+            最高画質
+          </Button>
         </div>
       </>
     );
@@ -378,136 +484,73 @@ export default function ThumbnailGeneratorPage() {
     </Accordion>
   );
 
-  const renderSidebar = () => (
-    <aside
-      className={cn(
-        "fixed top-0 right-0 h-[calc(100vh-3.5rem)] w-4/5 max-w-sm bg-background p-4 border-l z-40 flex flex-col overflow-y-auto",
-        "transition-transform duration-300 ease-in-out lg:static lg:w-96 lg:translate-x-0 lg:z-auto",
-        isSidebarOpen ? 'translate-x-0' : 'translate-x-full',
-        isDesktop ? (isSidebarOpen ? 'lg:block' : 'lg:hidden') : ''
-      )}
-    >
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">設定パネル</h2>
-        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} aria-label="設定パネルを閉じる">
-          <PanelLeftClose className="h-5 w-5" />
-        </Button>
-      </div>
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full flex flex-col flex-grow">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="settings">設定</TabsTrigger>
-          <TabsTrigger value="tools">ツール</TabsTrigger>
-          <TabsTrigger value="layers">レイヤー</TabsTrigger>
-        </TabsList>
-        <TabsContent value="settings" className="mt-4 space-y-6 flex-grow overflow-y-auto overflow-x-hidden">
-          <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
-        </TabsContent>
-        <TabsContent value="tools" className="mt-4 flex-grow overflow-y-auto overflow-x-hidden">
-          {renderToolsPanel()}
-        </TabsContent>
-        <TabsContent value="layers" className="mt-4 space-y-6 flex-grow overflow-y-auto overflow-x-hidden">
-          <LayerPanel />
-        </TabsContent>
-      </Tabs>
-    </aside>
-  );
-
-  const renderMobileSidebar = () => (
-    <aside
-      className={cn(
-        "fixed top-0 right-0 h-full w-4/5 max-w-xs bg-background p-4 border-l z-40",
-        "transition-transform duration-300 ease-in-out",
-        isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-      )
-    }>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">設定</h2>
-        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} aria-label="設定パネルを閉じる">
-          <PanelLeftClose className="h-5 w-5" />
-        </Button>
-      </div>
-      <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
-    </aside>
-  );
-
-  const renderMobileControls = () => (
-    <div className="p-4 space-y-6">
-      <Accordion type="single" collapsible className="w-full" defaultValue='tools'>
-        <AccordionItem value="tools">
-          <AccordionTrigger className="text-lg font-semibold">
-            <div className="flex items-center gap-2">
-              <Construction className="h-5 w-5" />
-              <span>ツール</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pt-4">
-            {renderToolsPanel()}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-      <div>
-        <LayerPanel />
-      </div>
-    </div>
-  );
-
   return (
-    <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-3.5rem)]">
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-4 pt-14 lg:p-6">
-          {renderPreview()}
-        </div>
-        {/* --- Mobile Controls --- */}
-        <div className="lg:hidden">
-          {renderMobileControls()}
-        </div>
-      </main>
-
-      {/* Overlay for mobile sidebar */}
-      {!isDesktop && isSidebarOpen && (
+    <div className="relative flex flex-col lg:h-screen">
+      {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
+      {isSidebarOpen && !isDesktop && (
         <div
-          className="fixed inset-0 bg-black/50 z-30"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* --- Sidebar --- */}
-      <div className="hidden lg:block">
-        {renderSidebar()}
-      </div>
-      <div className="lg:hidden">
-        {renderMobileSidebar()}
-      </div>
+      <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-2 pt-20 lg:p-4 lg:pt-4">
+          {renderPreview()}
+          
+          {/* モバイル用ツールとレイヤー */}
+          {!isDesktop && (
+            <div className="mt-6 space-y-4">
+              {/* ツールパネル（全体をアコーディオンで囲む） */}
+              <div className="bg-card border rounded-lg p-4">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="tools">
+                    <AccordionTrigger>
+                      <h3 className="text-lg font-semibold">ツール</h3>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      {renderToolsPanel()}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+              
+              {/* レイヤーパネル（常時表示） */}
+              <div className="bg-card border rounded-lg p-4">
+                <LayerPanel />
+              </div>
+            </div>
+          )}
+        </main>
 
-      {/* --- Sidebar Toggle Buttons --- */}
-      {!isDesktop && !isSidebarOpen && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed top-18 right-4 z-30"
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="設定パネルを開く"
+        {/* サイドバーが閉じている場合の開くボタン */}
+        {!isSidebarOpen && (
+          <SidebarToggle
+            onOpen={() => setIsSidebarOpen(true)}
+            isDesktop={isDesktop}
+            tabs={[
+              { id: "settings", label: "テンプレート", icon: <Settings className="h-4 w-4" /> },
+              { id: "tools", label: "ツール", icon: <Construction className="h-4 w-4" /> },
+              { id: "layers", label: "レイヤー", icon: <Layers className="h-4 w-4" /> }
+            ]}
+            onTabClick={(tabId) => {
+              // タブの状態管理が必要な場合はここで実装
+              console.log('Tab clicked:', tabId);
+            }}
+          />
+        )}
+
+        {/* サイドバー */}
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          title=""
+          isDesktop={isDesktop}
+          className="lg:w-1/4"
         >
-          <Settings className="h-5 w-5" />
-        </Button>
-      )}
-      {isDesktop && !isSidebarOpen && (
-         <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md">
-            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
-              <PanelLeftOpen className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("settings"); }}>
-              <Settings className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("tools"); }}>
-              <Construction className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => { setIsSidebarOpen(true); setSelectedTab("layers"); }}>
-              <Layers className="h-5 w-5" />
-            </Button>
-         </div>
-      )}
+          {isDesktop ? sidebarContent : mobileSidebarContent}
+        </Sidebar>
+      </div>
     </div>
   );
 }

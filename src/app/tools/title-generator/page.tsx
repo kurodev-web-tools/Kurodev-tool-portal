@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2, FileText, Copy, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -36,10 +38,11 @@ export default function TitleGeneratorPage() {
   const [finalDescription, setFinalDescription] = useState(""); // 最終概要欄
   const [aiTitles, setAiTitles] = useState<string[]>([]); // AI提案タイトル案
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
+  const [copiedItem, setCopiedItem] = useState<string | null>(null); // コピー状態
   const { handleAsyncError } = useErrorHandler();
 
   // T-04: フロントエンド内でのUIロジック実装
-  const handleGenerateClick = async () => {
+  const handleGenerateClick = useCallback(async () => {
     // バリデーション
     const titleError = validateTitle(finalTitle);
     const descriptionError = validateDescription(finalDescription);
@@ -58,11 +61,28 @@ export default function TitleGeneratorPage() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       const generatedTitles = [
-        "AIが生成したタイトル案1",
-        "AIが生成したタイトル案2",
-        "AIが生成したタイトル案3",
+        "【初見】超絶高難易度ゲームに挑戦！絶叫必至の展開が...",
+        "【実況】新作ゲームを完全攻略！隠し要素も全部見つけた",
+        "【コラボ】人気VTuberと一緒にゲーム！予想外の展開に..."
       ];
-      const generatedDescription = "AIが生成した概要欄の元データがここに表示されます。ハッシュタグや関連リンクなども含まれます。";
+      const generatedDescription = `【動画の概要】
+この動画では、${finalTitle}について詳しく解説しています。
+
+【タイムスタンプ】
+00:00 オープニング
+02:30 本編開始
+15:45 まとめ
+
+【関連動画】
+・前回の動画: [リンク]
+・次回予告: [リンク]
+
+【ハッシュタグ】
+#VTuber #ゲーム実況 #新作ゲーム #実況 #エンタメ
+
+【SNS】
+Twitter: @your_twitter
+Instagram: @your_instagram`;
 
       setAiTitles(generatedTitles);
       setAiDescription(generatedDescription);
@@ -74,25 +94,24 @@ export default function TitleGeneratorPage() {
     }, "生成中にエラーが発生しました");
     
     setIsLoading(false);
-  };
+  }, [finalTitle, finalDescription, handleAsyncError, isDesktop]);
 
-  const handleTitleSelect = (title: string) => {
+  const handleTitleSelect = useCallback((title: string) => {
     setFinalTitle(title);
-  };
+  }, []);
+
+  const handleCopy = useCallback(async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(type);
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (err) {
+      console.error('コピーに失敗しました:', err);
+    }
+  }, []);
 
   const controlPanelContent = (
     <div className="flex flex-col h-full p-6 space-y-4 relative">
-      {isDesktop && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-4 right-4 z-10"
-          onClick={() => setIsRightPanelOpen(false)}
-        >
-          ×
-        </Button>
-      )}
-      <h2 className="text-2xl font-semibold">コントロールパネル</h2>
       <Separator />
       <div className="flex-grow space-y-4 overflow-auto">
         {/* T-02: コントロールパネルのUI作成 */}
@@ -123,7 +142,14 @@ export default function TitleGeneratorPage() {
           </CardContent>
         </Card>
         <Button size="lg" className="w-full" onClick={handleGenerateClick} disabled={isLoading}>
-          {isLoading ? "生成中..." : "生成する"}
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              生成中...
+            </>
+          ) : (
+            '生成する'
+          )}
         </Button>
       </div>
     </div>
@@ -190,13 +216,31 @@ export default function TitleGeneratorPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {aiTitles.map((title, index) => (
-                  <p
-                    key={index}
-                    className="cursor-pointer hover:text-primary"
-                    onClick={() => handleTitleSelect(title)}
-                  >
-                    ・{title}
-                  </p>
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-md hover:bg-accent/50 transition-colors">
+                    <span className="flex-1 text-sm">{title}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTitleSelect(title)}
+                        aria-label={`タイトル案${index + 1}を選択`}
+                      >
+                        選択
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopy(title, `title-${index}`)}
+                        aria-label={`タイトル案${index + 1}をコピー`}
+                      >
+                        {copiedItem === `title-${index}` ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 ))}
               </CardContent>
             </Card>
@@ -223,34 +267,38 @@ export default function TitleGeneratorPage() {
           </main>
 
           {/* サイドバーが閉じている場合の開くボタン */}
-          <SidebarToggle 
-            onOpen={() => setIsRightPanelOpen(true)}
-            isDesktop={isDesktop}
-          />
+          {!isRightPanelOpen && (
+            <SidebarToggle
+              onOpen={() => setIsRightPanelOpen(true)}
+              isDesktop={isDesktop}
+            />
+          )}
 
           {/* サイドバー */}
           <Sidebar
             isOpen={isRightPanelOpen}
             onClose={() => setIsRightPanelOpen(false)}
-            title="コントロールパネル"
+            title=""
             isDesktop={isDesktop}
           >
             {controlPanelContent}
           </Sidebar>
         </>
       ) : (
-        <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="settings">設定</TabsTrigger>
-            <TabsTrigger value="results">結果</TabsTrigger>
-          </TabsList>
-          <TabsContent value="settings" className="flex-grow overflow-auto">
-            {controlPanelContent}
-          </TabsContent>
-          <TabsContent value="results" className="flex-grow overflow-auto">
-            {resultsDisplayContent}
-          </TabsContent>
-        </Tabs>
+        <div className="border-b bg-background p-4">
+          <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="settings">設定</TabsTrigger>
+              <TabsTrigger value="results">結果</TabsTrigger>
+            </TabsList>
+            <TabsContent value="settings" className="flex-grow overflow-auto">
+              {controlPanelContent}
+            </TabsContent>
+            <TabsContent value="results" className="flex-grow overflow-auto">
+              {resultsDisplayContent}
+            </TabsContent>
+          </Tabs>
+        </div>
       )}
     </div>
   );

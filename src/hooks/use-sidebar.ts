@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMediaQuery } from './use-media-query';
 
 interface UseSidebarOptions {
@@ -21,16 +21,16 @@ export const useSidebar = (options: UseSidebarOptions = {}) => {
     }
   }, [isDesktop, desktopDefaultOpen]);
 
-  const open = () => setIsOpen(true);
-  const close = () => setIsOpen(false);
-  const toggle = () => setIsOpen(prev => !prev);
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
+  const toggle = useCallback(() => setIsOpen(prev => !prev), []);
 
-  return {
+  return useMemo(() => ({
     isOpen,
     setIsOpen,
     isDesktop,
     open,
     close,
     toggle,
-  };
+  }), [isOpen, isDesktop, open, close, toggle]);
 };

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2, Copy, Check, Heart, Download as DownloadIcon } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -56,6 +58,8 @@ export default function VirtualBackgroundGeneratorPage() {
   const [imageCount, setImageCount] = useState("1");
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [favoriteImages, setFavoriteImages] = useState<string[]>([]);
   
   // 検索関連の状態
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -107,7 +111,7 @@ export default function VirtualBackgroundGeneratorPage() {
     { value: "8", label: "8枚" },
   ];
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     const promptError = validatePrompt(prompt);
     if (promptError) {
       console.error('バリデーションエラー:', promptError);
@@ -139,7 +143,25 @@ export default function VirtualBackgroundGeneratorPage() {
       }
     }, "背景生成中にエラーが発生しました");
     setIsLoading(false);
-  };
+  }, [prompt, imageCount, handleAsyncError, isDesktop]);
+
+  const handleCopyPrompt = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    } catch (err) {
+      console.error('コピーに失敗しました:', err);
+    }
+  }, [prompt]);
+
+  const handleToggleFavorite = useCallback((imageUrl: string) => {
+    setFavoriteImages(prev => 
+      prev.includes(imageUrl) 
+        ? prev.filter(url => url !== imageUrl)
+        : [...prev, imageUrl]
+    );
+  }, []);
 
   const handleDownload = async (imageUrl: string) => {
     try {
@@ -165,13 +187,13 @@ export default function VirtualBackgroundGeneratorPage() {
     } catch (error) {
       console.error('ダウンロードエラー:', error);
       // フォールバック: 元の方法でダウンロード
-      const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = `virtual-background-${Date.now()}.jpg`;
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `virtual-background-${Date.now()}.jpg`;
       link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     }
   };
 
@@ -261,13 +283,37 @@ export default function VirtualBackgroundGeneratorPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="prompt">テキストプロンプト</Label>
-              <Textarea
-                id="prompt"
-                placeholder="サイバーパンク都市の夜景、ネオンライトが輝く未来都市..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[100px]"
-              />
+              <div className="space-y-2">
+                <Textarea
+                  id="prompt"
+                  placeholder="サイバーパンク都市の夜景、ネオンライトが輝く未来都市..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                {prompt && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyPrompt}
+                      aria-label="プロンプトをコピー"
+                    >
+                      {copiedPrompt ? (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          コピー済み
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-1" />
+                          コピー
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -377,7 +423,7 @@ export default function VirtualBackgroundGeneratorPage() {
                   {isSearching ? (
                     <Sparkles className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Search className="h-4 w-4" />
+                  <Search className="h-4 w-4" />
                   )}
                 </Button>
               </div>
@@ -516,7 +562,7 @@ export default function VirtualBackgroundGeneratorPage() {
                     ))
                 ) : (
                   <div className="col-span-2 text-center text-muted-foreground py-8">
-                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>検索キーワードを入力して検索してください</p>
                   </div>
                 )}
@@ -597,9 +643,9 @@ export default function VirtualBackgroundGeneratorPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>生成履歴がここに表示されます</p>
+          <div className="text-center text-muted-foreground py-8">
+            <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>生成履歴がここに表示されます</p>
               </div>
             )}
           </div>
@@ -905,6 +951,38 @@ export default function VirtualBackgroundGeneratorPage() {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFavorite(imageUrl);
+                        }}
+                        className="h-8 w-8 p-0"
+                        aria-label={favoriteImages.includes(imageUrl) ? "お気に入りから削除" : "お気に入りに追加"}
+                      >
+                        <Heart 
+                          className={`h-4 w-4 ${
+                            favoriteImages.includes(imageUrl) 
+                              ? 'fill-red-500 text-red-500' 
+                              : 'text-gray-600'
+                          }`} 
+                        />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(imageUrl);
+                        }}
+                        className="h-8 w-8 p-0"
+                        aria-label="画像をダウンロード"
+                      >
+                        <DownloadIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -913,17 +991,32 @@ export default function VirtualBackgroundGeneratorPage() {
         </div>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <div className="text-center text-muted-foreground px-4">
-            <ImageIcon className="h-12 w-12 lg:h-16 lg:w-16 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg lg:text-xl font-semibold mb-2">バーチャル背景を生成</h3>
-            <p className="max-w-md text-sm lg:text-base">
-              {isDesktop ? (
-                <>左側のコントロールパネルでプロンプトを入力し、「背景を生成」ボタンをクリックしてAIが背景画像を生成します。</>
-              ) : (
-                <>「生成」タブでプロンプトを入力し、「背景を生成」ボタンをクリックしてAIが背景画像を生成します。</>
-              )}
-            </p>
-          </div>
+          {isLoading ? (
+            <div className="text-center text-muted-foreground px-4">
+              <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+                <Loader2 className="w-16 h-16 text-gray-400 mb-4 animate-spin" aria-hidden="true" />
+                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">バーチャル背景を生成中...</h3>
+                <p className="text-gray-500 mt-2">AIがあなたにぴったりの背景画像を生成しています。しばらくお待ちください。</p>
+              </div>
+              {/* ローディング中のスケルトン */}
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4" role="status" aria-label="バーチャル背景生成中">
+                <Skeleton className="aspect-video w-full" />
+                <Skeleton className="aspect-video w-full" />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground px-4">
+              <ImageIcon className="h-12 w-12 lg:h-16 lg:w-16 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg lg:text-xl font-semibold mb-2">バーチャル背景を生成</h3>
+              <p className="max-w-md text-sm lg:text-base">
+                {isDesktop ? (
+                  <>左側のコントロールパネルでプロンプトを入力し、「背景を生成」ボタンをクリックしてAIが背景画像を生成します。</>
+                ) : (
+                  <>「生成」タブでプロンプトを入力し、「背景を生成」ボタンをクリックしてAIが背景画像を生成します。</>
+                )}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -934,40 +1027,54 @@ export default function VirtualBackgroundGeneratorPage() {
       {isDesktop ? (
         <>
           <main className="flex-grow p-4 w-full lg:w-auto">
-            {previewContent}
+                {previewContent}
           </main>
           {!isRightPanelOpen && (
             <SidebarToggle
               onOpen={() => setIsRightPanelOpen(true)}
               isDesktop={isDesktop}
+              tabs={[
+                { id: "generate", label: "生成", icon: <Sparkles className="h-4 w-4" /> },
+                { id: "search", label: "検索", icon: <Search className="h-4 w-4" /> },
+                { id: "history", label: "履歴", icon: <History className="h-4 w-4" /> }
+              ]}
+              onTabClick={(tabId) => {
+                setActiveTab(tabId);
+              }}
             />
           )}
-          <Sidebar
-            isOpen={isRightPanelOpen}
-            onClose={() => setIsRightPanelOpen(false)}
-            title="コントロールパネル"
-            isDesktop={isDesktop}
-          >
+              <Sidebar
+                isOpen={isRightPanelOpen}
+                onClose={() => setIsRightPanelOpen(false)}
+            title=""
+                isDesktop={isDesktop}
+              >
             {desktopControlPanelContent}
-          </Sidebar>
+              </Sidebar>
         </>
       ) : (
-        <Tabs defaultValue="generate" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="generate">生成</TabsTrigger>
-            <TabsTrigger value="search">検索</TabsTrigger>
-            <TabsTrigger value="preview">プレビュー</TabsTrigger>
-          </TabsList>
-          <TabsContent value="generate" className="flex-grow overflow-auto">
-            {mobileGenerateContent}
-          </TabsContent>
-          <TabsContent value="search" className="flex-grow overflow-auto">
-            {mobileSearchContent}
-          </TabsContent>
-          <TabsContent value="preview" className="flex-grow overflow-auto">
+        <div className="w-full h-full flex flex-col">
+          {/* プレビューエリア */}
+          <div className="flex-grow p-4">
             {previewContent}
-          </TabsContent>
-        </Tabs>
+          </div>
+          
+          {/* 生成・検索の切り替えボタン */}
+          <div className="border-t p-4">
+            <Tabs defaultValue="generate" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="generate">生成</TabsTrigger>
+                <TabsTrigger value="search">検索</TabsTrigger>
+              </TabsList>
+              <TabsContent value="generate" className="mt-4">
+                {mobileGenerateContent}
+              </TabsContent>
+              <TabsContent value="search" className="mt-4">
+                {mobileSearchContent}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       )}
     </div>
   );

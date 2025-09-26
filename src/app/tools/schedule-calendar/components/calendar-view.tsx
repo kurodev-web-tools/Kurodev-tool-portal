@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -11,6 +13,7 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { DayProps } from 'react-day-picker';
 import { ScheduleItem } from '@/types/schedule';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { SnsPostTab } from './sns-post-tab';
 
 type ViewMode = 'month' | 'week' | 'day';
 
@@ -146,11 +149,29 @@ export function CalendarView() {
     <TooltipProvider>
       <div className="flex flex-col h-full">
         <div className="flex justify-end p-2 space-x-2 pr-14 lg:pr-0">
-          <Button variant={viewMode === 'month' ? 'default' : 'outline'} onClick={() => setViewMode('month')}>月</Button>
-          <Button variant={viewMode === 'week' ? 'default' : 'outline'} onClick={() => setViewMode('week')}>週</Button>
-          <Button variant={viewMode === 'day' ? 'default' : 'outline'} onClick={() => setViewMode('day')}>日</Button>
+          <Button 
+            variant={viewMode === 'month' ? 'default' : 'outline'} 
+            onClick={() => setViewMode('month')}
+            size={isDesktop ? "default" : "sm"}
+          >
+            月
+          </Button>
+          <Button 
+            variant={viewMode === 'week' ? 'default' : 'outline'} 
+            onClick={() => setViewMode('week')}
+            size={isDesktop ? "default" : "sm"}
+          >
+            週
+          </Button>
+          <Button 
+            variant={viewMode === 'day' ? 'default' : 'outline'} 
+            onClick={() => setViewMode('day')}
+            size={isDesktop ? "default" : "sm"}
+          >
+            日
+          </Button>
         </div>
-        <div className="flex-grow p-4 rounded-md">
+        <div className={`flex-grow rounded-md ${isDesktop ? 'p-4' : 'p-2'}`}>
           {viewMode === 'month' && (
             <Calendar
               numberOfMonths={1}
@@ -158,18 +179,30 @@ export function CalendarView() {
               selected={selectedDate}
               components={{ Day: DayComponent }}
               locale={ja}
-              className="rounded-md border w-full"
+              className={`rounded-md border w-full ${isDesktop ? '' : 'text-sm'}`}
             />
           )}
           {viewMode === 'week' && (
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <Button variant="outline" onClick={goToPreviousWeek}>←</Button>
-                <h3 className="font-bold">
+              <div className={`flex items-center justify-between mb-4 ${isDesktop ? '' : 'px-2'}`}>
+                <Button 
+                  variant="outline" 
+                  onClick={goToPreviousWeek}
+                  size={isDesktop ? "default" : "sm"}
+                >
+                  ←
+                </Button>
+                <h3 className={`font-bold ${isDesktop ? 'text-lg' : 'text-base'}`}>
                   {selectedDate ? format(startOfWeek(selectedDate, { weekStartsOn: 0 }), "M月", { locale: ja }) : ''}
                   第{selectedDate ? Math.ceil(Number(format(selectedDate, "d", { locale: ja })) / 7) : ''}週
                 </h3>
-                <Button variant="outline" onClick={goToNextWeek}>→</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={goToNextWeek}
+                  size={isDesktop ? "default" : "sm"}
+                >
+                  →
+                </Button>
               </div>
               <div className="flex flex-col gap-2">
                 {weekDays.map((day) => {
@@ -178,15 +211,17 @@ export function CalendarView() {
                     <div
                       key={day.toISOString()}
                       className={cn(
-                        "border p-2 rounded-md h-[7rem]",
+                        `border rounded-md ${isDesktop ? 'p-2 h-[7rem]' : 'p-1 h-[5rem]'}`,
                         isSameDay(day, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
                       )}
                       onClick={() => isDesktop ? handleDesktopDayClick(day) : handleDaySelect(day)}
                     >
-                      <div className="flex items-baseline mb-2">
-                        <h3 className="font-bold mr-2">{format(day, "M/d (E)", { locale: ja })}</h3>
+                      <div className={`flex items-baseline ${isDesktop ? 'mb-2' : 'mb-1'}`}>
+                        <h3 className={`font-bold mr-2 ${isDesktop ? 'text-sm' : 'text-xs'}`}>
+                          {format(day, "M/d (E)", { locale: ja })}
+                        </h3>
                       </div>
-                      <div className="space-y-1 overflow-y-auto h-[calc(100%-2rem)]">
+                      <div className={`space-y-1 overflow-y-auto ${isDesktop ? 'h-[calc(100%-2rem)]' : 'h-[calc(100%-1.5rem)]'}`}>
                         {daySchedules.length > 0 ? (
                           daySchedules.map((schedule) => (
                             <Tooltip key={schedule.id} delayDuration={200}>
@@ -211,31 +246,104 @@ export function CalendarView() {
             </div>
           )}
           {viewMode === 'day' && (
-            <div>
-              <h2>日表示カレンダー</h2>
+            <div className={isDesktop ? '' : 'px-2'}>
+              <h2 className={`${isDesktop ? 'text-xl' : 'text-lg'} font-bold mb-4`}>日表示カレンダー</h2>
               {selectedDate && (
-                <div className="mt-4">
-                  <h3>{format(selectedDate, "yyyy年MM月dd日", { locale: ja })} のスケジュール</h3>
+                <div className={`${isDesktop ? 'mt-4' : 'mt-2'}`}>
+                  <h3 className={`${isDesktop ? 'text-lg' : 'text-base'} font-semibold mb-3`}>
+                    {format(selectedDate, "yyyy年MM月dd日", { locale: ja })} のスケジュール
+                  </h3>
                   {schedules.filter(s => s.date === format(selectedDate, "yyyy-MM-dd")).length > 0 ? (
-                    <ul>
+                    <ul className="space-y-2">
                       {schedules.filter(s => s.date === format(selectedDate, "yyyy-MM-dd")).map((schedule) => (
-                        <li key={schedule.id} className="mb-2 p-2 border rounded-md">
-                          <p><strong>タイトル:</strong> {schedule.title}</p>
-                          <p><strong>時間:</strong> {schedule.time}</p>
-                          <p><strong>カテゴリ:</strong> {schedule.category}</p>
-                          <p><strong>プラットフォーム:</strong> {schedule.platform}</p>
-                          <p><strong>備考:</strong> {schedule.notes}</p>
+                        <li key={schedule.id} className={`${isDesktop ? 'p-3' : 'p-2'} border rounded-md bg-card`}>
+                          <p className={`${isDesktop ? 'text-sm' : 'text-xs'} font-medium`}><strong>タイトル:</strong> {schedule.title}</p>
+                          <p className={`${isDesktop ? 'text-sm' : 'text-xs'}`}><strong>時間:</strong> {schedule.time}</p>
+                          <p className={`${isDesktop ? 'text-sm' : 'text-xs'}`}><strong>カテゴリ:</strong> {schedule.category}</p>
+                          <p className={`${isDesktop ? 'text-sm' : 'text-xs'}`}><strong>プラットフォーム:</strong> {schedule.platform}</p>
+                          <p className={`${isDesktop ? 'text-sm' : 'text-xs'}`}><strong>備考:</strong> {schedule.notes}</p>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p>この日のスケジュールはありません。</p>
+                    <p className={`${isDesktop ? 'text-base' : 'text-sm'} text-muted-foreground`}>この日のスケジュールはありません。</p>
                   )}
                 </div>
               )}
             </div>
           )}
         </div>
+
+        {/* モバイル表示用の追加機能 */}
+        {!isDesktop && (
+          <div className="mt-6">
+            <div className="bg-card border rounded-lg p-4">
+              <Tabs defaultValue="sns" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="sns">SNS投稿</TabsTrigger>
+                  <TabsTrigger value="schedule">予定一覧</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="sns" className="mt-4">
+                  <SnsPostTab />
+                </TabsContent>
+                
+                <TabsContent value="schedule" className="mt-4 space-y-4">
+                  {/* 選択日の予定セクション */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">選択日の予定</h3>
+                    {(() => {
+                      const selectedDaySchedules = selectedDate 
+                        ? schedules.filter(s => isSameDay(parseISO(s.date), selectedDate))
+                        : [];
+                      return selectedDaySchedules.length > 0 ? (
+                        <div className="space-y-2">
+                          {selectedDaySchedules.map((schedule) => (
+                            <div key={schedule.id} className="flex items-center justify-between p-2 bg-secondary rounded">
+                              <div>
+                                <p className="font-medium text-sm">{schedule.title || '(タイトルなし)'}</p>
+                                <p className="text-xs text-muted-foreground">{schedule.time}</p>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                {schedule.category}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {selectedDate ? '選択日の予定はありません' : '日付を選択してください'}
+                        </p>
+                      );
+                    })()}
+                  </div>
+
+                  {/* 予定一覧セクション */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">予定一覧</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {schedules.length > 0 ? (
+                        schedules.slice(0, 10).map((schedule) => (
+                          <div key={schedule.id} className="flex items-center justify-between p-2 bg-secondary rounded">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{schedule.title || '(タイトルなし)'}</p>
+                              <p className="text-xs text-muted-foreground">{format(parseISO(schedule.date), "M/d HH:mm")}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs ml-2">
+                              {schedule.category}
+                            </Badge>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">予定はありません</p>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );
