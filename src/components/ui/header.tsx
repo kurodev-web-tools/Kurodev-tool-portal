@@ -115,12 +115,28 @@ export function Header() {
   const { user, logout } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | undefined>(undefined);
 
-  // GitHub Pages用のbasePathを直接判定
-  const isGitHubPages = pathname.startsWith('/Kurodev-tool-portal');
-  const basePath = isGitHubPages ? '/Kurodev-tool-portal' : '';
+  // GitHub Pages用のbasePathを判定（より確実な方法）
+  const getBasePath = () => {
+    if (typeof window !== 'undefined') {
+      const fullPath = window.location.pathname;
+      if (fullPath.startsWith('/Kurodev-tool-portal')) {
+        return '/Kurodev-tool-portal';
+      }
+    }
+    return process.env.NEXT_PUBLIC_BASE_PATH || '';
+  };
+  
+  const basePath = getBasePath();
+  const isGitHubPages = basePath === '/Kurodev-tool-portal';
 
   // デバッグ用ログ
-  console.log('Header Debug:', { pathname, isGitHubPages, basePath });
+  console.log('Header Debug:', { 
+    pathname, 
+    isGitHubPages, 
+    basePath, 
+    envBasePath: process.env.NEXT_PUBLIC_BASE_PATH,
+    windowPath: typeof window !== 'undefined' ? window.location.pathname : 'undefined'
+  });
 
   // activeTab の初期値を設定するロジック
   const initialActiveTab = () => {
