@@ -205,15 +205,33 @@ export function Header() {
   };
 
   // 現在のツールを特定
-  const currentTool = tools.find(tool => 
-    basePath ? pathname === `${basePath}${tool.href}` : pathname === tool.href
-  );
+  const currentTool = tools.find(tool => {
+    if (basePath) {
+      // GitHub Pages用: pathname + basePath で比較
+      return pathname === `${basePath}${tool.href}` || pathname === `${basePath}${tool.href}/`;
+    } else {
+      // ローカル環境用: pathname で比較
+      return pathname === tool.href || pathname === `${tool.href}/`;
+    }
+  });
+  
   const isToolPage = basePath 
     ? pathname.startsWith(`${basePath}/tools/`) && currentTool
     : pathname.startsWith('/tools/') && currentTool;
 
   // デバッグ用ログ
-  console.log('Tool Page Debug:', { currentTool, isToolPage, tools: tools.map(t => ({ id: t.id, href: t.href, fullPath: basePath ? `${basePath}${t.href}` : t.href })) });
+  console.log('Tool Page Debug:', { 
+    currentTool, 
+    isToolPage, 
+    tools: tools.map(t => ({ 
+      id: t.id, 
+      href: t.href, 
+      fullPath: basePath ? `${basePath}${t.href}` : t.href,
+      matches: basePath ? 
+        (pathname === `${basePath}${t.href}` || pathname === `${basePath}${t.href}/`) :
+        (pathname === t.href || pathname === `${t.href}/`)
+    }))
+  });
 
   // タブを表示すべきかどうかを判定するヘルパー関数
   const shouldShowTabs = () => {
