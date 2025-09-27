@@ -219,18 +219,28 @@ export function Header() {
     ? pathname.startsWith(`${basePath}/tools/`) && currentTool
     : pathname.startsWith('/tools/') && currentTool;
 
-  // デバッグ用ログ
+  // デバッグ用ログ（詳細版）
   console.log('Tool Page Debug:', { 
     currentTool, 
     isToolPage, 
-    tools: tools.map(t => ({ 
-      id: t.id, 
-      href: t.href, 
-      fullPath: basePath ? `${basePath}${t.href}` : t.href,
-      matches: basePath ? 
-        (pathname === `${basePath}${t.href}` || pathname === `${basePath}${t.href}/`) :
-        (pathname === t.href || pathname === `${t.href}/`)
-    }))
+    pathname,
+    basePath,
+    tools: tools.map(t => {
+      const fullPath = basePath ? `${basePath}${t.href}` : t.href;
+      const fullPathWithSlash = basePath ? `${basePath}${t.href}/` : `${t.href}/`;
+      const exactMatch = pathname === fullPath;
+      const slashMatch = pathname === fullPathWithSlash;
+      
+      return { 
+        id: t.id, 
+        href: t.href, 
+        fullPath,
+        fullPathWithSlash,
+        exactMatch,
+        slashMatch,
+        willMatch: exactMatch || slashMatch
+      };
+    })
   });
 
   // タブを表示すべきかどうかを判定するヘルパー関数
