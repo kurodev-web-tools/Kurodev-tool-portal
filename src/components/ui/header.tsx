@@ -243,6 +243,23 @@ export function Header() {
     })
   });
 
+  // schedule-calendarツールの詳細デバッグ
+  const scheduleTool = tools.find(t => t.id === 'schedule-calendar');
+  if (scheduleTool) {
+    const fullPath = basePath ? `${basePath}${scheduleTool.href}` : scheduleTool.href;
+    const fullPathWithSlash = basePath ? `${basePath}${scheduleTool.href}/` : `${scheduleTool.href}/`;
+    console.log('Schedule Calendar Debug:', {
+      pathname,
+      basePath,
+      toolHref: scheduleTool.href,
+      fullPath,
+      fullPathWithSlash,
+      exactMatch: pathname === fullPath,
+      slashMatch: pathname === fullPathWithSlash,
+      shouldMatch: pathname === fullPath || pathname === fullPathWithSlash
+    });
+  }
+
   // タブを表示すべきかどうかを判定するヘルパー関数
   const shouldShowTabs = () => {
     if (basePath) {
