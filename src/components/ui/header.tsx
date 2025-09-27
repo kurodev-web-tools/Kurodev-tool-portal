@@ -206,18 +206,11 @@ export function Header() {
 
   // 現在のツールを特定
   const currentTool = tools.find(tool => {
-    if (basePath) {
-      // GitHub Pages用: pathname + basePath で比較
-      return pathname === `${basePath}${tool.href}` || pathname === `${basePath}${tool.href}/`;
-    } else {
-      // ローカル環境用: pathname で比較
-      return pathname === tool.href || pathname === `${tool.href}/`;
-    }
+    // usePathname()は既にbasePathを除いたパスを返すため、直接比較
+    return pathname === tool.href || pathname === `${tool.href}/`;
   });
   
-  const isToolPage = basePath 
-    ? pathname.startsWith(`${basePath}/tools/`) && currentTool
-    : pathname.startsWith('/tools/') && currentTool;
+  const isToolPage = pathname.startsWith('/tools/') && currentTool;
 
   // デバッグ用ログ（詳細版）
   console.log('Tool Page Debug:', { 
@@ -246,17 +239,14 @@ export function Header() {
   // schedule-calendarツールの詳細デバッグ
   const scheduleTool = tools.find(t => t.id === 'schedule-calendar');
   if (scheduleTool) {
-    const fullPath = basePath ? `${basePath}${scheduleTool.href}` : scheduleTool.href;
-    const fullPathWithSlash = basePath ? `${basePath}${scheduleTool.href}/` : `${scheduleTool.href}/`;
-    console.log('Schedule Calendar Debug:', {
+    console.log('Schedule Calendar Debug (Fixed):', {
       pathname,
       basePath,
       toolHref: scheduleTool.href,
-      fullPath,
-      fullPathWithSlash,
-      exactMatch: pathname === fullPath,
-      slashMatch: pathname === fullPathWithSlash,
-      shouldMatch: pathname === fullPath || pathname === fullPathWithSlash
+      exactMatch: pathname === scheduleTool.href,
+      slashMatch: pathname === `${scheduleTool.href}/`,
+      shouldMatch: pathname === scheduleTool.href || pathname === `${scheduleTool.href}/`,
+      currentToolFound: !!currentTool
     });
   }
 
