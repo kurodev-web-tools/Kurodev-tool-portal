@@ -198,9 +198,9 @@ export function Header() {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     if (value === "suites") {
-      router.push(basePath ? `${basePath}/` : "/");
+      router.push("/");
     } else if (value === "tools") {
-      router.push(basePath ? `${basePath}/tools` : "/tools");
+      router.push("/tools");
     }
   };
 
@@ -266,7 +266,7 @@ export function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* 左側: ロゴと現在のツール表示 */}
         <div className="flex items-center space-x-4">
-          <Link href={basePath ? `${basePath}/` : "/"} className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <Wrench className="h-6 w-6" />
             <span className="text-2xl font-bold">Kurodev Tools</span>
           </Link>
@@ -293,10 +293,10 @@ export function Header() {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList>
                 <TabsTrigger value="suites" asChild>
-                  <Link href={basePath ? `${basePath}/` : "/"}>スイート</Link>
+                  <Link href="/">スイート</Link>
                 </TabsTrigger>
                 <TabsTrigger value="tools" asChild>
-                  <Link href={basePath ? `${basePath}/tools` : "/tools"}>ツール</Link>
+                  <Link href="/tools">ツール</Link>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -317,7 +317,7 @@ export function Header() {
                 {tools.map((tool) => (
                   <DropdownMenuItem key={tool.id} asChild>
                     <Link 
-                      href={basePath ? `${basePath}${tool.href}` : tool.href}
+                      href={tool.href}
                       className="flex items-center space-x-3 p-3 w-full"
                     >
                       <tool.icon className="h-5 w-5 flex-shrink-0" />
@@ -357,16 +357,16 @@ export function Header() {
                 <DropdownMenuContent className="w-56">
                   <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href={basePath ? `${basePath}/settings/profile` : "/settings/profile"}>プロフィール編集</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href={basePath ? `${basePath}/settings/account` : "/settings/account"}>アカウント設定</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href={basePath ? `${basePath}/settings/notifications` : "/settings/notifications"}>通知設定</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/settings/profile">プロフィール編集</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/settings/account">アカウント設定</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/settings/notifications">通知設定</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel>テーマ</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => setTheme("light")}>ライト</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTheme("dark")}>ダーク</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTheme("system")}>システム</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href={basePath ? `${basePath}/settings/ai` : "/settings/ai"}>AI設定</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/settings/ai">AI設定</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>ログアウト</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -374,7 +374,7 @@ export function Header() {
             </>
           ) : (
             <Button asChild>
-              <Link href={basePath ? `${basePath}/login` : "/login"}>ログイン</Link>
+              <Link href="/login">ログイン</Link>
             </Button>
           )}
         </div>
