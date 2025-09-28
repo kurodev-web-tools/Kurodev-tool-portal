@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+
+Sitemap: https://kurodev-web-tools.github.io/Kurodev-tool-portal/sitemap.xml
+Host: https://kurodev-web-tools.github.io

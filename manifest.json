@@ -1,0 +1,68 @@
+{
+  "name": "VTuber Tools Portal",
+  "short_name": "VTuber Tools",
+  "description": "VTuber・配信者・クリエイター向けの配信ワークフロー連鎖ツールポータル",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ja",
+  "dir": "ltr",
+  "categories": ["productivity", "multimedia", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "スケジュールカレンダー",
+      "short_name": "カレンダー",
+      "description": "配信スケジュールを管理",
+      "url": "/tools/schedule-calendar",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "素材制作",
+      "short_name": "素材制作",
+      "description": "配信素材を制作",
+      "url": "/tools/asset-creator",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
