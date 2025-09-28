@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
 
-import { useTemplate, ShapeType } from './contexts/TemplateContext';
+import { useTemplate, ShapeType, TemplateProvider } from './contexts/TemplateContext';
 import TemplateSelector from './components/TemplateSelector';
 import ThumbnailText from './components/ThumbnailText';
 import ThumbnailImage from './components/ThumbnailImage';
@@ -33,7 +33,7 @@ import { LayerPanel } from './components/LayerPanel';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-export default function ThumbnailGeneratorPage() {
+function AssetCreatorPage() {
   // UI状態管理
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -552,5 +552,14 @@ export default function ThumbnailGeneratorPage() {
         </Sidebar>
       </div>
     </div>
+  );
+}
+
+// TemplateProviderでラップしたコンポーネント
+export default function AssetCreatorPageWithProvider() {
+  return (
+    <TemplateProvider>
+      <AssetCreatorPage />
+    </TemplateProvider>
   );
 }

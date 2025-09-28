@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import Image from 'next/image';
+import { ResponsiveImage } from '@/components/ui/optimized-image';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -199,10 +199,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
                               aspectRatio === '9:16' ? 'aspect-[9/16]' :
                               'aspect-video'
                             )}>
-                              <Image
+                              <ResponsiveImage
                                 src={template.initialImageSrc}
                                 alt={template.name}
-                                fill
+                                aspectRatio="16:9"
+                                breakpoints={{
+                                  sm: 200,
+                                  md: 250,
+                                  lg: 300
+                                }}
                                 style={{ objectFit: 'cover' }}
                                 className="transition-transform duration-300 group-hover:scale-105"
                               />

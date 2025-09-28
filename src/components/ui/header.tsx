@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,11 +14,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "./button";
 import { Badge } from "@/components/ui/badge";
 import { MdNotifications } from "react-icons/md";
+import { SearchBar } from "./search-bar";
 import { 
   Calendar, 
   Image, 
@@ -48,7 +49,7 @@ const tools: Tool[] = [
     href: '/tools/schedule-calendar',
     icon: Calendar,
     status: 'beta',
-    description: '配信スケジュールを管理するツール'
+    description: '配信・ライブのスケジュールを管理するツール'
   },
   {
     id: 'thumbnail-generator',
@@ -56,7 +57,7 @@ const tools: Tool[] = [
     href: '/tools/thumbnail-generator',
     icon: Image,
     status: 'beta',
-    description: '動画のサムネイルをAIが自動生成'
+    description: '動画・コンテンツのサムネイルをAIが自動生成'
   },
   {
     id: 'script-generator',
@@ -64,7 +65,7 @@ const tools: Tool[] = [
     href: '/tools/script-generator',
     icon: FileText,
     status: 'beta',
-    description: '配信の企画や台本作成をAIがサポート'
+    description: 'コンテンツの企画や台本作成をAIがサポート'
   },
   {
     id: 'branding-generator',
@@ -80,7 +81,7 @@ const tools: Tool[] = [
     href: '/tools/title-generator',
     icon: Type,
     status: 'development',
-    description: 'AIが動画のタイトルと概要欄を自動生成'
+    description: 'AIが動画・コンテンツのタイトルと概要欄を自動生成'
   },
   {
     id: 'schedule-adjuster',
@@ -88,7 +89,7 @@ const tools: Tool[] = [
     href: '/tools/schedule-adjuster',
     icon: Clock,
     status: 'development',
-    description: 'コラボ相手との配信スケジュールを自動調整'
+    description: 'コラボ相手との配信・ライブスケジュールを自動調整'
   },
   {
     id: 'asset-creator',
@@ -104,14 +105,13 @@ const tools: Tool[] = [
     href: '/tools/virtual-bg-generator',
     icon: Sparkles,
     status: 'development',
-    description: 'AIが配信用のバーチャル背景を自動生成'
+    description: 'AIが配信・ライブ用のバーチャル背景を自動生成'
   }
 ];
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { setTheme } = useTheme();
   const { user, logout } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | undefined>(undefined);
 
@@ -140,6 +140,8 @@ export function Header() {
 
   // activeTab の初期値を設定するロジック
   const initialActiveTab = () => {
+    if (!pathname) return "suites";
+    
     if (basePath) {
       // GitHub Pages用のパス判定
       if (pathname === basePath || pathname === `${basePath}/`) {
@@ -210,7 +212,7 @@ export function Header() {
     return pathname === tool.href || pathname === `${tool.href}/`;
   });
   
-  const isToolPage = pathname.startsWith('/tools/') && currentTool;
+  const isToolPage = pathname?.startsWith('/tools/') && currentTool;
 
   // デバッグ用ログ（詳細版）
   console.log('Tool Page Debug:', { 
@@ -262,13 +264,17 @@ export function Header() {
   };
 
   return (
-    <header className="border-b">
+    <header className="border-b bg-gradient-to-r from-black to-gray-900 backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* 左側: ロゴと現在のツール表示 */}
         <div className="flex items-center space-x-4">
-          <Link href="/" className="flex items-center space-x-2">
-            <Wrench className="h-6 w-6" />
-            <span className="text-2xl font-bold">Kurodev Tools</span>
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+              <Wrench className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              Kurodev Tools
+            </span>
           </Link>
           
           {/* 現在のツール表示（ツールページの場合） */}
@@ -277,12 +283,12 @@ export function Header() {
               <span>/</span>
               <currentTool.icon className="h-4 w-4" />
               <span>{currentTool.title}</span>
-              <Badge 
-                variant={currentTool.status === 'beta' ? 'default' : 'secondary'}
-                className="text-xs"
-              >
-                {currentTool.status === 'beta' ? 'ベータ' : '開発中'}
-              </Badge>
+                          <Badge 
+                            variant={currentTool.status === 'beta' ? 'warning' : 'danger'}
+                            className="text-xs"
+                          >
+                            {currentTool.status === 'beta' ? 'ベータ' : '開発中'}
+                          </Badge>
             </div>
           )}
         </div>
@@ -291,16 +297,65 @@ export function Header() {
         {shouldShowTabs() && ( // タブを表示すべき場合にのみレンダリング
           <nav className="flex items-center space-x-4 lg:space-x-6">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList>
-                <TabsTrigger value="suites" asChild>
-                  <Link href="/">スイート</Link>
+              <TabsList className="bg-gray-900/50 backdrop-blur-sm p-1 rounded-lg shadow-lg border border-gray-700/50">
+                <TabsTrigger 
+                  value="suites" 
+                  asChild
+                  className="text-xs md:text-sm font-medium text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:text-blue-400 tracking-normal"
+                >
+                  <Link href="/" className="flex items-center gap-2 px-4 py-2">
+                    <Sparkles className="h-4 w-4" />
+                    スイート
+                  </Link>
                 </TabsTrigger>
-                <TabsTrigger value="tools" asChild>
-                  <Link href="/tools">ツール</Link>
+                <TabsTrigger 
+                  value="tools" 
+                  asChild
+                  className="text-xs md:text-sm font-medium text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:text-blue-400 tracking-normal"
+                >
+                  <Link href="/tools" className="flex items-center gap-2 px-4 py-2">
+                    <Wrench className="h-4 w-4" />
+                    ツール
+                  </Link>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           </nav>
+        )}
+
+        {/* 検索バー（ポータルページのみ） */}
+        {shouldShowTabs() && (
+          <div className="hidden md:block">
+            <SearchBar 
+              items={tools.map(tool => ({
+                id: tool.id,
+                title: tool.title,
+                description: tool.description,
+                status: tool.status,
+                href: tool.href,
+                iconName: tool.id === 'schedule-calendar' ? 'calendar' :
+                         tool.id === 'script-generator' ? 'brain' :
+                         tool.id === 'thumbnail-generator' ? 'image' :
+                         tool.id === 'branding-generator' ? 'sparkles' :
+                         tool.id === 'title-generator' ? 'trending-up' : 'wrench',
+                color: tool.id === 'schedule-calendar' ? 'from-blue-500 to-cyan-500' :
+                       tool.id === 'script-generator' ? 'from-blue-500 to-cyan-500' :
+                       tool.id === 'thumbnail-generator' ? 'from-green-500 to-emerald-500' :
+                       tool.id === 'branding-generator' ? 'from-orange-500 to-red-500' :
+                       tool.id === 'title-generator' ? 'from-indigo-500 to-blue-500' :
+                       tool.id === 'schedule-adjuster' ? 'from-purple-500 to-pink-500' :
+                       tool.id === 'asset-creator' ? 'from-pink-500 to-rose-500' :
+                       tool.id === 'virtual-bg-generator' ? 'from-cyan-500 to-blue-500' :
+                       'from-gray-500 to-gray-600'
+              }))}
+              onItemClick={(item) => {
+                const fullPath = basePath ? `${basePath}${item.href}` : item.href;
+                router.push(fullPath);
+              }}
+              placeholder="ツールを検索..."
+              className="w-80"
+            />
+          </div>
         )}
 
         {/* 右側: ツール切替（ツールページの場合）+ 通知とプロフィール */}
@@ -309,23 +364,25 @@ export function Header() {
           {isToolPage && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="bg-gray-900 backdrop-blur-sm border-gray-700 hover:bg-gray-800 transition-all shadow-sm text-gray-300">
                   ツール切替
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuContent align="end" className="w-80 bg-gray-900/95 backdrop-blur-md border-gray-700">
                 {tools.map((tool) => (
                   <DropdownMenuItem key={tool.id} asChild>
                     <Link 
                       href={tool.href}
-                      className="flex items-center space-x-3 p-3 w-full"
+                      className="flex items-center space-x-3 p-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
-                      <tool.icon className="h-5 w-5 flex-shrink-0" />
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-sm">
+                        <tool.icon className="h-5 w-5 text-white" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
                           <span className="font-medium truncate">{tool.title}</span>
                           <Badge 
-                            variant={tool.status === 'beta' ? 'default' : 'secondary'}
+                            variant={tool.status === 'beta' ? 'warning' : 'danger'}
                             className="text-xs"
                           >
                             {tool.status === 'beta' ? 'ベータ' : '開発中'}
@@ -350,25 +407,26 @@ export function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="cursor-pointer">
-                    <AvatarImage src={avatarSrc} alt={user.name} />
+                    <OptimizedImage 
+                      src={avatarSrc || '/default-avatar.png'} 
+                      alt={user.name}
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                    />
                     <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                   <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href="/settings/profile">プロフィール編集</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href="/settings/account">アカウント設定</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href="/settings/notifications">通知設定</Link></DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>テーマ</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setTheme("light")}>ライト</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("dark")}>ダーク</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("system")}>システム</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href="/settings/ai">AI設定</Link></DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>ログアウト</DropdownMenuItem>
+                          <DropdownMenuItem asChild><Link href="/settings/profile">プロフィール編集</Link></DropdownMenuItem>
+                          <DropdownMenuItem asChild><Link href="/settings/account">アカウント設定</Link></DropdownMenuItem>
+                          <DropdownMenuItem asChild><Link href="/settings/notifications">通知設定</Link></DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild><Link href="/settings/ai">AI設定</Link></DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={logout}>ログアウト</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>

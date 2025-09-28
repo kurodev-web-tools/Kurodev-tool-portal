@@ -11,7 +11,11 @@
     "start": "next start",
     "lint": "eslint",
     "generate-templates": "tsx scripts/generateTemplates.ts",
-    "watch-templates": "tsx scripts/watchTemplates.ts"
+    "watch-templates": "tsx scripts/watchTemplates.ts",
+    "convert-webp": "tsx scripts/convert-to-webp.ts",
+    "watch-webp": "tsx scripts/watch-and-convert.ts",
+    "auto-convert": "tsx scripts/auto-convert-simple.ts",
+    "dev:full": "concurrently \"next dev\" \"tsx scripts/watchTemplates.ts\" \"tsx scripts/watch-and-convert.ts\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -70,6 +74,7 @@
     "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
+    "sharp": "^0.34.4",
     "tailwindcss": "^4",
     "tsx": "^4.7.0",
     "typescript": "^5"

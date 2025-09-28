@@ -1,0 +1,224 @@
+/* パフォーマンス最適化されたアニメーション */
+
+/* GPU加速を活用したTransform/Opacityアニメーション */
+@layer utilities {
+  /* 基本のトランジション */
+  .transition-smooth {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .transition-fast {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .transition-slow {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ホバー効果の最適化 */
+  .hover-lift {
+    transform: translateZ(0); /* GPU加速を強制 */
+    will-change: transform, box-shadow;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px) translateZ(0);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .hover-scale {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05) translateZ(0);
+  }
+
+  .hover-scale-sm {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .hover-scale-sm:hover {
+    transform: scale(1.1) translateZ(0);
+  }
+
+  /* カードアニメーション */
+  .card-interactive {
+    transform: translateZ(0);
+    will-change: transform, box-shadow, background-color;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 8px 25px -8px rgba(59, 130, 246, 0.3),
+                0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ボタンアニメーション */
+  .btn-interactive {
+    transform: translateZ(0);
+    will-change: transform, background-color;
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-interactive:hover {
+    transform: translateY(-1px) translateZ(0);
+  }
+
+  .btn-interactive:active {
+    transform: translateY(0) translateZ(0);
+  }
+
+  /* フェードインアニメーション */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(10px) translateZ(0);
+    animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .fade-in-delay-1 {
+    animation-delay: 0.1s;
+  }
+
+  .fade-in-delay-2 {
+    animation-delay: 0.2s;
+  }
+
+  .fade-in-delay-3 {
+    animation-delay: 0.3s;
+  }
+
+  /* スケルトンアニメーション */
+  .skeleton-pulse {
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+  }
+
+  /* スピナーアニメーション */
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  /* プログレスバーアニメーション */
+  .progress-fill {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* スワイプアニメーション */
+  .swipe-transition {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* キーフレームアニメーション */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg) translateZ(0);
+  }
+  to {
+    transform: rotate(360deg) translateZ(0);
+  }
+}
+
+/* パフォーマンス最適化のためのwill-change管理 */
+.hover-lift,
+.hover-scale,
+.hover-scale-sm,
+.card-interactive,
+.btn-interactive {
+  /* ホバー時にのみwill-changeを適用 */
+}
+
+.hover-lift:hover,
+.hover-scale:hover,
+.hover-scale-sm:hover,
+.card-interactive:hover,
+.btn-interactive:hover {
+  will-change: transform, box-shadow, background-color;
+}
+
+/* アニメーション終了後にwill-changeをリセット */
+.hover-lift:not(:hover),
+.hover-scale:not(:hover),
+.hover-scale-sm:not(:hover),
+.card-interactive:not(:hover),
+.btn-interactive:not(:hover) {
+  will-change: auto;
+}
+
+/* モーション軽減設定の対応 */
+@media (prefers-reduced-motion: reduce) {
+  .transition-smooth,
+  .transition-fast,
+  .transition-slow,
+  .hover-lift,
+  .hover-scale,
+  .hover-scale-sm,
+  .card-interactive,
+  .btn-interactive {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .fade-in {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .skeleton-pulse {
+    animation: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+}
+
+/* 高コントラストモードでの最適化 */
+@media (prefers-contrast: high) {
+  .hover-lift:hover,
+  .card-interactive:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ダークモードでの最適化 */
+@media (prefers-color-scheme: dark) {
+  .hover-lift:hover,
+  .card-interactive:hover {
+    box-shadow: 0 8px 25px -8px rgba(59, 130, 246, 0.4),
+                0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+}
