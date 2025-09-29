@@ -142,22 +142,12 @@ export function Header() {
   const initialActiveTab = () => {
     if (!pathname) return "suites";
     
-    if (basePath) {
-      // GitHub Pages用のパス判定
-      if (pathname === basePath || pathname === `${basePath}/`) {
-        return "suites";
-      }
-      if (pathname.startsWith(`${basePath}/tools`)) {
-        return "tools";
-      }
-    } else {
-      // ローカル環境用のパス判定
-      if (pathname === "/") {
-        return "suites";
-      }
-      if (pathname.startsWith("/tools")) {
-        return "tools";
-      }
+    // pathnameは既にbasePathを除いたパスなので、環境に関係なく同じロジックを使用
+    if (pathname === "/") {
+      return "suites";
+    }
+    if (pathname.startsWith("/tools")) {
+      return "tools";
     }
     return "suites"; // デフォルト
   };
@@ -256,7 +246,8 @@ export function Header() {
   const shouldShowTabs = () => {
     if (basePath) {
       // GitHub Pages用のパス判定
-      return pathname === basePath || pathname === `${basePath}/` || pathname === `${basePath}/tools`;
+      // pathnameは既にbasePathを除いたパスなので、直接比較
+      return pathname === "/" || pathname === "/tools";
     } else {
       // ローカル環境用のパス判定
       return pathname === "/" || pathname === "/tools";
