@@ -244,14 +244,8 @@ export function Header() {
 
   // タブを表示すべきかどうかを判定するヘルパー関数
   const shouldShowTabs = () => {
-    if (basePath) {
-      // GitHub Pages用のパス判定
-      // pathnameは既にbasePathを除いたパスなので、直接比較
-      return pathname === "/" || pathname === "/tools";
-    } else {
-      // ローカル環境用のパス判定
-      return pathname === "/" || pathname === "/tools";
-    }
+    // ポータルページ（スイート・ツール一覧）または個別ツールページでタブを表示
+    return pathname === "/" || pathname === "/tools" || pathname?.startsWith("/tools/");
   };
 
   return (
