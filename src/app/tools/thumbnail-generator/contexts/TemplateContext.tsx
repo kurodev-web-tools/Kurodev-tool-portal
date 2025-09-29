@@ -24,6 +24,7 @@ export interface Layer {
   width: number;
   height: number;
   rotation: number;
+  opacity?: number;
   // Type-specific properties
   src?: string | null;
   text?: string;
@@ -187,21 +188,8 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // テンプレート変更時に既存のレイヤーをクリアし、テンプレートの初期要素をレイヤーとして追加
     const initialLayers: Layer[] = [];
-    if (selectedTemplate.initialImageSrc) {
-      initialLayers.push({
-        id: uuidv4(),
-        type: 'image',
-        name: '背景画像',
-        visible: true,
-        locked: false,
-        x: 0,
-        y: 0,
-        width: 1200,
-        height: 675,
-        rotation: 0,
-        src: selectedTemplate.initialImageSrc,
-      });
-    }
+    
+    // テキストレイヤーを最初に追加（最前面）
     if (selectedTemplate.initialText) {
       initialLayers.push({
         id: uuidv4(),
@@ -217,6 +205,40 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         text: selectedTemplate.initialText,
         color: selectedTemplate.initialTextColor,
         fontSize: selectedTemplate.initialFontSize,
+      });
+    }
+    
+    // 通常のテンプレートの背景画像（中間層）
+    if (selectedTemplate.initialImageSrc) {
+      initialLayers.push({
+        id: uuidv4(),
+        type: 'image',
+        name: '背景画像',
+        visible: true,
+        locked: false,
+        x: 0,
+        y: 0,
+        width: 1200,
+        height: 675,
+        rotation: 0,
+        src: selectedTemplate.initialImageSrc,
+      });
+    }
+    
+    // カスタムテンプレートの画像を背景として最後に追加（最下部）
+    if (selectedTemplate.templateImage) {
+      initialLayers.push({
+        id: uuidv4(),
+        type: 'image',
+        name: 'カスタム背景',
+        visible: true,
+        locked: false,
+        x: 0,
+        y: 0,
+        width: 1280,
+        height: 720,
+        rotation: 0,
+        src: selectedTemplate.templateImage,
       });
     }
     setLayers(initialLayers);

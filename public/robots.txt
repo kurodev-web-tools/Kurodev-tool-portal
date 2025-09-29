@@ -14,3 +14,4 @@ Disallow: /private/
 
 Sitemap: https://kurodev-web-tools.github.io/Kurodev-tool-portal/sitemap.xml
 Host: https://kurodev-web-tools.github.io
+

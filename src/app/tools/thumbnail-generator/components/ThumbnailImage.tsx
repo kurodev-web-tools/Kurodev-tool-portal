@@ -180,6 +180,5 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   );
 };
 
-
 export default React.memo(ThumbnailImage);
 /* eslint-enable @typescript-eslint/no-explicit-any */

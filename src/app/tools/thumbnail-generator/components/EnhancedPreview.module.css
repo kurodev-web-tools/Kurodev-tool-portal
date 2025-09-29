@@ -1,0 +1,272 @@
+/* Enhanced Preview Styles */
+
+/* テンプレート別の背景スタイル */
+.simple-enhanced {
+  background: linear-gradient(135deg, #e0f2f7 0%, #bbdefb 100%);
+}
+
+.stylish-enhanced {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  position: relative;
+}
+
+.cute-enhanced {
+  background: linear-gradient(135deg, #ffe0f2 0%, #f8bbd0 100%);
+  position: relative;
+}
+
+.cool-enhanced {
+  background: linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%);
+  position: relative;
+}
+
+/* スタイリッシュテンプレートの装飾 */
+.stylish-enhanced .abstract-shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+.stylish-enhanced .s1 {
+  width: 200px;
+  height: 200px;
+  background: #ffffff;
+  top: 50px;
+  right: 100px;
+  animation: float 6s ease-in-out infinite;
+}
+
+.stylish-enhanced .s2 {
+  width: 150px;
+  height: 150px;
+  background: #ffffff;
+  bottom: 100px;
+  left: 150px;
+  animation: float 8s ease-in-out infinite reverse;
+}
+
+/* かわいいテンプレートの装飾 */
+.cute-enhanced .dot-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle, #ff69b4 2px, transparent 2px);
+  background-size: 30px 30px;
+  opacity: 0.3;
+}
+
+.cute-enhanced .blob {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 105, 180, 0.2);
+  animation: blob 4s ease-in-out infinite;
+}
+
+.cute-enhanced .b1 {
+  width: 100px;
+  height: 100px;
+  top: 100px;
+  left: 200px;
+}
+
+.cute-enhanced .b2 {
+  width: 80px;
+  height: 80px;
+  bottom: 150px;
+  right: 250px;
+  animation-delay: 2s;
+}
+
+/* クールテンプレートの装飾 */
+.cool-enhanced .digital-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  animation: scan 3s linear infinite;
+}
+
+.cool-enhanced .light-ray-1,
+.cool-enhanced .light-ray-2 {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  height: 2px;
+  animation: ray 2s ease-in-out infinite;
+}
+
+.cool-enhanced .light-ray-1 {
+  top: 30%;
+  left: -100%;
+  width: 200%;
+  animation-delay: 0s;
+}
+
+.cool-enhanced .light-ray-2 {
+  top: 70%;
+  left: -100%;
+  width: 200%;
+  animation-delay: 1s;
+}
+
+/* アニメーション */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes blob {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(180deg);
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes ray {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* プレビュー品質向上 */
+.transform-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* エクスポート時の境界線除外 */
+.export-mode {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* ガイド表示 */
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  z-index: 10; /* カスタム背景の上に表示 */
+}
+
+.center-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10; /* カスタム背景の上に表示 */
+}
+
+.center-lines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  background: #ef4444;
+  transform: translateX(-50%);
+}
+
+.center-lines::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #ef4444;
+  transform: translateY(-50%);
+}
+
+.safe-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10; /* カスタム背景の上に表示 */
+}
+
+.safe-area::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 2px solid #eab308;
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+.safe-area::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  border: 1px solid #fbbf24;
+  border-radius: 4px;
+  opacity: 0.3;
+}
+
+/* フルスクリーンモード */
+.fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #000;
+}
+
+/* ズーム時のスムーズな変換 */
+.preview-container {
+  transition: transform 0.2s ease-in-out;
+  transform-origin: center;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .preview-container {
+    transform: scale(0.8);
+  }
+}
+
+@media (max-width: 480px) {
+  .preview-container {
+    transform: scale(0.6);
+  }
+}

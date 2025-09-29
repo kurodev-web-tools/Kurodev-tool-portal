@@ -31,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = memo(({
   return (
     <aside
       className={cn(
-        "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-background p-4 border-l z-40",
+        "fixed top-0 right-0 h-[calc(100vh-2rem)] w-4/5 max-w-sm bg-slate-900/95 backdrop-blur-sm p-4 border-l border-slate-600/30 z-40",
         "transition-transform duration-300 ease-in-out",
         isDesktop && "lg:static lg:w-96 lg:translate-x-0 lg:z-auto",
         isOpen ? 'translate-x-0' : 'translate-x-full',
@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = memo(({
           </Button>
         )}
       </div>
-      <div className="overflow-y-auto h-full">
+      <div className="overflow-y-auto h-[calc(100%-4rem)]">
         {children}
       </div>
     </aside>
@@ -96,7 +96,7 @@ export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
     if (tabs.length > 0) {
       return (
         <div className={cn(
-          "fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md",
+          "fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-slate-800/90 backdrop-blur-sm border border-slate-600/30 rounded-l-md",
           className
         )}>
           {tabs.map((tab) => (
@@ -119,7 +119,7 @@ export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
     // 従来の単一ボタン表示
     return (
       <div className={cn(
-        "fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-background border rounded-l-md",
+        "fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-slate-800/90 backdrop-blur-sm border border-slate-600/30 rounded-l-md",
         className
       )}>
         <Button variant="ghost" size="icon" onClick={handleOpen} aria-label="サイドバーを開く">

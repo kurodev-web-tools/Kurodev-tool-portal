@@ -1,0 +1,12 @@
+<!-- gaming_cool_template-2_preview.jpg -->
+<svg width="320" height="180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2p" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#bg2p)"/>
+  <text x="160" y="90" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" text-anchor="middle">スタイリッシュ</text>
+  <text x="160" y="110" font-family="Arial, sans-serif" font-size="10" fill="#cccccc" text-anchor="middle">今日の配信！</text>
+</svg>

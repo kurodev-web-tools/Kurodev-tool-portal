@@ -99,7 +99,7 @@ export function ScheduleList() {
         {/* スケジュール一覧 */}
         <div>
           <h3 className="font-semibold mb-2 text-sm">スケジュール一覧</h3>
-          <div className="space-y-2 max-h-[34rem] overflow-y-auto pr-2">
+          <div className="space-y-2 pb-6">
             {allSchedules.length > 0 ? (
               allSchedules.map(renderScheduleItem)
             ) : (

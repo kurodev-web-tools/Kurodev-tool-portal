@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
+import { Rnd, RndDragCallback, ResizableDelta, Position } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { useTemplate } from '../contexts/TemplateContext';
 import { RotateCw } from 'lucide-react';
@@ -17,7 +17,7 @@ interface ThumbnailTextProps {
   width: number;
   height: number;
   rotation: number;
-  onDragStop: (e: any, data: DraggableData) => void;
+  onDragStop: RndDragCallback;
   onResizeStop: (
     e: any,
     dir: string,
@@ -27,6 +27,12 @@ interface ThumbnailTextProps {
   ) => void;
   enableResizing: boolean;
   disableDragging: boolean;
+  onSelect?: () => void;
+  isLocked?: boolean;
+  isDraggable?: boolean;
+  onRotateStart?: () => void;
+  onRotate?: () => void;
+  onRotateStop?: () => void;
 }
 
 const ThumbnailText: React.FC<ThumbnailTextProps> = ({
@@ -45,6 +51,12 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   onResizeStop,
   enableResizing,
   disableDragging,
+  onSelect,
+  isLocked,
+  isDraggable,
+  onRotateStart,
+  onRotate,
+  onRotateStop,
 }) => {
   const { updateLayer } = useTemplate();
   const [position, setPosition] = useState({ x, y });
@@ -139,6 +151,8 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
           if (isRotating) {
             return false;
           }
+          // ドラッグ開始時にレイヤーを選択状態にする
+          onSelect?.();
         }}
         onDrag={(e, d) => {
           if (!isRotating) {

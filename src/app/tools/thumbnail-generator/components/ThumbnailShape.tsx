@@ -22,6 +22,12 @@ interface ThumbnailShapeProps {
   y: number;
   width: number;
   height: number;
+  onSelect?: () => void;
+  isLocked?: boolean;
+  isDraggable?: boolean;
+  onRotateStart?: () => void;
+  onRotate?: () => void;
+  onRotateStop?: () => void;
 }
 
 const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
@@ -42,6 +48,12 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   y,
   width,
   height,
+  onSelect,
+  isLocked,
+  isDraggable,
+  onRotateStart,
+  onRotate,
+  onRotateStop,
 }) => {
   const { updateLayer } = useTemplate();
   const [position, setPosition] = useState({ x: x || 0, y: y || 0 });
@@ -201,6 +213,8 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
           if (isRotating) {
             return false;
           }
+          // ドラッグ開始時にレイヤーを選択状態にする
+          onSelect?.();
         }}
         onDrag={(e, d) => {
           if (!isRotating) {

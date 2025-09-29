@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -21,6 +23,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
+import { Plus, Calendar, Clock, Bell } from 'lucide-react';
 
 const scheduleSchema = z.object({
   title: z.string().max(50, { message: "タイトルは50文字までです。" }).optional(),
@@ -29,6 +32,8 @@ const scheduleSchema = z.object({
   category: z.string().optional(),
   platform: z.string().optional(),
   notes: z.string().max(200, { message: "備考は200文字までです。" }).optional(),
+  duration: z.number().optional(),
+  reminders: z.array(z.string()).optional(),
 });
 
 type ScheduleFormData = z.infer<typeof scheduleSchema>;
@@ -36,6 +41,7 @@ type ScheduleFormData = z.infer<typeof scheduleSchema>;
 export function ScheduleForm() {
   const { selectedDate, setIsModalOpen, refreshSchedules, editingSchedule, setEditingSchedule } = useSchedule();
   const { settings } = useSettings();
+  const [reminders, setReminders] = useState<string[]>([]);
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleSchema),
@@ -46,8 +52,25 @@ export function ScheduleForm() {
       category: '',
       platform: '',
       notes: '',
+      duration: 60,
+      reminders: [],
     },
   });
+
+  const reminderOptions = [
+    { value: '15min', label: '15分前' },
+    { value: '30min', label: '30分前' },
+    { value: '1hour', label: '1時間前' },
+    { value: '1day', label: '1日前' },
+  ];
+
+  const toggleReminder = (value: string, checked: boolean) => {
+    if (checked) {
+      setReminders(prev => [...prev, value]);
+    } else {
+      setReminders(prev => prev.filter(r => r !== value));
+    }
+  };
 
   useEffect(() => {
     if (editingSchedule) {
@@ -67,16 +90,22 @@ export function ScheduleForm() {
 
   const onSubmit = (data: ScheduleFormData) => {
     try {
+      const scheduleData = {
+        ...data,
+        reminders: reminders,
+      };
+      
       if (editingSchedule) {
-        updateSchedule({ ...editingSchedule, ...data });
+        updateSchedule({ ...editingSchedule, ...scheduleData });
         toast.success("スケジュールを更新しました。");
       } else {
-        addSchedule(data);
+        addSchedule(scheduleData);
         toast.success("スケジュールを保存しました。");
       }
       refreshSchedules();
       setIsModalOpen(false);
-      setEditingSchedule(null); // 編集状態をリセット
+      setEditingSchedule(null);
+      setReminders([]);
     } catch (error) {
       console.error("Failed to save schedule", error);
       toast.error("処理に失敗しました。");
@@ -99,122 +128,190 @@ export function ScheduleForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* ... form fields ... */}
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>タイトル</FormLabel>
-              <FormControl>
-                <Input placeholder="配信タイトル" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* 基本情報セクション */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="h-5 w-5 text-blue-500" />
+            <h3 className="text-lg font-semibold">基本情報</h3>
+          </div>
 
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>日付</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="time"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>時間</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>タイトル</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="時間を選択" />
-                  </SelectTrigger>
+                  <Input placeholder="配信タイトル" {...field} />
                 </FormControl>
-                <SelectContent>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>カテゴリ</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>日付</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="time"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>時間</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="時間を選択" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timeOptions.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="duration"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>予定時間（分）</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="カテゴリを選択" />
-                  </SelectTrigger>
+                  <Input 
+                    type="number" 
+                    placeholder="60" 
+                    {...field}
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 60)}
+                  />
                 </FormControl>
-                <SelectContent>
-                  {settings.categories.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="platform"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>プラットフォーム</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+        {/* 詳細設定セクション */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="h-5 w-5 text-blue-500" />
+            <h3 className="text-lg font-semibold">詳細設定</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>カテゴリ</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="カテゴリを選択" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {settings.categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="platform"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>プラットフォーム</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="プラットフォームを選択" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {settings.platforms.map(platform => (
+                        <SelectItem key={platform} value={platform}>{platform}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>備考</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="プラットフォームを選択" />
-                  </SelectTrigger>
+                  <Textarea placeholder="メモ、詳細など" {...field} />
                 </FormControl>
-                <SelectContent>
-                  {settings.platforms.map(platform => (
-                    <SelectItem key={platform} value={platform}>{platform}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>備考</FormLabel>
-              <FormControl>
-                <Textarea placeholder="メモ、詳細など" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* リマインダー設定セクション */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="h-5 w-5 text-blue-500" />
+            <h3 className="text-lg font-semibold">リマインダー設定</h3>
+          </div>
 
-        <Button type="submit">{editingSchedule ? '更新' : '保存'}</Button>
+          <div className="space-y-2">
+            {reminderOptions.map((option) => (
+              <div key={option.value} className="flex items-center space-x-2">
+                <Checkbox
+                  id={option.value}
+                  checked={reminders.includes(option.value)}
+                  onCheckedChange={(checked) => toggleReminder(option.value, checked as boolean)}
+                />
+                <Label htmlFor={option.value} className="text-sm font-medium">
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+            キャンセル
+          </Button>
+          <Button type="submit">
+            {editingSchedule ? '更新' : '保存'}
+          </Button>
+        </div>
       </form>
     </Form>
   );

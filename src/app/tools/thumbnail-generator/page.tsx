@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { toPng } from 'html-to-image';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { ResizableDelta, Position } from 'react-rnd';
 import {
   Accordion,
@@ -28,6 +30,8 @@ import ThumbnailText from './components/ThumbnailText';
 import ThumbnailImage from './components/ThumbnailImage';
 import ThumbnailShape from './components/ThumbnailShape';
 import { LayerPanel } from './components/LayerPanel';
+import { ExportSettingsPanel, ExportSettings } from './components/ExportSettingsPanel';
+import EnhancedPreview from './components/EnhancedPreview';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -83,32 +87,165 @@ export default function ThumbnailGeneratorPage() {
     }
   }, [isDesktop]);
 
-  // サムネイルのダウンロード処理
-  const handleDownloadThumbnail = React.useCallback(async (quality: 'standard' | 'high' | 'ultra' = 'standard') => {
+  // エクスポート状態管理
+  const [isExporting, setIsExporting] = useState(false);
+
+  // 高度なエクスポート処理
+  const handleAdvancedExport = React.useCallback(async (settings: ExportSettings) => {
     const thumbnailElement = document.getElementById('thumbnail-preview');
-    if (thumbnailElement) {
+    if (!thumbnailElement) {
+      toast.error('サムネイルが見つかりません');
+      return;
+    }
+
+    setIsExporting(true);
+    
+    try {
       await handleAsyncError(async () => {
-        // 画質に応じて設定を変更
-        const qualitySettings = {
-          standard: { pixelRatio: 1, quality: 0.8 },
-          high: { pixelRatio: 2, quality: 0.9 },
-          ultra: { pixelRatio: 3, quality: 1.0 }
-        };
-        
-        const settings = qualitySettings[quality];
-        const dataUrl = await toPng(thumbnailElement, { 
-          cacheBust: true,
-          pixelRatio: settings.pixelRatio,
-          quality: settings.quality
-        });
-        
-        const link = document.createElement('a');
-        link.download = `thumbnail-${quality}.png`;
-        link.href = dataUrl;
-        link.click();
-      }, "画像の生成に失敗しました");
+        if (settings.batchExport) {
+          // バッチエクスポート
+          await handleBatchExport(thumbnailElement, settings);
+        } else {
+          // 単一エクスポート
+          await handleSingleExport(thumbnailElement, settings);
+        }
+      }, "エクスポートに失敗しました");
+    } finally {
+      setIsExporting(false);
     }
   }, [handleAsyncError]);
+
+  // 画像の読み込み完了を待つ
+  const waitForImagesToLoad = async (element: HTMLElement): Promise<void> => {
+    const images = element.querySelectorAll('img');
+    const imagePromises = Array.from(images).map((img) => {
+      return new Promise<void>((resolve) => {
+        if (img.complete && img.naturalWidth > 0) {
+          resolve();
+        } else {
+          const onLoad = () => {
+            img.removeEventListener('load', onLoad);
+            img.removeEventListener('error', onError);
+            resolve();
+          };
+          const onError = () => {
+            img.removeEventListener('load', onLoad);
+            img.removeEventListener('error', onError);
+            console.warn('画像の読み込みに失敗しました:', img.src);
+            resolve(); // エラーでも続行
+          };
+          img.addEventListener('load', onLoad);
+          img.addEventListener('error', onError);
+        }
+      });
+    });
+    
+    await Promise.all(imagePromises);
+    
+    // より長い待機時間でレンダリングを確実にする
+    await new Promise(resolve => setTimeout(resolve, 500));
+  };
+
+  // 単一エクスポート
+  const handleSingleExport = async (element: HTMLElement, settings: ExportSettings) => {
+    // 画像の読み込み完了を待つ
+    await waitForImagesToLoad(element);
+    const qualityPreset = {
+      low: { pixelRatio: 1, quality: 0.6 },
+      medium: { pixelRatio: 1.5, quality: 0.8 },
+      high: { pixelRatio: 2, quality: 0.9 },
+      ultra: { pixelRatio: 3, quality: 1.0 }
+    }[settings.quality];
+
+    // 解像度の計算
+    const resolution = settings.resolution === 'custom' 
+      ? { width: settings.customWidth || 1920, height: settings.customHeight || 1080 }
+      : {
+          hd: { width: 1280, height: 720 },
+          fhd: { width: 1920, height: 1080 },
+          '4k': { width: 3840, height: 2160 }
+        }[settings.resolution];
+
+    // エクスポート設定
+    const exportOptions = {
+      cacheBust: false, // キャッシュバストを無効化して画像の読み込みを確実にする
+      pixelRatio: settings.pixelRatio || qualityPreset.pixelRatio,
+      quality: settings.format === 'png' ? 1.0 : qualityPreset.quality,
+      backgroundColor: settings.backgroundColor || '#ffffff',
+      width: resolution.width,
+      height: resolution.height,
+      style: {
+        transform: 'scale(1)',
+        transformOrigin: 'top left',
+      }
+    };
+
+    let dataUrl: string;
+    let filename: string;
+
+    // 形式に応じてエクスポート
+    if (settings.format === 'png') {
+      dataUrl = await toPng(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.png`;
+    } else if (settings.format === 'jpeg') {
+      const { toJpeg } = await import('html-to-image');
+      dataUrl = await toJpeg(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.jpg`;
+    } else {
+      // WebPはサポートされていないため、PNGを使用
+      dataUrl = await toPng(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.png`;
+    }
+
+    // ダウンロード
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+
+    toast.success(`${filename} をエクスポートしました`);
+  };
+
+  // バッチエクスポート
+  const handleBatchExport = async (element: HTMLElement, settings: ExportSettings) => {
+    const promises = settings.batchSizes.map(async (size) => {
+      const exportOptions = {
+        cacheBust: true,
+        pixelRatio: settings.pixelRatio || 2,
+        quality: settings.format === 'png' ? 1.0 : 0.9,
+        backgroundColor: settings.backgroundColor || '#ffffff',
+        width: size.width,
+        height: size.height
+      };
+
+      let dataUrl: string;
+      let filename: string;
+
+      if (settings.format === 'png') {
+        dataUrl = await toPng(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.png`;
+      } else if (settings.format === 'jpeg') {
+        const { toJpeg } = await import('html-to-image');
+        dataUrl = await toJpeg(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.jpg`;
+      } else {
+        // WebPはサポートされていないため、PNGを使用
+        dataUrl = await toPng(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.png`;
+      }
+
+      // ダウンロード
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+
+      return filename;
+    });
+
+    const filenames = await Promise.all(promises);
+    toast.success(`${filenames.length}個のファイルをエクスポートしました`);
+  };
 
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
@@ -213,83 +350,278 @@ export default function ThumbnailGeneratorPage() {
   }
 
   const renderToolsPanel = () => (
-    <Accordion type="multiple" className="w-full" defaultValue={['text']}>
-      <AccordionItem value="text">
-        <AccordionTrigger>テキスト</AccordionTrigger>
-        <AccordionContent className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="thumbnail-text">テキスト内容</Label>
-            <Textarea id="thumbnail-text" value={currentText} onChange={(e) => setCurrentText(e.target.value)} className="h-24" />
+    <div className="space-y-6">
+      {/* 基本情報 */}
+      <div className="space-y-4">
+        <h4 className="font-medium">基本情報</h4>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-sm font-medium">レイヤー名</Label>
+            <Input
+              value={selectedLayer?.name || ''}
+              onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { name: e.target.value })}
+              className="mt-1"
+              placeholder="レイヤー名を入力"
+              disabled={!selectedLayer}
+            />
           </div>
-          <div className="pt-4">
-            <Button variant="outline" className="w-full" onClick={handleAddText}>テキストを追加</Button>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-sm font-medium">X座標</Label>
+              <Input
+                type="number"
+                value={selectedLayer?.x || 0}
+                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { x: Number(e.target.value) })}
+                className="mt-1"
+                disabled={!selectedLayer}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Y座標</Label>
+              <Input
+                type="number"
+                value={selectedLayer?.y || 0}
+                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { y: Number(e.target.value) })}
+                className="mt-1"
+                disabled={!selectedLayer}
+              />
+            </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="images">
-        <AccordionTrigger>画像</AccordionTrigger>
-        <AccordionContent className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="add-images">画像を追加</Label>
-            <Input id="add-images" type="file" accept="image/*" multiple onChange={handleImageUpload} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-sm font-medium">幅</Label>
+              <Input
+                type="number"
+                value={selectedLayer?.width || 0}
+                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { width: Number(e.target.value) })}
+                className="mt-1"
+                disabled={!selectedLayer}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">高さ</Label>
+              <Input
+                type="number"
+                value={selectedLayer?.height || 0}
+                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { height: Number(e.target.value) })}
+                className="mt-1"
+                disabled={!selectedLayer}
+              />
+            </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="shapes">
-        <AccordionTrigger>図形</AccordionTrigger>
-        <AccordionContent className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => handleAddShape('rectangle')}>四角を追加</Button>
-            <Button variant="outline" onClick={() => handleAddShape('circle')}>円を追加</Button>
-            <Button variant="outline" onClick={() => handleAddShape('line')}>線を追加</Button>
-            <Button variant="outline" onClick={() => handleAddShape('arrow')}>矢印を追加</Button>
+        </div>
+      </div>
+
+      {/* テキストレイヤーの設定 */}
+      {selectedLayer?.type === 'text' && (
+        <div className="space-y-4">
+          <h4 className="font-medium">テキスト設定</h4>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">テキスト</Label>
+              <Textarea
+                value={selectedLayer.text || ''}
+                onChange={(e) => updateLayer(selectedLayer.id, { text: e.target.value })}
+                className="mt-1 min-h-[80px] resize-none"
+                placeholder="テキストを入力してください"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-sm font-medium">フォントサイズ</Label>
+                <Slider
+                  value={[parseFloat(selectedLayer.fontSize?.replace('rem', '') || '2')]}
+                  onValueChange={([value]) => updateLayer(selectedLayer.id, { fontSize: `${value}rem` })}
+                  min={0.5}
+                  max={8}
+                  step={0.1}
+                  className="mt-2"
+                />
+                <div className="text-xs text-gray-500 text-center mt-1">
+                  {selectedLayer.fontSize || '2rem'}
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">色</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="color"
+                    value={selectedLayer.color || '#ffffff'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                    className="w-8 h-8 rounded border border-gray-300"
+                  />
+                  <Input
+                    value={selectedLayer.color || '#ffffff'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="style">
-        <AccordionTrigger>スタイル</AccordionTrigger>
-        <AccordionContent className="space-y-4 pt-4">
-          {!selectedLayer && <p className="text-sm text-muted-foreground">レイヤーを選択してください</p>}
-          {selectedLayer?.type === 'text' && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="text-color">テキストカラー</Label>
-                <input id="text-color" type="color" value={selectedLayer.color} onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })} className="w-full h-10 rounded-md" />
+        </div>
+      )}
+
+      {/* 画像レイヤーの設定 */}
+      {selectedLayer?.type === 'image' && (
+        <div className="space-y-4">
+          <h4 className="font-medium">画像設定</h4>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">画像を変更</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const src = URL.createObjectURL(file);
+                    updateLayer(selectedLayer.id, { src });
+                  }
+                }}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">不透明度</Label>
+              <Slider
+                value={[selectedLayer.opacity || 100]}
+                onValueChange={([value]) => updateLayer(selectedLayer.id, { opacity: value })}
+                min={0}
+                max={100}
+                step={1}
+                className="mt-2"
+              />
+              <div className="text-xs text-gray-500 text-center mt-1">
+                {selectedLayer.opacity || 100}%
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="font-size">フォントサイズ ({selectedLayer.fontSize})</Label>
-                <Slider id="font-size" min={1} max={8} step={0.1} value={[parseFloat(selectedLayer.fontSize || '1')]} onValueChange={(v) => updateLayer(selectedLayer.id, { fontSize: `${v[0]}rem` })} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">回転角度</Label>
+              <Slider
+                value={[selectedLayer.rotation || 0]}
+                onValueChange={([value]) => updateLayer(selectedLayer.id, { rotation: value })}
+                min={-180}
+                max={180}
+                step={1}
+                className="mt-2"
+              />
+              <div className="text-xs text-gray-500 text-center mt-1">
+                {selectedLayer.rotation || 0}°
               </div>
-            </>
-          )}
-          {selectedLayer?.type === 'shape' && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="shape-fill">塗りつぶし</Label>
-                <input id="shape-fill" type="color" value={selectedLayer.backgroundColor} onChange={(e) => updateLayer(selectedLayer.id, { backgroundColor: e.target.value })} className="w-full h-10 rounded-md" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 図形レイヤーの設定 */}
+      {selectedLayer?.type === 'shape' && (
+        <div className="space-y-4">
+          <h4 className="font-medium">図形設定</h4>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">図形の種類</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <Button 
+                  variant={selectedLayer.shapeType === 'rectangle' ? 'default' : 'outline'}
+                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'rectangle' })}
+                  size="sm"
+                >
+                  四角形
+                </Button>
+                <Button 
+                  variant={selectedLayer.shapeType === 'circle' ? 'default' : 'outline'}
+                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'circle' })}
+                  size="sm"
+                >
+                  円
+                </Button>
+                <Button 
+                  variant={selectedLayer.shapeType === 'line' ? 'default' : 'outline'}
+                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'line' })}
+                  size="sm"
+                >
+                  線
+                </Button>
+                <Button 
+                  variant={selectedLayer.shapeType === 'arrow' ? 'default' : 'outline'}
+                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'arrow' })}
+                  size="sm"
+                >
+                  矢印
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="shape-stroke">枠線</Label>
-                <input id="shape-stroke" type="color" value={selectedLayer.borderColor} onChange={(e) => updateLayer(selectedLayer.id, { borderColor: e.target.value })} className="w-full h-10 rounded-md" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-sm font-medium">塗りつぶし色</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="color"
+                    value={selectedLayer.backgroundColor || '#000000'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { backgroundColor: e.target.value })}
+                    className="w-8 h-8 rounded border border-gray-300"
+                  />
+                  <Input
+                    value={selectedLayer.backgroundColor || '#000000'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { backgroundColor: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="shape-stroke-width">枠線の太さ ({selectedLayer.borderWidth}px)</Label>
-                <Slider id="shape-stroke-width" min={0} max={20} step={1} value={[selectedLayer.borderWidth || 0]} onValueChange={(v) => updateLayer(selectedLayer.id, { borderWidth: v[0] })} />
+              <div>
+                <Label className="text-sm font-medium">境界線色</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="color"
+                    value={selectedLayer.borderColor || '#000000'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { borderColor: e.target.value })}
+                    className="w-8 h-8 rounded border border-gray-300"
+                  />
+                  <Input
+                    value={selectedLayer.borderColor || '#000000'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { borderColor: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
               </div>
-            </>
-          )}
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">境界線の太さ</Label>
+              <Slider
+                value={[selectedLayer.borderWidth || 0]}
+                onValueChange={([value]) => updateLayer(selectedLayer.id, { borderWidth: value })}
+                min={0}
+                max={20}
+                step={1}
+                className="mt-2"
+              />
+              <div className="text-xs text-gray-500 text-center mt-1">
+                {selectedLayer.borderWidth || 0}px
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* レイヤーが選択されていない場合 */}
+      {!selectedLayer && (
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">レイヤーを選択してください</p>
+          <p className="text-xs text-muted-foreground mt-1">レイヤーパネルからレイヤーを選択すると、ここで詳細設定ができます</p>
+        </div>
+      )}
+    </div>
   );
 
   // サイドバーコンテンツ
   const sidebarContent = (
     <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="settings">テンプレート</TabsTrigger>
         <TabsTrigger value="tools">ツール</TabsTrigger>
         <TabsTrigger value="layers">レイヤー</TabsTrigger>
+        <TabsTrigger value="export">エクスポート</TabsTrigger>
       </TabsList>
       <TabsContent value="settings" className="mt-4">
         <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
@@ -299,6 +631,9 @@ export default function ThumbnailGeneratorPage() {
       </TabsContent>
       <TabsContent value="layers" className="mt-4">
         <LayerPanel />
+      </TabsContent>
+      <TabsContent value="export" className="mt-4">
+        <ExportSettingsPanel onExport={handleAdvancedExport} isExporting={isExporting} />
       </TabsContent>
     </Tabs>
   );
@@ -314,83 +649,7 @@ export default function ThumbnailGeneratorPage() {
   );
 
   const renderPreview = () => (
-    <>
-      <div id="thumbnail-preview" className={cn("aspect-video w-full bg-card relative border rounded-md", {
-          'simple-enhanced': selectedTemplate.id === 'template-1',
-          'stylish-enhanced': selectedTemplate.id === 'template-2',
-          'cute-enhanced': selectedTemplate.id === 'template-3',
-          'cool-enhanced': selectedTemplate.id === 'template-4',
-          'bg-gray-200': selectedTemplate.id === 'template-5',
-        })}>
-        {selectedTemplate.id === 'template-4' && (
-          <>
-            <div className="digital-overlay"></div>
-            <div className="light-ray-1"></div>
-            <div className="light-ray-2"></div>
-          </>
-        )}
-        {layers.slice().reverse().map((layer) => {
-          const isSelected = layer.id === selectedLayerId;
-          const isDraggable = isSelected && !layer.locked;
-          const isResizable = isSelected && !layer.locked;
-
-          if (!layer.visible) return null;
-
-          if (layer.type === 'image') {
-            return (
-              <ThumbnailImage
-                key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
-                x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
-                onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                onSelect={() => setSelectedLayerId(layer.id)} // 追加
-                isLocked={layer.locked} // 追加
-                isDraggable={isDraggable} // 追加
-                onRotateStart={() => {}} // 追加
-                onRotate={() => {}} // 追加
-                onRotateStop={() => {}} // 追加
-              />
-            );
-          } else if (layer.type === 'text') {
-            return (
-              <ThumbnailText
-                key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color || '#000000'}
-                fontSize={layer.fontSize || '1rem'} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                enableResizing={isResizable} disableDragging={!isDraggable}
-              />
-            );
-          } else if (layer.type === 'shape' && layer.shapeType) {
-            return (
-              <ThumbnailShape
-                key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType}
-                backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
-                borderWidth={layer.borderWidth || 0} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
-                onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-              />
-            );
-          }
-          return null;
-        })}
-      </div>
-      <div className="mt-4 flex justify-end space-x-2">
-        <Button onClick={() => handleDownloadThumbnail('standard')} size="sm">
-          標準画質
-        </Button>
-        <Button onClick={() => handleDownloadThumbnail('high')} size="sm">
-          高画質
-        </Button>
-        <Button onClick={() => handleDownloadThumbnail('ultra')} size="sm">
-          最高画質
-        </Button>
-      </div>
-    </>
+    <EnhancedPreview isShiftKeyDown={isShiftKeyDown} />
   );
 
   const renderMobileControls = () => (
