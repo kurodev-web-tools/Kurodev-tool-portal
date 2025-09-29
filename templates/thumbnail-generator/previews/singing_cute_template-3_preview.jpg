@@ -1,0 +1,12 @@
+<!-- singing_cute_template-3_preview.jpg -->
+<svg width="320" height="180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3p" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff9a9e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fecfef;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#bg3p)"/>
+  <text x="160" y="90" font-family="Arial, sans-serif" font-size="16" fill="#FF69B4" text-anchor="middle">かわいい</text>
+  <text x="160" y="110" font-family="Arial, sans-serif" font-size="10" fill="#d63384" text-anchor="middle">みてね！</text>
+</svg>
