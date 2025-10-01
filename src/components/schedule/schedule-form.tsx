@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Plus, Calendar, Clock, Bell } from 'lucide-react';
 
 const scheduleSchema = z.object({
@@ -42,6 +43,7 @@ export function ScheduleForm() {
   const { selectedDate, setIsModalOpen, refreshSchedules, editingSchedule, setEditingSchedule } = useSchedule();
   const { settings } = useSettings();
   const [reminders, setReminders] = useState<string[]>([]);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleSchema),
@@ -128,12 +130,12 @@ export function ScheduleForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className={`space-y-${isDesktop ? '6' : '4'}`}>
         {/* 基本情報セクション */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
-            <Calendar className="h-5 w-5 text-blue-500" />
-            <h3 className="text-lg font-semibold">基本情報</h3>
+            <Calendar className={`${isDesktop ? 'h-5 w-5' : 'h-4 w-4'} text-blue-500`} />
+            <h3 className={`${isDesktop ? 'text-lg' : 'text-base'} font-semibold`}>基本情報</h3>
           </div>
 
           <FormField
@@ -141,24 +143,32 @@ export function ScheduleForm() {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>タイトル</FormLabel>
+                <FormLabel className={isDesktop ? '' : 'text-sm'}>タイトル</FormLabel>
                 <FormControl>
-                  <Input placeholder="配信タイトル" {...field} />
+                  <Input 
+                    placeholder="配信タイトル" 
+                    className={isDesktop ? '' : 'h-10 text-sm'} 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>日付</FormLabel>
+                  <FormLabel className={isDesktop ? '' : 'text-sm'}>日付</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input 
+                      type="date" 
+                      className={isDesktop ? '' : 'h-10 text-sm'} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -170,10 +180,10 @@ export function ScheduleForm() {
               name="time"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>時間</FormLabel>
+                  <FormLabel className={isDesktop ? '' : 'text-sm'}>時間</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className={isDesktop ? '' : 'h-10 text-sm'}>
                         <SelectValue placeholder="時間を選択" />
                       </SelectTrigger>
                     </FormControl>
@@ -196,11 +206,12 @@ export function ScheduleForm() {
             name="duration"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>予定時間（分）</FormLabel>
+                <FormLabel className={isDesktop ? '' : 'text-sm'}>予定時間（分）</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
                     placeholder="60" 
+                    className={isDesktop ? '' : 'h-10 text-sm'}
                     {...field}
                     onChange={(e) => field.onChange(parseInt(e.target.value) || 60)}
                   />
@@ -214,20 +225,20 @@ export function ScheduleForm() {
         {/* 詳細設定セクション */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="h-5 w-5 text-blue-500" />
-            <h3 className="text-lg font-semibold">詳細設定</h3>
+            <Clock className={`${isDesktop ? 'h-5 w-5' : 'h-4 w-4'} text-blue-500`} />
+            <h3 className={`${isDesktop ? 'text-lg' : 'text-base'} font-semibold`}>詳細設定</h3>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>カテゴリ</FormLabel>
+                  <FormLabel className={isDesktop ? '' : 'text-sm'}>カテゴリ</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className={isDesktop ? '' : 'h-10 text-sm'}>
                         <SelectValue placeholder="カテゴリを選択" />
                       </SelectTrigger>
                     </FormControl>
@@ -247,10 +258,10 @@ export function ScheduleForm() {
               name="platform"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>プラットフォーム</FormLabel>
+                  <FormLabel className={isDesktop ? '' : 'text-sm'}>プラットフォーム</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className={isDesktop ? '' : 'h-10 text-sm'}>
                         <SelectValue placeholder="プラットフォームを選択" />
                       </SelectTrigger>
                     </FormControl>
@@ -271,9 +282,13 @@ export function ScheduleForm() {
             name="notes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>備考</FormLabel>
+                <FormLabel className={isDesktop ? '' : 'text-sm'}>備考</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="メモ、詳細など" {...field} />
+                  <Textarea 
+                    placeholder="メモ、詳細など" 
+                    className={`${isDesktop ? '' : 'text-sm min-h-[80px]'}`}
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -284,19 +299,20 @@ export function ScheduleForm() {
         {/* リマインダー設定セクション */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
-            <Bell className="h-5 w-5 text-blue-500" />
-            <h3 className="text-lg font-semibold">リマインダー設定</h3>
+            <Bell className={`${isDesktop ? 'h-5 w-5' : 'h-4 w-4'} text-blue-500`} />
+            <h3 className={`${isDesktop ? 'text-lg' : 'text-base'} font-semibold`}>リマインダー設定</h3>
           </div>
 
-          <div className="space-y-2">
+          <div className={`space-y-2 ${isDesktop ? '' : 'grid grid-cols-2 gap-2'}`}>
             {reminderOptions.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
+              <div key={option.value} className={`flex items-center space-x-2 ${isDesktop ? '' : 'p-2 bg-slate-100 dark:bg-slate-800 rounded-md h-12'}`}>
                 <Checkbox
                   id={option.value}
                   checked={reminders.includes(option.value)}
                   onCheckedChange={(checked) => toggleReminder(option.value, checked as boolean)}
+                  className={isDesktop ? '' : 'h-4 w-4'}
                 />
-                <Label htmlFor={option.value} className="text-sm font-medium">
+                <Label htmlFor={option.value} className={`${isDesktop ? 'text-sm' : 'text-xs'} font-medium`}>
                   {option.label}
                 </Label>
               </div>
@@ -304,11 +320,19 @@ export function ScheduleForm() {
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+        <div className={`flex gap-2 pt-4 ${isDesktop ? 'justify-end' : 'flex-col'}`}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => setIsModalOpen(false)}
+            className={isDesktop ? '' : 'w-full h-10'}
+          >
             キャンセル
           </Button>
-          <Button type="submit">
+          <Button 
+            type="submit"
+            className={isDesktop ? '' : 'w-full h-10'}
+          >
             {editingSchedule ? '更新' : '保存'}
           </Button>
         </div>

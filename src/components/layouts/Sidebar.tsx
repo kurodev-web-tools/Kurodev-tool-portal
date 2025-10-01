@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = memo(({
       className={cn(
         "fixed top-0 right-0 h-[calc(100vh-2rem)] w-4/5 max-w-sm bg-slate-900/95 backdrop-blur-sm p-4 border-l border-slate-600/30 z-40",
         "transition-transform duration-300 ease-in-out",
-        isDesktop && "lg:static lg:w-96 lg:translate-x-0 lg:z-auto",
+        isDesktop && "lg:static lg:w-96 lg:translate-x-0 lg:z-auto lg:h-full",
         isOpen ? 'translate-x-0' : 'translate-x-full',
         isDesktop && (isOpen ? 'lg:block' : 'lg:hidden'),
         className

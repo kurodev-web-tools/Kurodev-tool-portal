@@ -176,10 +176,10 @@ export function SettingsTab() {
           <AccordionTrigger>カテゴリ設定</AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-wrap gap-2 mb-4">
-              {settings.categories.map(category => (
-                <span key={category} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
-                  {category}
-                  <Button variant="ghost" size="icon" className="ml-2 h-5 w-5" onClick={() => handleRemoveCategory(category)}>
+              {settings.categories.sort().map(category => (
+                <span key={category} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-sm w-[110px] justify-center">
+                  <span className="flex-1 text-center text-xs font-medium truncate">{category}</span>
+                  <Button variant="ghost" size="icon" className="ml-1 h-4 w-4 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0" onClick={() => handleRemoveCategory(category)}>
                     ×
                   </Button>
                 </span>
@@ -202,9 +202,9 @@ export function SettingsTab() {
           <AccordionContent>
             <div className="flex flex-wrap gap-2 mb-4">
               {settings.platforms.map(platform => (
-                <span key={platform} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
-                  {platform}
-                  <Button variant="ghost" size="icon" className="ml-2 h-5 w-5" onClick={() => handleRemovePlatform(platform)}>
+                <span key={platform} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-sm w-[110px] justify-center">
+                  <span className="flex-1 text-center text-xs font-medium truncate">{platform}</span>
+                  <Button variant="ghost" size="icon" className="ml-1 h-4 w-4 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0" onClick={() => handleRemovePlatform(platform)}>
                     ×
                   </Button>
                 </span>
@@ -279,14 +279,14 @@ export function SettingsTab() {
         <AccordionItem value="item-4">
           <AccordionTrigger>ハッシュタグ設定</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="space-y-2 mb-4">
               {settings.hashtags.map(hashtag => (
-                <span key={hashtag} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
-                  {hashtag}
-                  <Button variant="ghost" size="icon" className="ml-2 h-5 w-5" onClick={() => handleRemoveHashtag(hashtag)}>
+                <div key={hashtag} className="flex items-center justify-between bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm">
+                  <span className="text-xs font-medium">{hashtag}</span>
+                  <Button variant="ghost" size="icon" className="h-4 w-4 hover:bg-destructive hover:text-destructive-foreground" onClick={() => handleRemoveHashtag(hashtag)}>
                     ×
                   </Button>
-                </span>
+                </div>
               ))}
             </div>
             <div className="flex gap-2">

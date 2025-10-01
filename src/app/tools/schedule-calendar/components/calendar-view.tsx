@@ -6,7 +6,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, parseISO, addMonths, subMonths } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
@@ -14,7 +14,7 @@ import { DayProps } from 'react-day-picker';
 import { ScheduleItem } from '@/types/schedule';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { SnsPostTab } from './sns-post-tab';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Filter } from 'lucide-react';
 
 type ViewMode = 'month' | 'week' | 'day';
 
@@ -153,22 +153,6 @@ export function CalendarView() {
     ? eachDayOfInterval({ start: startOfWeek(currentDate, { weekStartsOn: 1 }), end: endOfWeek(currentDate, { weekStartsOn: 1 }) })
     : [];
 
-  // ナビゲーション機能
-  const navigateCalendar = (direction: 'prev' | 'next') => {
-    if (viewMode === 'month') {
-      setCurrentDate(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
-    } else if (viewMode === 'week') {
-      setCurrentDate(prev => direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1));
-    } else if (viewMode === 'day') {
-      setCurrentDate(prev => direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1));
-    }
-  };
-
-  const goToToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    setSelectedDate(today);
-  };
 
   const goToPreviousWeek = () => setSelectedDate((prev) => (prev ? subWeeks(prev, 1) : undefined));
   const goToNextWeek = () => setSelectedDate((prev) => (prev ? addWeeks(prev, 1) : undefined));
@@ -275,7 +259,7 @@ export function CalendarView() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col min-h-full">
         {/* 改善されたビュー切り替えコントロール */}
         <div className="flex items-center justify-between mb-6 p-4">
           {/* ビュー切り替え */}
@@ -309,64 +293,30 @@ export function CalendarView() {
             </Button>
           </div>
 
-          {/* ナビゲーション */}
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigateCalendar('prev')}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="text-center min-w-[120px]">
-              <div className="text-lg font-semibold">
-                {format(currentDate, 'yyyy年M月', { locale: ja })}
-              </div>
-              {viewMode === 'week' && (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'M/d', { locale: ja })} - 
-                  {format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'M/d', { locale: ja })}
-                </div>
-              )}
-              {viewMode === 'day' && (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {format(currentDate, 'M月d日(E)', { locale: ja })}
-                </div>
-              )}
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigateCalendar('next')}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={goToToday}
-            >
-              今日
-            </Button>
-          </div>
 
           {/* アクションボタン */}
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4 mr-1" />
-              フィルター
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              追加
-            </Button>
+            {/* デスクトップ表示でのみフィルターボタンを表示 */}
+            {isDesktop && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                フィルター
+              </Button>
+            )}
+            {/* デスクトップ表示でのみ追加ボタンを表示 */}
+            {isDesktop && (
+              <Button
+                size="sm"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                追加
+              </Button>
+            )}
           </div>
         </div>
 
@@ -483,8 +433,8 @@ export function CalendarView() {
           </div>
         )}
 
-        <div className={`flex-grow rounded-md ${isDesktop ? 'p-4' : 'p-2'} overflow-hidden bg-slate-900/95 backdrop-blur-sm`}>
-          <div className="h-full overflow-y-auto">
+        <div className={`flex-grow rounded-md ${isDesktop ? 'p-4' : 'p-2'} bg-slate-900/95 backdrop-blur-sm`}>
+          <div className={`${isDesktop ? 'h-full overflow-y-auto' : 'min-h-full'}`}>
             {viewMode === 'month' && (
               <Calendar
                 numberOfMonths={1}
@@ -496,87 +446,178 @@ export function CalendarView() {
               />
             )}
             {viewMode === 'week' && (
-              <div className="space-y-4">
-                {/* 時間軸ヘッダー */}
-                <div className="flex">
-                  <div className="w-16 text-sm text-gray-500">時間</div>
-                  <div className="flex-1 grid grid-cols-7 gap-1">
-                    {weekDays.map((day) => (
-                      <div key={day.toISOString()} className="text-center text-sm font-medium">
-                        <div>{format(day, 'M/d', { locale: ja })}</div>
-                        <div className="text-xs text-gray-500">
-                          {format(day, 'E', { locale: ja })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 時間軸グリッド */}
-                <div className="flex">
-                  <div className="w-16 space-y-1">
-                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                      <div key={hour} className="text-xs text-gray-500 h-12 flex items-center justify-center">
-                        {hour.toString().padStart(2, '0')}:00
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex-1 grid grid-cols-7 gap-1">
-                    {weekDays.map((day) => (
-                      <div key={day.toISOString()} className="space-y-1">
-                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                          <div
-                            key={hour}
-                            className="h-12 border border-slate-600/30 rounded cursor-pointer hover:bg-slate-700/50 transition-colors bg-slate-800/20 backdrop-blur-sm relative"
-                            onClick={() => {
-                              const time = `${hour.toString().padStart(2, '0')}:00`;
-                              setSelectedDate(day);
-                              setIsModalOpen(true);
-                            }}
-                          >
-                            {(() => {
-                              const schedule = getScheduleForTimeSlot(day, hour);
-                              if (!schedule) return null;
-                              
-                              const timeSlots = getScheduleTimeSlots(schedule);
-                              const hourSlots = timeSlots.filter(slot => slot.hour === hour);
-                              const isFirstHour = timeSlots[0].hour === hour;
-                              const isLastHour = timeSlots[timeSlots.length - 1].hour === hour;
-                              
-                              // 30分刻みの内部処理で視覚的に調整
-                              const topOffset = hourSlots[0]?.minute === 30 ? '50%' : '0%';
-                              const height = hourSlots.length === 2 ? '100%' : '50%';
-                              
-                              return (
-                                <div 
-                                  className={`absolute left-0 right-0 p-1 text-xs bg-blue-500/80 text-white rounded backdrop-blur-sm`}
-                                  style={{
-                                    top: topOffset,
-                                    height: height,
-                                    borderRadius: isFirstHour ? '0.375rem 0.375rem 0 0' : 
-                                                 isLastHour ? '0 0 0.375rem 0.375rem' : '0'
-                                  }}
-                                >
-                                  {isFirstHour && (
-                                    <div className="font-medium truncate">
-                                      {schedule.title || '(タイトルなし)'}
-                                    </div>
-                                  )}
-                                  {isFirstHour && (
-                                    <div className="text-xs opacity-75">
-                                      {schedule.time} - {getScheduleDuration(schedule)}分
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()}
+              <>
+                {isDesktop ? (
+                  <div className="space-y-4">
+                    {/* デスクトップ用：時間軸ヘッダー */}
+                    <div className="flex">
+                      <div className="w-16 text-sm text-gray-500">時間</div>
+                      <div className="flex-1 grid grid-cols-7 gap-1">
+                        {weekDays.map((day) => (
+                          <div key={day.toISOString()} className="text-center text-sm font-medium">
+                            <div>{format(day, 'M/d', { locale: ja })}</div>
+                            <div className="text-xs text-gray-500">
+                              {format(day, 'E', { locale: ja })}
+                            </div>
                           </div>
                         ))}
                       </div>
-                    ))}
+                    </div>
+
+                    {/* デスクトップ用：時間軸グリッド */}
+                    <div className="flex">
+                      <div className="w-16 space-y-1">
+                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                          <div key={hour} className="text-xs text-gray-500 h-12 flex items-center justify-center">
+                            {hour.toString().padStart(2, '0')}:00
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex-1 grid grid-cols-7 gap-1">
+                        {weekDays.map((day) => (
+                          <div key={day.toISOString()} className="space-y-1">
+                            {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                              <div
+                                key={hour}
+                                className="h-12 border border-slate-600/30 rounded cursor-pointer hover:bg-slate-700/50 transition-colors bg-slate-800/20 backdrop-blur-sm relative"
+                                onClick={() => {
+                                  const time = `${hour.toString().padStart(2, '0')}:00`;
+                                  setSelectedDate(day);
+                                  setIsModalOpen(true);
+                                }}
+                              >
+                                {(() => {
+                                  const schedule = getScheduleForTimeSlot(day, hour);
+                                  if (!schedule) return null;
+                                  
+                                  const timeSlots = getScheduleTimeSlots(schedule);
+                                  const hourSlots = timeSlots.filter(slot => slot.hour === hour);
+                                  const isFirstHour = timeSlots[0].hour === hour;
+                                  const isLastHour = timeSlots[timeSlots.length - 1].hour === hour;
+                                  
+                                  // 30分刻みの内部処理で視覚的に調整
+                                  const topOffset = hourSlots[0]?.minute === 30 ? '50%' : '0%';
+                                  const height = hourSlots.length === 2 ? '100%' : '50%';
+                                  
+                                  return (
+                                    <div 
+                                      className={`absolute left-0 right-0 p-1 text-xs bg-blue-500/80 text-white rounded backdrop-blur-sm`}
+                                      style={{
+                                        top: topOffset,
+                                        height: height,
+                                        borderRadius: isFirstHour ? '0.375rem 0.375rem 0 0' : 
+                                                     isLastHour ? '0 0 0.375rem 0.375rem' : '0'
+                                      }}
+                                    >
+                                      {isFirstHour && (
+                                        <div className="font-medium truncate">
+                                          {schedule.title || '(タイトルなし)'}
+                                        </div>
+                                      )}
+                                      {isFirstHour && (
+                                        <div className="text-xs opacity-75">
+                                          {schedule.time} - {getScheduleDuration(schedule)}分
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                ) : (
+                  /* モバイル用：縦リスト表示 */
+                  <div className="space-y-1">
+                    {weekDays.map((day) => {
+                      const daySchedules = filteredSchedules.filter(schedule => 
+                        isSameDay(parseISO(schedule.date), day)
+                      ).sort((a, b) => {
+                        if (!a.time || !b.time) return 0;
+                        return a.time.localeCompare(b.time);
+                      });
+
+                      return (
+                        <div key={day.toISOString()} className="bg-slate-800/50 rounded-lg p-2">
+                          {/* 日付ヘッダー */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-base font-semibold text-white">
+                              {format(day, 'M/d', { locale: ja })}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {format(day, 'E', { locale: ja })}
+                            </div>
+                          </div>
+
+                          {/* スケジュールリスト */}
+                          {daySchedules.length > 0 ? (
+                            <div className="space-y-0.5">
+                              {daySchedules.map((schedule) => (
+                                <div
+                                  key={schedule.id}
+                                  className="bg-blue-500/15 border border-blue-500/20 rounded px-2 py-1.5 cursor-pointer hover:bg-blue-500/25 transition-colors"
+                                  onClick={() => {
+                                    setSelectedDate(day);
+                                    setIsModalOpen(true);
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    {/* 時間情報 */}
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                      <span className="text-xs text-blue-300 font-mono">
+                                        {schedule.time}
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                        {getScheduleDuration(schedule)}分
+                                      </span>
+                                    </div>
+                                    
+                                    {/* タイトル */}
+                                    <div className="flex-1 min-w-0 text-center">
+                                      <span className="text-sm text-white font-medium truncate block">
+                                        {schedule.title || '(タイトルなし)'}
+                                      </span>
+                                    </div>
+                                    
+                                    {/* カテゴリ */}
+                                    <div className="flex-shrink-0">
+                                      {schedule.category && (
+                                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                          {schedule.category}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-xs text-center py-1.5">
+                              スケジュールなし
+                            </div>
+                          )}
+
+                          {/* 新規追加ボタン */}
+                          <div className="mt-2">
+                            <button
+                              className="w-full text-center py-1.5 text-xs text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded-md hover:bg-blue-500/10 transition-colors"
+                              onClick={() => {
+                                setSelectedDate(day);
+                                setIsModalOpen(true);
+                              }}
+                            >
+                              + 予定を追加
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
             {viewMode === 'day' && (
               <div className={isDesktop ? '' : 'px-2'}>
@@ -605,17 +646,25 @@ export function CalendarView() {
                 )}
               </div>
             )}
-          </div>
-        </div>
 
         {/* モバイル表示用の追加機能 */}
         {!isDesktop && (
           <div className="mt-6">
             <div className="bg-slate-800/80 border border-slate-600/30 rounded-lg p-4 backdrop-blur-sm">
               <Tabs defaultValue="sns" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="sns">SNS投稿</TabsTrigger>
-                  <TabsTrigger value="schedule">予定一覧</TabsTrigger>
+                <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
+                  <TabsTrigger 
+                    value="sns" 
+                    className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-6 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                  >
+                    SNS投稿
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="schedule" 
+                    className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-6 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                  >
+                    予定一覧
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="sns" className="mt-4">
@@ -678,6 +727,31 @@ export function CalendarView() {
             </div>
           </div>
         )}
+        </div>
+      </div>
+
+      {/* Floating Action Buttons for Mobile - Fixed Position */}
+      <div className="fixed bottom-4 right-4 z-20 lg:hidden">
+        <div className="flex flex-col gap-3">
+          {/* フィルターボタン */}
+          <Button
+            size="icon"
+            variant="outline"
+            className="rounded-full h-12 w-12 shadow-lg bg-white dark:bg-slate-800"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-5 w-5" />
+          </Button>
+          {/* 追加ボタン */}
+          <Button
+            size="icon"
+            className="rounded-full h-14 w-14 shadow-lg"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      </div>
       </div>
     </TooltipProvider>
   );

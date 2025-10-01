@@ -3,7 +3,7 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { CalendarPlus, MessageSquare, Settings, Plus } from "lucide-react";
+import { CalendarPlus, MessageSquare, Settings } from "lucide-react";
 import { ScheduleModal } from '@/components/schedule/schedule-modal';
 import { ScheduleProvider, useSchedule } from '@/contexts/ScheduleContext';
 import { ScheduleList } from '@/components/schedule/schedule-list';
@@ -47,10 +47,7 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
         </Tabs>
       ) : (
         // モバイル表示では設定タブのみ
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">設定</h3>
-          <SettingsTab />
-        </div>
+        <SettingsTab />
       )}
     </div>
   );
@@ -60,13 +57,13 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
       {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
       {isSidebarOpen && !isDesktop && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <div className="flex flex-col lg:flex-row flex-grow h-full overflow-hidden">
-        <main className="flex-grow p-2 lg:p-4 w-full lg:w-auto overflow-hidden">
+        <main className={`flex-grow p-2 lg:p-4 w-full lg:w-auto ${isDesktop ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {children}
         </main>
 
@@ -98,16 +95,6 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
       
       <ScheduleModal />
 
-      {/* Floating Action Button for Mobile - Fixed Position */}
-      <div className="fixed bottom-4 right-4 z-20 lg:hidden">
-        <Button
-          size="icon"
-          className="rounded-full h-14 w-14 shadow-lg"
-          onClick={() => setIsModalOpen(true)}
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </div>
     </div>
   );
 }

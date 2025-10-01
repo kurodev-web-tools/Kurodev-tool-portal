@@ -22,9 +22,11 @@ export function ScheduleModal() {
 
   return (
     <Dialog open={isModalOpen} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingSchedule ? 'スケジュールを編集' : '新規スケジュール登録'}</DialogTitle>
+          <DialogTitle className="text-lg md:text-xl">
+            {editingSchedule ? 'スケジュールを編集' : '新規スケジュール登録'}
+          </DialogTitle>
         </DialogHeader>
         <ScheduleForm />
       </DialogContent>

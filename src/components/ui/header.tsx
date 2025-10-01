@@ -244,8 +244,8 @@ export function Header() {
 
   // タブを表示すべきかどうかを判定するヘルパー関数
   const shouldShowTabs = () => {
-    // ポータルページ（スイート・ツール一覧）または個別ツールページでタブを表示
-    return pathname === "/" || pathname === "/tools" || pathname?.startsWith("/tools/");
+    // ポータルページ（スイート・ツール一覧）でのみタブを表示
+    return pathname === "/" || pathname === "/tools";
   };
 
   return (
