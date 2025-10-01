@@ -63,7 +63,7 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="flex flex-col lg:flex-row flex-grow h-full overflow-hidden">
-        <main className={`flex-grow p-2 lg:p-4 w-full lg:w-auto ${isDesktop ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+        <main className={`flex-grow p-2 lg:p-4 w-full lg:w-auto ${isDesktop ? 'overflow-y-auto' : 'overflow-y-auto'}`}>
           {children}
         </main>
 
