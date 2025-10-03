@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { ThumbnailTemplate } from '../components/TemplateSelector';
 import { loadTemplates } from '@/lib/templateLoader';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,7 +12,7 @@ interface ElementPositionType {
 }
 
 export type LayerType = 'image' | 'text' | 'shape';
-export type ShapeType = 'rectangle' | 'circle' | 'line' | 'arrow';
+export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star';
 
 export interface Layer {
   id: string;
@@ -26,6 +26,7 @@ export interface Layer {
   height: number | string;
   rotation: number;
   zIndex: number; // zIndexプロパティを追加
+  opacity?: number; // 不透明度プロパティを追加
   isBackground?: boolean; // 背景画像フラグを追加
   // Type-specific properties
   src?: string | null;
@@ -83,7 +84,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     load();
   }, []);
 
-  const addLayer = (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
+  const addLayer = useCallback((layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
     const maxZIndex = layers.reduce((max, l) => Math.max(max, l.zIndex), -1);
     const newLayer: Layer = { 
       ...layer, 
@@ -93,22 +94,22 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
     setLayers((prevLayers) => [...prevLayers, newLayer]);
     setSelectedLayerId(newLayer.id);
-  };
+  }, [layers]);
 
-  const removeLayer = (id: string) => {
+  const removeLayer = useCallback((id: string) => {
     setLayers((prevLayers) => prevLayers.filter((layer) => layer.id !== id));
     if (selectedLayerId === id) {
       setSelectedLayerId(null);
     }
-  };
+  }, [selectedLayerId]);
 
-  const updateLayer = (id: string, updates: Partial<Layer>) => {
+  const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     setLayers((prevLayers) =>
       prevLayers.map((layer) => (layer.id === id ? { ...layer, ...updates } : layer))
     );
-  };
+  }, []);
 
-  const reorderLayers = (startIndex: number, endIndex: number) => {
+  const reorderLayers = useCallback((startIndex: number, endIndex: number) => {
     setLayers((prevLayers) => {
       const newLayers = Array.from(prevLayers);
       const [removed] = newLayers.splice(startIndex, 1);
@@ -116,9 +117,9 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
       // zIndexを再割り当て
       return newLayers.map((layer, index) => ({ ...layer, zIndex: index }));
     });
-  };
+  }, []);
 
-  const duplicateLayer = (id: string) => {
+  const duplicateLayer = useCallback((id: string) => {
     const layerToDuplicate = layers.find((layer) => layer.id === id);
     if (!layerToDuplicate) return;
 
@@ -135,21 +136,21 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     const newLayers = [...layers];
     newLayers.splice(index + 1, 0, duplicatedLayer);
     setLayers(newLayers.map((l, i) => ({ ...l, zIndex: i }))); // zIndex再割当て
-  };
+  }, [layers]);
 
-  const moveLayerUp = (id: string) => {
+  const moveLayerUp = useCallback((id: string) => {
     const index = layers.findIndex((layer) => layer.id === id);
     if (index > 0) {
       reorderLayers(index, index - 1);
     }
-  };
+  }, [layers, reorderLayers]);
 
-  const moveLayerDown = (id: string) => {
+  const moveLayerDown = useCallback((id: string) => {
     const index = layers.findIndex((layer) => layer.id === id);
     if (index < layers.length - 1 && index !== -1) {
       reorderLayers(index, index + 1);
     }
-  };
+  }, [layers, reorderLayers]);
 
   useEffect(() => {
     const initialLayers: Layer[] = [];
@@ -201,30 +202,44 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   }, [selectedTemplate]);
 
+  const contextValue = useMemo(() => ({
+    selectedTemplate,
+    setSelectedTemplate,
+    currentText,
+    setCurrentText,
+    layers,
+    setLayers,
+    addLayer,
+    removeLayer,
+    updateLayer,
+    selectedLayerId,
+    setSelectedLayerId,
+    reorderLayers,
+    duplicateLayer,
+    moveLayerUp,
+    moveLayerDown,
+    aspectRatio,
+    setAspectRatio,
+    customAspectRatio,
+    setCustomAspectRatio,
+  }), [
+    selectedTemplate,
+    currentText,
+    layers,
+    selectedLayerId,
+    addLayer,
+    removeLayer,
+    updateLayer,
+    reorderLayers,
+    duplicateLayer,
+    moveLayerUp,
+    moveLayerDown,
+    aspectRatio,
+    customAspectRatio,
+  ]);
+
   return (
-    <TemplateContext.Provider
-      value={{
-        selectedTemplate,
-        setSelectedTemplate,
-        currentText,
-        setCurrentText,
-        layers,
-        setLayers,
-        addLayer,
-        removeLayer,
-        updateLayer,
-        selectedLayerId,
-        setSelectedLayerId,
-        reorderLayers,
-        duplicateLayer,
-        moveLayerUp,
-        moveLayerDown,
-        aspectRatio,
-        setAspectRatio,
-        customAspectRatio,
-        setCustomAspectRatio,
-      }}
-    >
+    <TemplateContext.Provider value={contextValue}>
       {children}
     </TemplateContext.Provider>
   );

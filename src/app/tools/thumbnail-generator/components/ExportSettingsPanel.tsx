@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 // エクスポート設定の型定義
 export interface ExportSettings {
@@ -127,6 +128,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
   const [settings, setSettings] = useState<ExportSettings>(EXPORT_PRESETS['youtube-standard']);
   const [savedPresets, setSavedPresets] = useState<Record<string, ExportSettings>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const isMobile = !useMediaQuery("(min-width: 768px)");
 
   // プリセットの読み込み
   React.useEffect(() => {
@@ -199,7 +201,8 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant={settings.resolution === 'fhd' && !settings.batchExport ? 'default' : 'outline'}
-              size="sm"
+              size={isMobile ? "default" : "sm"}
+              className={isMobile ? "h-10" : ""}
               onClick={() => applyPreset('youtube-standard')}
             >
               <ImageIcon className="h-4 w-4 mr-1" />
@@ -207,7 +210,8 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
             </Button>
             <Button
               variant={settings.optimizeForPlatform === 'twitter' ? 'default' : 'outline'}
-              size="sm"
+              size={isMobile ? "default" : "sm"}
+              className={isMobile ? "h-10" : ""}
               onClick={() => applyPreset('twitter-optimized')}
             >
               <ImageIcon className="h-4 w-4 mr-1" />
@@ -215,7 +219,8 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
             </Button>
             <Button
               variant={settings.optimizeForPlatform === 'instagram' ? 'default' : 'outline'}
-              size="sm"
+              size={isMobile ? "default" : "sm"}
+              className={isMobile ? "h-10" : ""}
               onClick={() => applyPreset('instagram-square')}
             >
               <ImageIcon className="h-4 w-4 mr-1" />
@@ -223,7 +228,8 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
             </Button>
             <Button
               variant={settings.batchExport ? 'default' : 'outline'}
-              size="sm"
+              size={isMobile ? "default" : "sm"}
+              className={isMobile ? "h-10" : ""}
               onClick={() => applyPreset('batch-all-platforms')}
             >
               <Zap className="h-4 w-4 mr-1" />
@@ -242,7 +248,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
           <div className="space-y-2">
             <Label className="text-sm font-medium">解像度</Label>
             <Select value={settings.resolution} onValueChange={(value: 'hd' | 'fhd' | '4k' | 'custom') => updateSettings({ resolution: value })}>
-              <SelectTrigger>
+              <SelectTrigger className={isMobile ? "h-10" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -259,20 +265,24 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
                   <Label className="text-xs">幅 (px)</Label>
                   <Input
                     type="number"
+                    inputMode="numeric"
                     value={settings.customWidth || 1920}
                     onChange={(e) => updateSettings({ customWidth: Number(e.target.value) })}
                     min="100"
                     max="8000"
+                    className={isMobile ? "h-10" : ""}
                   />
                 </div>
                 <div>
                   <Label className="text-xs">高さ (px)</Label>
                   <Input
                     type="number"
+                    inputMode="numeric"
                     value={settings.customHeight || 1080}
                     onChange={(e) => updateSettings({ customHeight: Number(e.target.value) })}
                     min="100"
                     max="8000"
+                    className={isMobile ? "h-10" : ""}
                   />
                 </div>
               </div>
@@ -289,14 +299,14 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
                 pixelRatio: qualityPreset.pixelRatio
               });
             }}>
-              <SelectTrigger>
+              <SelectTrigger className={isMobile ? "h-10" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">低品質 (軽量)</SelectItem>
-                <SelectItem value="medium">中品質 (バランス)</SelectItem>
-                <SelectItem value="high">高品質 (推奨)</SelectItem>
-                <SelectItem value="ultra">最高品質 (重い)</SelectItem>
+                <SelectItem value="low">低品質 (軽量・1x)</SelectItem>
+                <SelectItem value="medium">中品質 (バランス・1.5x)</SelectItem>
+                <SelectItem value="high">高品質 (推奨・2x)</SelectItem>
+                <SelectItem value="ultra">最高品質 (重い・3x)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -305,7 +315,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
           <div className="space-y-2">
             <Label className="text-sm font-medium">形式</Label>
             <Select value={settings.format} onValueChange={(value: 'png' | 'jpeg') => updateSettings({ format: value })}>
-              <SelectTrigger>
+              <SelectTrigger className={isMobile ? "h-10" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -402,26 +412,41 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
         {/* プレビュー情報 */}
         <div className="space-y-2">
           <h4 className="font-medium">出力情報</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">解像度:</span>
-              <span className="ml-2 font-medium">{currentResolution.width}×{currentResolution.height}</span>
+          {isMobile ? (
+            // モバイル：重要な情報のみ縦並び
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">解像度:</span>
+                <span className="font-medium">{currentResolution.width}×{currentResolution.height}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">形式:</span>
+                <span className="font-medium">{settings.format.toUpperCase()}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-gray-500">形式:</span>
-              <span className="ml-2 font-medium">{settings.format.toUpperCase()}</span>
+          ) : (
+            // デスクトップ：従来通り
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">解像度:</span>
+                <span className="ml-2 font-medium">{currentResolution.width}×{currentResolution.height}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">形式:</span>
+                <span className="ml-2 font-medium">{settings.format.toUpperCase()}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">品質:</span>
+                <span className="ml-2 font-medium">{QUALITY_PRESETS[settings.quality].label}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">ファイル数:</span>
+                <span className="ml-2 font-medium">
+                  {settings.batchExport ? settings.batchSizes.length : 1}個
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-gray-500">品質:</span>
-              <span className="ml-2 font-medium">{QUALITY_PRESETS[settings.quality].label}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">ファイル数:</span>
-              <span className="ml-2 font-medium">
-                {settings.batchExport ? settings.batchSizes.length : 1}個
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* アクションボタン */}
@@ -429,7 +454,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
           <Button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex-1"
+            className={cn("flex-1", isMobile && "h-11")}
           >
             {isExporting ? (
               <>
@@ -447,9 +472,10 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
             variant="outline"
             onClick={savePreset}
             disabled={isExporting}
+            className={isMobile ? "h-11 px-3" : ""}
           >
-            <Save className="h-4 w-4 mr-2" />
-            保存
+            <Save className="h-4 w-4 mr-1" />
+            {isMobile ? "" : "保存"}
           </Button>
         </div>
       </CardContent>

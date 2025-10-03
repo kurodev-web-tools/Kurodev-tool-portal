@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { Rnd, DraggableData, ResizableDelta, Position } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { useTemplate } from '../contexts/TemplateContext';

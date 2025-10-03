@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Rnd, RndDragCallback, ResizableDelta, Position } from 'react-rnd';
 import { ShapeType, useTemplate } from '../contexts/TemplateContext';
 import { cn } from '@/lib/utils';
@@ -240,4 +240,4 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   );
 };
 
-export default ThumbnailShape;
+export default memo(ThumbnailShape);

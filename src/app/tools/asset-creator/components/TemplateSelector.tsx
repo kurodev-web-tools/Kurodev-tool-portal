@@ -159,19 +159,22 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
           {availableGenres.length > 0 ? (
             <Tabs defaultValue={availableGenres[0]} className="w-full">
               <TabsList className={cn(
-                "w-full",
+                "w-full h-auto p-1",
                 availableGenres.length <= 4 
                   ? availableGenres.length === 1 ? "grid grid-cols-1" :
                     availableGenres.length === 2 ? "grid grid-cols-2" :
                     availableGenres.length === 3 ? "grid grid-cols-3" :
                     "grid grid-cols-4"
-                  : "flex overflow-x-auto space-x-1 p-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                  : "flex overflow-x-auto space-x-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
               )}>
                 {availableGenres.map(genre => (
                   <TabsTrigger 
                     key={genre} 
                     value={genre}
-                    className={availableGenres.length > 4 ? 'min-w-fit whitespace-nowrap' : ''}
+                    className={cn(
+                      availableGenres.length > 4 ? 'min-w-fit whitespace-nowrap' : '',
+                      'h-8 px-3 py-1 text-sm'
+                    )}
                   >
                     {genreNames[genre]}
                   </TabsTrigger>

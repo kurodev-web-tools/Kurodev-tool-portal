@@ -5,6 +5,7 @@ import { Eye, EyeOff, Lock, Unlock, Trash2, Copy, ArrowUp, ArrowDown, Type, Imag
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import ShapeSelectorModal, { ShapeType } from './ShapeSelectorModal';
 
 export const LayerPanel: React.FC = () => {
@@ -22,6 +23,7 @@ export const LayerPanel: React.FC = () => {
   } = useTemplate();
 
   const [showShapeSelector, setShowShapeSelector] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const handleToggleVisibility = (id: string) => {
     updateLayer(id, { visible: !layers.find(layer => layer.id === id)?.visible });
@@ -45,10 +47,10 @@ export const LayerPanel: React.FC = () => {
     let initialProps: any = {
       visible: true,
       locked: false,
-      x: 100,
-      y: 100,
-      width: 200,
-      height: 100,
+      x: isDesktop ? 100 : 50,
+      y: isDesktop ? 100 : 50,
+      width: isDesktop ? 200 : 150,
+      height: isDesktop ? 100 : 50,
       rotation: 0
     };
 
@@ -57,7 +59,7 @@ export const LayerPanel: React.FC = () => {
         name = `テキスト ${layerCount}`;
         initialProps.text = '新しいテキスト';
         initialProps.color = '#000000';
-        initialProps.fontSize = '2rem';
+        initialProps.fontSize = isDesktop ? '2rem' : '1rem';
         break;
       case 'image':
         name = `画像 ${layerCount}`;
@@ -113,21 +115,21 @@ export const LayerPanel: React.FC = () => {
     const initialProps: any = {
       visible: true,
       locked: false,
-      x: 100,
-      y: 100,
-      width: 200,
-      height: 100,
+      x: isDesktop ? 100 : 50,
+      y: isDesktop ? 100 : 50,
+      width: isDesktop ? 200 : 100,
+      height: isDesktop ? 100 : 50,
       rotation: 0,
       shapeType: shapeType,
       backgroundColor: '#cccccc',
       borderColor: '#000000',
-      borderWidth: 2,
+      borderWidth: isDesktop ? 2 : 1,
     };
     
     // 線と矢印の場合はサイズを調整
     if (shapeType === 'line' || shapeType === 'arrow') {
-      initialProps.width = 200;
-      initialProps.height = 5;
+      initialProps.width = isDesktop ? 200 : 100;
+      initialProps.height = isDesktop ? 5 : 3;
     }
     
     addLayer({
@@ -167,19 +169,26 @@ export const LayerPanel: React.FC = () => {
     <div className="space-y-4">
       {/* レイヤー操作ツールバー */}
       <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        <Button size="sm" variant="outline" onClick={() => handleAddLayer('text')}>
-          <Type className="h-4 w-4 mr-1" />
-          テキスト
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => handleAddLayer('image')}>
-          <Image className="h-4 w-4 mr-1" />
-          画像
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => handleAddLayer('shape')}>
-          <Square className="h-4 w-4 mr-1" />
-          図形
-        </Button>
-        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+        {/* レイヤー追加ボタン（デスクトップのみ） */}
+        {isDesktop && (
+          <>
+            <Button size="sm" variant="outline" onClick={() => handleAddLayer('text')}>
+              <Type className="h-4 w-4 mr-1" />
+              テキスト
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleAddLayer('image')}>
+              <Image className="h-4 w-4 mr-1" />
+              画像
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleAddLayer('shape')}>
+              <Square className="h-4 w-4 mr-1" />
+              図形
+            </Button>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+          </>
+        )}
+        
+        {/* レイヤー操作ボタン（全デバイス） */}
         <Button size="sm" variant="outline" onClick={() => selectedLayerId && handleDuplicateLayer(selectedLayerId)} disabled={!selectedLayerId}>
           <Copy className="h-4 w-4 mr-1" />
           複製

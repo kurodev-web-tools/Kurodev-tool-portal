@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ThumbnailTemplate, templates } from '../components/TemplateSelector';
 import { v4 as uuidv4 } from 'uuid';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 // ElementPositionTypeを定義
 interface ElementPositionType {
@@ -24,6 +25,7 @@ export interface Layer {
   width: number;
   height: number;
   rotation: number;
+  zIndex: number;
   opacity?: number;
   // Type-specific properties
   src?: string | null;
@@ -64,6 +66,10 @@ interface TemplateContextType {
   duplicateLayer: (id: string) => void;
   moveLayerUp: (id: string) => void;
   moveLayerDown: (id: string) => void;
+  aspectRatio: string;
+  setAspectRatio: (ratio: string) => void;
+  customAspectRatio: { width: number; height: number };
+  setCustomAspectRatio: (aspect: { width: number; height: number }) => void;
 }
 
 const TemplateContext = createContext<TemplateContextType>({
@@ -94,9 +100,16 @@ const TemplateContext = createContext<TemplateContextType>({
   duplicateLayer: () => {},
   moveLayerUp: () => {},
   moveLayerDown: () => {},
+  aspectRatio: '16:9',
+  setAspectRatio: () => {},
+  customAspectRatio: { width: 16, height: 9 },
+  setCustomAspectRatio: () => {},
 });
 
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // レスポンシブ対応
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  
   const [selectedTemplate, setSelectedTemplate] = useState<ThumbnailTemplate>(templates[0]);
   const [currentText, setCurrentText] = useState<string>(templates[0].initialText);
   const [currentTextColor, setCurrentTextColor] = useState<string>(templates[0].initialTextColor);
@@ -108,9 +121,12 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [customAspectRatio, setCustomAspectRatio] = useState({ width: 16, height: 9 });
 
-  const addLayer = (layer: Omit<Layer, 'id' | 'rotation'>) => {
-    const newLayer: Layer = { ...layer, id: uuidv4(), rotation: 0 };
+  const addLayer = (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
+    const maxZIndex = layers.length > 0 ? Math.max(...layers.map(l => l.zIndex)) : 0;
+    const newLayer: Layer = { ...layer, id: uuidv4(), rotation: 0, zIndex: maxZIndex + 1 };
     setLayers((prevLayers) => [newLayer, ...prevLayers]); // 新しいレイヤーを一番上に追加
     setSelectedLayerId(newLayer.id);
   };
@@ -191,20 +207,28 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     
     // テキストレイヤーを最初に追加（最前面）
     if (selectedTemplate.initialText) {
+      // デバイス別の初期位置とサイズを設定
+      const initialX = isDesktop ? (selectedTemplate.initialTextPosition?.x || 550) : 50;
+      const initialY = isDesktop ? (selectedTemplate.initialTextPosition?.y || 250) : 50;
+      const initialWidth = isDesktop ? (selectedTemplate.initialTextPosition?.width || 300) : 150;
+      const initialHeight = isDesktop ? (selectedTemplate.initialTextPosition?.height || 100) : 50;
+      const initialFontSize = isDesktop ? selectedTemplate.initialFontSize : '1rem';
+      
       initialLayers.push({
         id: uuidv4(),
         type: 'text',
         name: 'テキスト',
         visible: true,
         locked: false,
-        x: selectedTemplate.initialTextPosition?.x || 0,
-        y: selectedTemplate.initialTextPosition?.y || 0,
-        width: selectedTemplate.initialTextPosition?.width || 300,
-        height: selectedTemplate.initialTextPosition?.height || 100,
+        x: initialX,
+        y: initialY,
+        width: initialWidth,
+        height: initialHeight,
         rotation: 0,
+        zIndex: 1000,
         text: selectedTemplate.initialText,
         color: selectedTemplate.initialTextColor,
-        fontSize: selectedTemplate.initialFontSize,
+        fontSize: initialFontSize,
       });
     }
     
@@ -221,6 +245,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         width: 1200,
         height: 675,
         rotation: 0,
+        zIndex: 500,
         src: selectedTemplate.initialImageSrc,
       });
     }
@@ -238,13 +263,14 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         width: 1280,
         height: 720,
         rotation: 0,
+        zIndex: 0,
         src: selectedTemplate.templateImage,
       });
     }
     setLayers(initialLayers);
     setSelectedLayerId(initialLayers.length > 0 ? initialLayers[0].id : null); // 最初のレイヤーを選択状態にする
 
-  }, [selectedTemplate]);
+  }, [selectedTemplate, isDesktop]);
 
   return (
     <TemplateContext.Provider
@@ -276,6 +302,10 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         duplicateLayer,
         moveLayerUp,
         moveLayerDown,
+        aspectRatio,
+        setAspectRatio,
+        customAspectRatio,
+        setCustomAspectRatio,
       }}
     >
       {children}

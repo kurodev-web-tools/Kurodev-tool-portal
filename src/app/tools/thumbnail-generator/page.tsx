@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { toPng } from 'html-to-image';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Settings, Layers, Construction } from "lucide-react";
+import { Settings, Layers, Construction, Minimize2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSidebar } from '@/hooks/use-sidebar';
 import { useErrorHandler } from '@/hooks/use-error-handler';
@@ -29,9 +29,11 @@ import TemplateSelector from './components/TemplateSelector';
 import ThumbnailText from './components/ThumbnailText';
 import ThumbnailImage from './components/ThumbnailImage';
 import ThumbnailShape from './components/ThumbnailShape';
-import { LayerPanel } from './components/LayerPanel';
+import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { ExportSettingsPanel, ExportSettings } from './components/ExportSettingsPanel';
-import EnhancedPreview from './components/EnhancedPreview';
+import { EnhancedPreview } from '../asset-creator/components/EnhancedPreview';
+import { Toolbar } from '../asset-creator/components/Toolbar';
+import { useCanvasOperations } from '../asset-creator/hooks/useCanvasOperations';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -44,6 +46,13 @@ export default function ThumbnailGeneratorPage() {
   });
   const [selectedTab, setSelectedTab] = React.useState("settings");
   const [isShiftKeyDown, setIsShiftKeyDown] = React.useState(false);
+  const [isPreviewDedicatedMode, setIsPreviewDedicatedMode] = React.useState(false);
+  
+  // プレビュー設定の状態
+  const [showGrid, setShowGrid] = React.useState(false);
+  const [showAspectGuide, setShowAspectGuide] = React.useState(true);
+  const [showSafeArea, setShowSafeArea] = React.useState(false);
+  const [gridSize, setGridSize] = React.useState(20);
 
   const { handleAsyncError } = useErrorHandler();
 
@@ -55,12 +64,58 @@ export default function ThumbnailGeneratorPage() {
     setCurrentText,
     layers,
     addLayer,
+    removeLayer,
     updateLayer,
     selectedLayerId,
     setSelectedLayerId,
+    reorderLayers,
+    duplicateLayer,
+    moveLayerUp,
+    moveLayerDown,
+    aspectRatio,
+    customAspectRatio,
   } = useTemplate();
 
   const selectedLayer = layers.find(layer => layer.id === selectedLayerId);
+
+  // プレビューエリアのサイズ計算
+  const getPreviewSize = React.useCallback(() => {
+    if (!isDesktop) {
+      // モバイル表示：画面幅を最大限活用
+      if (isPreviewDedicatedMode) {
+        // フルスクリーン表示時は画面幅の95%を使用
+        return { width: '95vw', maxWidth: 'none' };
+      }
+      // 通常表示時は画面幅の90%を使用（サイドバー分を考慮）
+      return { width: '90vw', maxWidth: 'none' };
+    }
+
+    // プレビュー専用モード
+    if (isPreviewDedicatedMode) {
+      return { width: 'min(2000px, 95vw)', maxWidth: 'none' };
+    }
+
+    // サイドバーの状態に応じて動的調整
+    if (isSidebarOpen) {
+      return { width: 'min(1600px, 80vw)', maxWidth: 'none' };
+    } else {
+      return { width: 'min(1800px, 90vw)', maxWidth: 'none' };
+    }
+  }, [isDesktop, isPreviewDedicatedMode, isSidebarOpen]);
+
+  // キャンバス操作機能
+  const {
+    zoom,
+    setZoom,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    addToHistory,
+    resetHistoryFlag,
+    saveToLocalStorage,
+    loadFromLocalStorage,
+  } = useCanvasOperations(layers, selectedLayerId);
 
   // キー入力のイベントハンドラー
   React.useEffect(() => {
@@ -250,7 +305,8 @@ export default function ThumbnailGeneratorPage() {
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
     updateLayer(id, { x: d.x, y: d.y });
-  }, [updateLayer]);
+    addToHistory(layers, selectedLayerId);
+  }, [updateLayer, addToHistory, layers, selectedLayerId]);
 
   const handleLayerResize = React.useCallback((id: string, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
     updateLayer(id, {
@@ -259,7 +315,8 @@ export default function ThumbnailGeneratorPage() {
       x: position.x,
       y: position.y,
     });
-  }, [updateLayer]);
+    addToHistory(layers, selectedLayerId);
+  }, [updateLayer, addToHistory, layers, selectedLayerId]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -289,6 +346,7 @@ export default function ThumbnailGeneratorPage() {
         width: isDesktop ? 300 : 150,
         height: isDesktop ? 300 : 150,
         src,
+        zIndex: 0,
       });
     }
     e.target.value = '';
@@ -326,6 +384,7 @@ export default function ThumbnailGeneratorPage() {
       backgroundColor: '#cccccc',
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
+      zIndex: 0,
     });
   };
 
@@ -342,6 +401,7 @@ export default function ThumbnailGeneratorPage() {
       text: currentText,
       color: '#000000',
       fontSize: isDesktop ? '2rem' : '1rem',
+      zIndex: 0,
     });
   };
 
@@ -630,7 +690,22 @@ export default function ThumbnailGeneratorPage() {
         {renderToolsPanel()}
       </TabsContent>
       <TabsContent value="layers" className="mt-4">
-        <LayerPanel />
+        <UnifiedLayerPanel 
+          context={{
+            layers: layers as any[],
+            updateLayer: updateLayer as any,
+            removeLayer,
+            selectedLayerId,
+            setSelectedLayerId,
+            reorderLayers,
+            duplicateLayer,
+            addLayer: addLayer as any,
+            moveLayerUp,
+            moveLayerDown,
+          }}
+          onShapeSelect={(shapeType) => handleAddShape(shapeType as ShapeType)}
+          showShapeSelector={true}
+        />
       </TabsContent>
       <TabsContent value="export" className="mt-4">
         <ExportSettingsPanel onExport={handleAdvancedExport} isExporting={isExporting} />
@@ -638,37 +713,798 @@ export default function ThumbnailGeneratorPage() {
     </Tabs>
   );
 
-  // モバイル用のサイドバーコンテンツ（テンプレートのみ）
+  // モバイル用のサイドバーコンテンツ（テンプレート・エクスポートのみ）
   const mobileSidebarContent = (
-    <div className="w-full">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold">テンプレート選択</h3>
-      </div>
-      <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
-    </div>
+    <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
+        <TabsTrigger 
+          value="settings"
+          className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-6 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+        >
+          テンプレート
+        </TabsTrigger>
+        <TabsTrigger 
+          value="export"
+          className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-6 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+        >
+          エクスポート
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="settings" className="mt-4">
+        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+      </TabsContent>
+      <TabsContent value="export" className="mt-4">
+        <ExportSettingsPanel onExport={handleAdvancedExport} isExporting={isExporting} />
+      </TabsContent>
+    </Tabs>
   );
 
+  // ハンドラー関数を追加
+  const handleSave = React.useCallback(() => {
+    const success = saveToLocalStorage(layers, selectedLayerId);
+    if (success) {
+      toast.success('プロジェクトを保存しました');
+    } else {
+      toast.error('保存に失敗しました');
+    }
+  }, [saveToLocalStorage, layers, selectedLayerId]);
+
+  const handleUndo = React.useCallback(() => {
+    const historyState = undo();
+    if (historyState) {
+      // ここでレイヤー状態を復元する処理が必要
+      resetHistoryFlag();
+    }
+  }, [undo, resetHistoryFlag]);
+
+  const handleRedo = React.useCallback(() => {
+    const historyState = redo();
+    if (historyState) {
+      // ここでレイヤー状態を復元する処理が必要
+      resetHistoryFlag();
+    }
+  }, [redo, resetHistoryFlag]);
+
+  const handleDownloadThumbnail = React.useCallback(async (quality: 'normal' | 'high' | 'super' = 'high') => {
+    const element = document.getElementById('thumbnail-preview');
+    if (!element) {
+      toast.error('プレビューエリアが見つかりません');
+      return;
+    }
+
+    // 品質レベルのマッピング
+    const qualityMapping = {
+      'normal': 'medium' as const,
+      'high': 'high' as const,
+      'super': 'ultra' as const,
+    };
+
+    try {
+      const settings: ExportSettings = {
+        format: 'png',
+        quality: qualityMapping[quality],
+        resolution: 'fhd', // デフォルト解像度を設定
+        optimizeForPlatform: 'youtube',
+        pixelRatio: quality === 'super' ? 4 : quality === 'high' ? 2 : 1,
+        backgroundColor: '#ffffff',
+        includeTransparency: false,
+        batchExport: false,
+        batchSizes: []
+      };
+      
+      await handleSingleExport(element, settings);
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('エクスポートに失敗しました');
+    }
+  }, []);
+
   const renderPreview = () => (
-    <EnhancedPreview isShiftKeyDown={isShiftKeyDown} />
+    <>
+      {/* ツールバー - デスクトップのみ表示 */}
+      {isDesktop && (
+        <Toolbar
+          zoom={zoom}
+          setZoom={setZoom}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onSave={handleSave}
+          onDownload={handleDownloadThumbnail}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          isPreviewDedicatedMode={isPreviewDedicatedMode}
+          onTogglePreviewMode={() => setIsPreviewDedicatedMode(!isPreviewDedicatedMode)}
+        />
+      )}
+      
+      {/* モバイル表示でのフルスクリーン表示時の戻るボタン */}
+      {!isDesktop && isPreviewDedicatedMode && (
+        <div className="absolute top-2 left-2 z-20">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsPreviewDedicatedMode(false)}
+            className="bg-background/90 backdrop-blur-sm shadow-lg"
+          >
+            <Minimize2 className="h-4 w-4 mr-1" />
+            通常表示に戻る
+          </Button>
+        </div>
+      )}
+      
+      {/* プレビューエリア */}
+      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
+        <div className="flex items-center justify-center h-full p-4 lg:p-8">
+          <EnhancedPreview
+            zoom={zoom}
+            onZoomReset={() => setZoom(1)}
+            className="w-full"
+            aspectRatio={aspectRatio}
+            customAspectRatio={customAspectRatio}
+            showGrid={showGrid}
+            setShowGrid={setShowGrid}
+            showAspectGuide={showAspectGuide}
+            setShowAspectGuide={setShowAspectGuide}
+            showSafeArea={showSafeArea}
+            setShowSafeArea={setShowSafeArea}
+            gridSize={gridSize}
+            setGridSize={setGridSize}
+          >
+            <div
+              id="thumbnail-preview"
+              style={{ 
+                aspectRatio: aspectRatio === 'custom' 
+                  ? `${customAspectRatio.width}/${customAspectRatio.height}` 
+                  : (aspectRatio || '16:9').replace(':', '/'),
+                ...getPreviewSize()
+              }}
+              className="bg-card relative border rounded-md shadow-lg"
+            >
+              <div id="download-target" className="w-full h-full relative overflow-hidden">
+                {layers.map((layer) => {
+                  const isSelected = layer.id === selectedLayerId;
+                  const isDraggable = isSelected && !layer.locked;
+                  const isResizable = isSelected && !layer.locked;
+
+                  if (!layer.visible) return null;
+
+                  if (layer.type === 'image') {
+                    return (
+                      <ThumbnailImage
+                        key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
+                        x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
+                        onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                        onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                        onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                        lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                        onSelect={() => setSelectedLayerId(layer.id)}
+                        isDraggable={isDraggable}
+                        isLocked={layer.locked}
+                        onRotateStart={() => {}}
+                        onRotate={() => {}}
+                        onRotateStop={() => {}}
+                      />
+                    );
+                  } else if (layer.type === 'text') {
+                    return (
+                      <ThumbnailText
+                        key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color}
+                        fontSize={layer.fontSize} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                        rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                        onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                        enableResizing={isResizable} disableDragging={!isDraggable}
+                      />
+                    );
+                  } else if (layer.type === 'shape') {
+                    return (
+                      <ThumbnailShape
+                        key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType as ShapeType}
+                        backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
+                        borderWidth={layer.borderWidth || 2} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                        rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                        onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                        onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                        lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+          </EnhancedPreview>
+        </div>
+      </div>
+    </>
   );
 
   const renderMobileControls = () => (
-    <div className="p-2 lg:p-4 space-y-4">
-      <Accordion type="single" collapsible className="w-full" defaultValue='tools'>
-        <AccordionItem value="tools">
-          <AccordionTrigger className="text-base font-semibold">
-            <div className="flex items-center gap-2">
-              <Construction className="h-4 w-4" />
-              <span>ツール</span>
+    <div className="p-2 lg:p-4 space-y-3">
+      {/* モバイル用クイックアクション */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-muted-foreground">クイックアクセス</h4>
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
+            <TabsTrigger 
+              value="tools"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              ツール設定
+            </TabsTrigger>
+            <TabsTrigger 
+              value="layers"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              レイヤー管理
+            </TabsTrigger>
+            <TabsTrigger 
+              value="edit"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              レイヤー編集
+            </TabsTrigger>
+            <TabsTrigger 
+              value="preview"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              プレビュー
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      
+      {/* インライン表示エリア */}
+      {selectedTab === "tools" && (
+        <div className="space-y-3 border-t pt-3">
+          <h4 className="text-sm font-medium">ツール設定</h4>
+          {renderToolsPanel()}
+        </div>
+      )}
+      
+      {selectedTab === "layers" && (
+        <div className="space-y-3 border-t pt-3">
+          <h4 className="text-sm font-medium">レイヤー管理</h4>
+          <UnifiedLayerPanel 
+            context={{
+              layers: layers as any[],
+              updateLayer: updateLayer as any,
+              removeLayer,
+              selectedLayerId,
+              setSelectedLayerId,
+              reorderLayers,
+              duplicateLayer,
+              addLayer: addLayer as any,
+              moveLayerUp,
+              moveLayerDown,
+            }}
+            onShapeSelect={(shapeType) => handleAddShape(shapeType as ShapeType)}
+            showShapeSelector={true}
+          />
+        </div>
+      )}
+      
+      {selectedTab === "edit" && (
+        <div className="space-y-3 border-t pt-3">
+          <h4 className="text-sm font-medium">レイヤー編集</h4>
+          {selectedLayer ? (
+            <div className="space-y-3">
+              {/* 選択中レイヤー情報 */}
+              <div className="p-2 bg-secondary/50 rounded-md">
+                <p className="text-xs text-muted-foreground mb-1">選択中</p>
+                <p className="text-sm font-medium">{selectedLayer.name}</p>
+              </div>
+              
+              {/* 位置調整 */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">📐 位置</Label>
+                <div className="space-y-2">
+                  {/* X座標 */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { x: selectedLayer.x - 10 })}
+                      className="h-7 w-7 p-0"
+                    >
+                      ←
+                    </Button>
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">X</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={Math.round(selectedLayer.x)}
+                        onChange={(e) => updateLayer(selectedLayer.id, { x: Number(e.target.value) })}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { x: selectedLayer.x + 10 })}
+                      className="h-7 w-7 p-0"
+                    >
+                      →
+                    </Button>
+                  </div>
+                  
+                  {/* Y座標 */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { y: selectedLayer.y - 10 })}
+                      className="h-7 w-7 p-0"
+                    >
+                      ↑
+                    </Button>
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">Y</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={Math.round(selectedLayer.y)}
+                        onChange={(e) => updateLayer(selectedLayer.id, { y: Number(e.target.value) })}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { y: selectedLayer.y + 10 })}
+                      className="h-7 w-7 p-0"
+                    >
+                      ↓
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* サイズ調整 */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">📏 サイズ</Label>
+                <div className="space-y-2">
+                  {/* 幅 */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { width: Math.max(10, selectedLayer.width - 20) })}
+                      className="h-7 w-7 p-0"
+                    >
+                      −
+                    </Button>
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">幅</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={Math.round(selectedLayer.width)}
+                        onChange={(e) => updateLayer(selectedLayer.id, { width: Math.max(10, Number(e.target.value)) })}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { width: selectedLayer.width + 20 })}
+                      className="h-7 w-7 p-0"
+                    >
+                      +
+                    </Button>
+                  </div>
+                  
+                  {/* 高さ */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { height: Math.max(10, selectedLayer.height - 20) })}
+                      className="h-7 w-7 p-0"
+                    >
+                      −
+                    </Button>
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">高さ</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={Math.round(selectedLayer.height)}
+                        onChange={(e) => updateLayer(selectedLayer.id, { height: Math.max(10, Number(e.target.value)) })}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLayer(selectedLayer.id, { height: selectedLayer.height + 20 })}
+                      className="h-7 w-7 p-0"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 回転調整 */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">🔄 回転</Label>
+                <div className="flex gap-1 items-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) - 15 })}
+                    className="h-7 w-7 p-0"
+                    title="反時計回り 15°"
+                  >
+                    ↺
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) - 5 })}
+                    className="h-7 w-7 p-0"
+                    title="反時計回り 5°"
+                  >
+                    ↶
+                  </Button>
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      value={Math.round(selectedLayer.rotation || 0)}
+                      onChange={(e) => updateLayer(selectedLayer.id, { rotation: Number(e.target.value) })}
+                      className="h-7 text-xs text-center"
+                      placeholder="角度"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) + 5 })}
+                    className="h-7 w-7 p-0"
+                    title="時計回り 5°"
+                  >
+                    ↷
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) + 15 })}
+                    className="h-7 w-7 p-0"
+                    title="時計回り 15°"
+                  >
+                    ↻
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateLayer(selectedLayer.id, { rotation: 0 })}
+                    className="h-7 px-2 text-xs"
+                  >
+                    0°
+                  </Button>
+                </div>
+              </div>
+              
+              {/* テキスト専用設定 */}
+              {selectedLayer.type === 'text' && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">✏️ テキスト設定</Label>
+                  <div className="space-y-2">
+                    <Textarea
+                      value={selectedLayer.text || ''}
+                      onChange={(e) => updateLayer(selectedLayer.id, { text: e.target.value })}
+                      className="text-xs min-h-[60px] resize-none"
+                      placeholder="テキストを入力"
+                    />
+                    <div className="space-y-2">
+                      {/* 色選択 */}
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground w-8">色</Label>
+                        <input
+                          type="color"
+                          value={selectedLayer.color || '#000000'}
+                          onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                          className="w-8 h-7 rounded border"
+                        />
+                        <Input
+                          value={selectedLayer.color || '#000000'}
+                          onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                          className="h-7 text-xs flex-1"
+                          placeholder="#000000"
+                        />
+                      </div>
+                      
+                      {/* フォントサイズ */}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const currentSize = parseFloat(selectedLayer.fontSize || '1rem');
+                            const newSize = Math.max(0.5, currentSize - 0.25);
+                            updateLayer(selectedLayer.id, { fontSize: `${newSize}rem` });
+                          }}
+                          className="h-7 w-7 p-0"
+                        >
+                          −
+                        </Button>
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">サイズ</Label>
+                          <Input
+                            value={selectedLayer.fontSize || '1rem'}
+                            onChange={(e) => updateLayer(selectedLayer.id, { fontSize: e.target.value })}
+                            className="h-7 text-xs"
+                            placeholder="1rem"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const currentSize = parseFloat(selectedLayer.fontSize || '1rem');
+                            const newSize = currentSize + 0.25;
+                            updateLayer(selectedLayer.id, { fontSize: `${newSize}rem` });
+                          }}
+                          className="h-7 w-7 p-0"
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </AccordionTrigger>
-          <AccordionContent className="pt-2">
-            {renderToolsPanel()}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-      <div>
-        <LayerPanel />
+          ) : (
+            <div className="p-4 text-center text-muted-foreground">
+              <p className="text-xs">レイヤーを選択してください</p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {selectedTab === "preview" && (
+        <div className="space-y-3 border-t pt-3">
+          <h4 className="text-sm font-medium">プレビュー設定</h4>
+          <div className="space-y-3">
+            {/* ズーム調整 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">🔍 ズーム</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setZoom(Math.max(0.25, zoom - 0.25))}
+                  className="h-8 w-8 p-0"
+                  disabled={zoom <= 0.25}
+                >
+                  −
+                </Button>
+                <div className="flex-1 text-center">
+                  <span className="text-xs text-muted-foreground">{Math.round(zoom * 100)}%</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setZoom(Math.min(4, zoom + 0.25))}
+                  className="h-8 w-8 p-0"
+                  disabled={zoom >= 4}
+                >
+                  +
+                </Button>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setZoom(1)}
+                className="w-full h-8"
+              >
+                リセット (100%)
+              </Button>
+            </div>
+
+            {/* プレビュー情報表示 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">📊 プレビュー情報</Label>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">アスペクト比:</span>
+                  <span className="font-medium">
+                    {aspectRatio === 'custom' 
+                      ? `${customAspectRatio.width}:${customAspectRatio.height}` 
+                      : aspectRatio || '16:9'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ズーム率:</span>
+                  <span className="font-medium">{Math.round(zoom * 100)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">グリッド:</span>
+                  <span className="font-medium">40px</span>
+                </div>
+              </div>
+            </div>
+
+            {/* プレビュー設定 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">⚙️ プレビュー設定</Label>
+              <div className="space-y-2">
+                {/* グリッド表示 */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">グリッド表示</Label>
+                  <Button
+                    size="sm"
+                    variant={showGrid ? "default" : "outline"}
+                    onClick={() => setShowGrid(!showGrid)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {showGrid ? "ON" : "OFF"}
+                  </Button>
+                </div>
+                
+                {/* アスペクト比ガイド */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">アスペクト比ガイド</Label>
+                  <Button
+                    size="sm"
+                    variant={showAspectGuide ? "default" : "outline"}
+                    onClick={() => setShowAspectGuide(!showAspectGuide)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {showAspectGuide ? "ON" : "OFF"}
+                  </Button>
+                </div>
+                
+                {/* セーフエリア */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">セーフエリア</Label>
+                  <Button
+                    size="sm"
+                    variant={showSafeArea ? "default" : "outline"}
+                    onClick={() => setShowSafeArea(!showSafeArea)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {showSafeArea ? "ON" : "OFF"}
+                  </Button>
+                </div>
+                
+                {/* グリッドサイズ */}
+                {showGrid && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">グリッドサイズ</Label>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant={gridSize === 10 ? "default" : "outline"}
+                        onClick={() => setGridSize(10)}
+                        className="h-6 px-2 text-xs flex-1"
+                      >
+                        10px
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={gridSize === 20 ? "default" : "outline"}
+                        onClick={() => setGridSize(20)}
+                        className="h-6 px-2 text-xs flex-1"
+                      >
+                        20px
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={gridSize === 40 ? "default" : "outline"}
+                        onClick={() => setGridSize(40)}
+                        className="h-6 px-2 text-xs flex-1"
+                      >
+                        40px
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setZoom(1)}
+                  className="w-full h-8"
+                >
+                  ズームリセット (100%)
+                </Button>
+              </div>
+            </div>
+
+            {/* プレビューモード切り替え */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">📺 表示モード</Label>
+              <Button
+                size="sm"
+                variant={isPreviewDedicatedMode ? "default" : "outline"}
+                onClick={() => setIsPreviewDedicatedMode(!isPreviewDedicatedMode)}
+                className="w-full h-8"
+              >
+                {isPreviewDedicatedMode ? "通常表示に戻る" : "フルスクリーン表示"}
+              </Button>
+            </div>
+
+            {/* 保存・エクスポート */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">💾 保存・出力</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSave}
+                  className="h-8"
+                >
+                  保存
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDownloadThumbnail('high')}
+                  className="h-8"
+                >
+                  ダウンロード
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* レイヤー追加ボタン */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-muted-foreground">レイヤーを追加</h4>
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleAddText}
+            className="flex items-center gap-2"
+          >
+            <span className="text-lg">T</span>
+            <span>テキスト</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => document.getElementById('image-upload')?.click()}
+            className="flex items-center gap-2"
+          >
+            <span className="text-lg">🖼️</span>
+            <span>画像</span>
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => handleAddShape('rectangle')}
+            className="flex items-center gap-2"
+          >
+            <span className="text-lg">⬜</span>
+            <span>四角</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => handleAddShape('circle')}
+            className="flex items-center gap-2"
+          >
+            <span className="text-lg">⭕</span>
+            <span>円</span>
+          </Button>
+        </div>
+        <input
+          id="image-upload"
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+          multiple
+        />
       </div>
     </div>
   );
@@ -678,20 +1514,29 @@ export default function ThumbnailGeneratorPage() {
       {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
       {isSidebarOpen && !isDesktop && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
         <main className="flex-1 overflow-y-auto">
-          <div className="p-2 pt-20 lg:p-6 lg:pt-6">
-            {renderPreview()}
+          <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
+            <div className={`${isDesktop ? '' : 'max-h-[70vh] overflow-hidden'}`}>
+              {renderPreview()}
+            </div>
           </div>
-          {/* モバイル用コントロール */}
-          <div className="lg:hidden">
-            {renderMobileControls()}
-          </div>
+          {/* モバイル用コントロール - プレビュー専用モード時は非表示 */}
+          {!isDesktop && !isPreviewDedicatedMode && (
+            <div className="border-t bg-background/95 backdrop-blur-sm">
+              <div className="p-2">
+                <p className="text-xs text-muted-foreground mb-2">
+                  💡 ヒント: 「ツール設定」でレイヤーの詳細編集、「レイヤー管理」でレイヤーの並び替えができます。テンプレートやエクスポートはサイドバーからアクセスできます。
+                </p>
+              </div>
+              {renderMobileControls()}
+            </div>
+          )}
         </main>
 
         {/* サイドバーが閉じている場合の開くボタン */}
@@ -711,16 +1556,18 @@ export default function ThumbnailGeneratorPage() {
           />
         )}
 
-        {/* サイドバー */}
-        <Sidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          title=""
-          isDesktop={isDesktop}
-          className="lg:w-96"
-        >
-          {isDesktop ? sidebarContent : mobileSidebarContent}
-        </Sidebar>
+        {/* サイドバー（プレビュー専用モード時は非表示） */}
+        {!isPreviewDedicatedMode && (
+          <Sidebar
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            title=""
+            isDesktop={isDesktop}
+            className={`${isDesktop ? 'lg:w-96' : 'w-full max-w-sm'}`}
+          >
+            {isDesktop ? sidebarContent : mobileSidebarContent}
+          </Sidebar>
+        )}
       </div>
     </div>
   );

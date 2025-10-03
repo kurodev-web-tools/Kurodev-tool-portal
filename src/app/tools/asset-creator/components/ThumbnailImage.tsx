@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Rnd, ResizableDelta, RndDragCallback } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { useTemplate } from '../contexts/TemplateContext';

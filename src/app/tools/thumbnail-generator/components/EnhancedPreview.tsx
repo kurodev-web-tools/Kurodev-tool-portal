@@ -15,10 +15,12 @@ import {
   Maximize2,
   Minimize2,
   Ruler,
-  Target
+  Target,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ResizableDelta, Position } from 'react-rnd';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import styles from './EnhancedPreview.module.css';
 
 import { useTemplate } from '../contexts/TemplateContext';
@@ -39,6 +41,9 @@ export default function EnhancedPreview({ isShiftKeyDown }: EnhancedPreviewProps
     updateLayer,
   } = useTemplate();
 
+  // レスポンシブ対応
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
   // プレビュー状態管理
   const [zoomLevel, setZoomLevel] = useState(1);
   const [showGrid, setShowGrid] = useState(false);
@@ -46,6 +51,7 @@ export default function EnhancedPreview({ isShiftKeyDown }: EnhancedPreviewProps
   const [showSafeArea, setShowSafeArea] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewQuality, setPreviewQuality] = useState<'standard' | 'high'>('standard');
+  const [showMobileInfo, setShowMobileInfo] = useState(false);
   
   const previewRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -156,108 +162,121 @@ export default function EnhancedPreview({ isShiftKeyDown }: EnhancedPreviewProps
       "flex flex-col h-full",
       isFullscreen && styles['fullscreen-mode']
     )}>
-      {/* プレビューコントロール */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-4">
-          <h3 className="font-semibold">プレビュー</h3>
+      {/* プレビューコントロール - デスクトップのみ表示 */}
+      {isDesktop && (
+        <div className="flex items-center justify-between border-b p-4">
+        <div className="flex items-center gap-2 lg:gap-4">
+          <h3 className={`font-semibold ${isDesktop ? 'text-base' : 'text-sm'}`}>プレビュー</h3>
           
           {/* ズームコントロール */}
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={handleZoomOut}>
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2 min-w-[120px]">
-              <Slider
-                value={[zoomLevel]}
-                onValueChange={handleZoomChange}
-                min={0.25}
-                max={4}
-                step={0.25}
-                className="flex-1"
-              />
-              <span className="text-sm font-medium min-w-[40px]">
-                {Math.round(zoomLevel * 100)}%
-              </span>
+          {isDesktop && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleZoomOut}>
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-2 min-w-[120px]">
+                <Slider
+                  value={[zoomLevel]}
+                  onValueChange={handleZoomChange}
+                  min={0.25}
+                  max={4}
+                  step={0.25}
+                  className="flex-1"
+                />
+                <span className="text-sm font-medium min-w-[40px]">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleZoomIn}>
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleZoomReset}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
             </div>
-            <Button size="sm" variant="outline" onClick={handleZoomIn}>
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={handleZoomReset}>
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-          </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-1 lg:gap-2 ${isDesktop ? '' : 'flex-wrap'}`}>
           {/* ガイドコントロール */}
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={showGrid ? "default" : "outline"}
-              onClick={() => setShowGrid(!showGrid)}
-              title="グリッド表示 (G)"
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant={showCenterLines ? "default" : "outline"}
-              onClick={() => setShowCenterLines(!showCenterLines)}
-              title="中央線表示 (C)"
-            >
-              <Ruler className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant={showSafeArea ? "default" : "outline"}
-              onClick={() => setShowSafeArea(!showSafeArea)}
-              title="安全エリア表示 (S)"
-            >
-              <Target className="h-4 w-4" />
-            </Button>
-          </div>
+          {isDesktop && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={showGrid ? "default" : "outline"}
+                onClick={() => setShowGrid(!showGrid)}
+                title="グリッド表示 (G)"
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={showCenterLines ? "default" : "outline"}
+                onClick={() => setShowCenterLines(!showCenterLines)}
+                title="中央線表示 (C)"
+              >
+                <Ruler className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={showSafeArea ? "default" : "outline"}
+                onClick={() => setShowSafeArea(!showSafeArea)}
+                title="安全エリア表示 (S)"
+              >
+                <Target className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           {/* 品質設定 */}
-          <div className="flex items-center gap-2">
-            <Label className="text-sm">品質:</Label>
-            <Button
-              size="sm"
-              variant={previewQuality === 'standard' ? "default" : "outline"}
-              onClick={() => setPreviewQuality('standard')}
-            >
-              標準
-            </Button>
-            <Button
-              size="sm"
-              variant={previewQuality === 'high' ? "default" : "outline"}
-              onClick={() => setPreviewQuality('high')}
-            >
-              高品質
-            </Button>
-          </div>
+          {isDesktop && (
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">品質:</Label>
+              <Button
+                size="sm"
+                variant={previewQuality === 'standard' ? "default" : "outline"}
+                onClick={() => setPreviewQuality('standard')}
+              >
+                標準
+              </Button>
+              <Button
+                size="sm"
+                variant={previewQuality === 'high' ? "default" : "outline"}
+                onClick={() => setPreviewQuality('high')}
+              >
+                高品質
+              </Button>
+            </div>
+          )}
 
-          {/* フルスクリーン */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={toggleFullscreen}
-            title="フルスクリーン (Ctrl+F)"
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
+          {/* デスクトップ用フルスクリーン */}
+          {isDesktop && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={toggleFullscreen}
+              title="フルスクリーン (Ctrl+F)"
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* プレビューエリア */}
       <div 
         ref={containerRef}
         className={cn(
-          "flex-1 overflow-auto bg-gray-100 dark:bg-gray-900",
+          "flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative",
           isFullscreen && "h-full"
         )}
-        onWheel={handleWheel}
+        onWheel={isDesktop ? handleWheel : undefined}
       >
-        <div className="flex items-center justify-center min-h-full p-8">
+        {/* モバイル用フルスクリーンボタンは下部のプレビュータブに移動 */}
+        
+
+        <div className={`flex items-center justify-center ${isDesktop ? 'min-h-full p-8' : 'h-full p-1'}`}>
           <div
             id="thumbnail-preview"
             ref={previewRef}
@@ -273,11 +292,16 @@ export default function EnhancedPreview({ isShiftKeyDown }: EnhancedPreviewProps
               }),
               styles['export-mode'] // エクスポート時の境界線除外
             )}
-            style={{
+            style={isDesktop ? {
               transform: `scale(${zoomLevel})`,
               transformOrigin: 'center',
               width: '1280px',
               height: '720px'
+            } : {
+              width: '100%',
+              maxWidth: '100vw',
+              height: 'auto',
+              aspectRatio: '16/9'
             }}
           >
             {/* テンプレート背景 */}
@@ -323,6 +347,8 @@ export default function EnhancedPreview({ isShiftKeyDown }: EnhancedPreviewProps
             {showSafeArea && (
               <div className={cn("absolute inset-0 pointer-events-none", styles['safe-area'])}></div>
             )}
+
+            {/* プレビューエリア内の設定ボタンと情報表示 - 完全に削除 */}
 
             {/* レイヤー */}
             {layers.slice().reverse().map((layer) => {
@@ -418,17 +444,19 @@ export default function EnhancedPreview({ isShiftKeyDown }: EnhancedPreviewProps
       </div>
 
       {/* キーボードショートカットヘルプ */}
-      <div className="p-2 bg-muted text-xs text-muted-foreground border-t">
-        <div className="flex items-center gap-4">
-          <span>ショートカット:</span>
-          <span>Ctrl + +/-: ズーム</span>
-          <span>Ctrl + 0: リセット</span>
-          <span>G: グリッド</span>
-          <span>C: 中央線</span>
-          <span>S: 安全エリア</span>
-          <span>Ctrl + F: フルスクリーン</span>
+      {isDesktop && (
+        <div className="p-2 bg-muted text-xs text-muted-foreground border-t">
+          <div className="flex items-center gap-4">
+            <span>ショートカット:</span>
+            <span>Ctrl + +/-: ズーム</span>
+            <span>Ctrl + 0: リセット</span>
+            <span>G: グリッド</span>
+            <span>C: 中央線</span>
+            <span>S: 安全エリア</span>
+            <span>Ctrl + F: フルスクリーン</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

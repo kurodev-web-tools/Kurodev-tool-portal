@@ -181,33 +181,36 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
     <div className="space-y-4">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">テンプレート選択</h3>
+        <h3 className="text-lg md:text-lg font-semibold">テンプレート選択</h3>
         <Button
           size="sm"
           variant="outline"
           onClick={() => setShowCustomCreator(true)}
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 md:gap-2 h-9 px-3 md:px-4"
         >
           <Plus className="h-4 w-4" />
-          カスタム作成
+          <span className="hidden sm:inline">カスタム作成</span>
+          <span className="sm:hidden">作成</span>
         </Button>
       </div>
 
       {/* 検索・フィルター */}
       <div className="space-y-3">
+        {/* 検索バー */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="テンプレートを検索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-10 md:h-9"
           />
         </div>
         
-        <div className="flex gap-2">
+        {/* フィルター */}
+        <div className="flex flex-col md:flex-row gap-2">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-full md:w-32 h-10 md:h-9">
               <SelectValue placeholder="カテゴリ" />
             </SelectTrigger>
             <SelectContent>
@@ -222,7 +225,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
           </Select>
           
           <Select value={styleFilter} onValueChange={setStyleFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-full md:w-32 h-10 md:h-9">
               <SelectValue placeholder="スタイル" />
             </SelectTrigger>
             <SelectContent>
@@ -238,78 +241,100 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
       </div>
 
       {/* テンプレートグリッド */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {filteredTemplates.map((template) => (
           <div
             key={template.id}
             className={cn(
-              "relative group cursor-pointer transition-all hover:scale-105",
+              "relative group cursor-pointer transition-all hover:scale-[1.02] md:hover:scale-105",
               selectedTemplateId === template.id && "ring-2 ring-blue-500"
             )}
             onClick={() => onSelectTemplate(template)}
           >
-            <Card className="overflow-hidden">
-              <div className="aspect-video bg-gray-100 dark:bg-gray-800 relative">
-                {/* プレビュー画像またはフォールバック */}
-                {template.preview ? (
-                  <img
-                    src={template.preview}
-                    alt={template.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className={cn("w-full h-full flex items-center justify-center", {
-                    'simple-enhanced': template.id === 'template-1',
-                    'stylish-enhanced': template.id === 'template-2',
-                    'cute-enhanced': template.id === 'template-3',
-                    'cool-enhanced': template.id === 'template-4',
-                    'bg-gray-200': template.id === 'template-5',
-                  })}>
-                    <p className="text-sm font-bold" style={{ color: template.initialTextColor }}>
-                      {template.initialText}
-                    </p>
-                  </div>
-                )}
-                
-                {/* ホバー時のプレビューボタン */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="sm" variant="secondary">
-                    <Eye className="h-4 w-4 mr-1" />
-                    プレビュー
-                  </Button>
-                  {template.isCustom && (
-                    <Button 
-                      size="sm" 
-                      variant="destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCustomTemplate(template.id);
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      削除
-                    </Button>
+            {/* モバイル用横長レイアウト */}
+            <Card className="overflow-hidden md:block">
+              <div className="flex md:block">
+                {/* プレビュー画像部分 */}
+                <div className="w-24 h-16 md:w-full md:aspect-video bg-gray-100 dark:bg-gray-800 relative flex-shrink-0">
+                  {template.preview ? (
+                    <img
+                      src={template.preview}
+                      alt={template.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className={cn("w-full h-full flex items-center justify-center text-xs md:text-sm", {
+                      'simple-enhanced': template.id === 'template-1',
+                      'stylish-enhanced': template.id === 'template-2',
+                      'cute-enhanced': template.id === 'template-3',
+                      'cool-enhanced': template.id === 'template-4',
+                      'bg-gray-200': template.id === 'template-5',
+                    })}>
+                      <p className="font-bold text-center px-1" style={{ color: template.initialTextColor }}>
+                        {template.initialText}
+                      </p>
+                    </div>
                   )}
+                  
+                  {/* デスクトップ用ホバーオーバーレイ */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 md:group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2">
+                    <Button size="sm" variant="secondary">
+                      <Eye className="h-4 w-4 mr-1" />
+                      プレビュー
+                    </Button>
+                    {template.isCustom && (
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCustomTemplate(template.id);
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        削除
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* コンテンツ部分 */}
+                <div className="flex-1 p-3 md:p-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm md:text-sm truncate">{template.name}</h4>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-1 md:line-clamp-2">{template.description}</p>
+                    </div>
+                    {/* モバイル用削除ボタン */}
+                    {template.isCustom && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        className="md:hidden ml-2 h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCustomTemplate(template.id);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {template.category === 'gaming' ? 'ゲーム' :
+                       template.category === 'talk' ? '雑談' :
+                       template.category === 'singing' ? '歌枠' :
+                       template.category === 'collaboration' ? 'コラボ' :
+                       template.category === 'event' ? 'イベント' : 'カスタム'}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-500" />
+                      <span className="text-xs">{template.rating}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <CardContent className="p-3">
-                <h4 className="font-medium text-sm truncate">{template.name}</h4>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{template.description}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {template.category === 'gaming' ? 'ゲーム' :
-                     template.category === 'talk' ? '雑談' :
-                     template.category === 'singing' ? '歌枠' :
-                     template.category === 'collaboration' ? 'コラボ' :
-                     template.category === 'event' ? 'イベント' : 'カスタム'}
-                  </Badge>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 text-yellow-500" />
-                    <span className="text-xs">{template.rating}</span>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </div>
         ))}
