@@ -1,12 +1,43 @@
 1:"$Sreact.fragment"
-2:I[56609,["177","static/chunks/app/layout-7b618135876407b6.js"],""]
+2:I[56609,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],""]
 17:I[16307,[],""]
-:HL["/Kurodev-tool-portal/_next/static/media/0ba443039d62fc5b-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/0484562807a97172-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/0c1a05f6642d3ad4-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/0e9d289c6eb42bf7-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/155cae559bbd1a77-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/Kurodev-tool-portal/_next/static/media/1bc72ecfe6e6f869-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/1f3fe8c6df3d47c1-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/3703c28dcda155b1-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/443896d591e4f761-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/47cbc4e2adbc5db9-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/4c285fdca692ea22-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/4de1fea1a954a5b6-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/5c0c2bcbaa4149ca-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/62c97acc3aa63787-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/Kurodev-tool-portal/_next/static/media/6c25f6e897d845a3-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/6d664cce900333ee-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/72b894ddc38a7cc1-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/739c2d8941231bb4-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/7f06be3f780a819a-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/87069f06a4f1ee13-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/8888a3826f4a3af4-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/904be59b21bd51cb-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/9cf9c6e84ed13b5e-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/b0ae0c3d5e298d03-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/b957ea75a84b6ea7-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/ba2138f0d9bce0a9-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/bb3ef058b751a6ad-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/be955174636e5369-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/c7b4fd33734710f7-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/e400baae650c21fc-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/e4af272ccee01ff0-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/e807dee2426166ad-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/eaead17c7dbfcd5d-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/eafabf029ad39a43-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Kurodev-tool-portal/_next/static/media/ee40bb094c99a29a-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/Kurodev-tool-portal/_next/static/media/f2dba9fbcf2f771b-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/css/9d9a17133c491df5.css","style"]
-:HL["/Kurodev-tool-portal/_next/static/css/d23c40d42b130a9b.css","style"]
+:HL["/Kurodev-tool-portal/_next/static/css/bdacc7621bbcffc0.css","style"]
+:HL["/Kurodev-tool-portal/_next/static/css/95a220f98eba43ef.css","style"]
 3:Tb33,{
   "@context": "https://schema.org",
   "@type": "WebApplication",
@@ -23,7 +54,7 @@
     "name": "Kurodev Tools"
   },
   "datePublished": "2025-01-01",
-  "dateModified": "2025-10-03",
+  "dateModified": "2025-10-04",
   "inLanguage": "ja-JP",
   "isAccessibleForFree": true,
   "applicationCategory": "MultimediaApplication",
@@ -91,16 +122,16 @@
       }
     ]
   }
-}0:{"P":null,"b":"build-1759488752546","p":"/Kurodev-tool-portal","c":["","tools","schedule-adjuster",""],"i":false,"f":[[["",{"children":["tools",{"children":["schedule-adjuster",{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/9d9a17133c491df5.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/d23c40d42b130a9b.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["tools","$L12",{"children":["schedule-adjuster","$L13",{"children":["__PAGE__","$L14",{},null,false]},null,false]},null,false]},["$L15",[],[]],false],"$L16",false]],"m":"$undefined","G":["$17",[]],"s":false,"S":true}
-18:I[35305,["177","static/chunks/app/layout-7b618135876407b6.js"],"ThemeProvider"]
-19:I[83388,["177","static/chunks/app/layout-7b618135876407b6.js"],"AuthProvider"]
-1a:I[5915,["177","static/chunks/app/layout-7b618135876407b6.js"],"default"]
-1b:I[72251,["177","static/chunks/app/layout-7b618135876407b6.js"],"DebugPanelProvider"]
-1c:I[52763,["177","static/chunks/app/layout-7b618135876407b6.js"],"Header"]
+}0:{"P":null,"b":"build-1759585301988","p":"/Kurodev-tool-portal","c":["","tools","schedule-adjuster",""],"i":false,"f":[[["",{"children":["tools",{"children":["schedule-adjuster",{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/bdacc7621bbcffc0.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/95a220f98eba43ef.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["tools","$L12",{"children":["schedule-adjuster","$L13",{"children":["__PAGE__","$L14",{},null,false]},null,false]},null,false]},["$L15",[],[]],false],"$L16",false]],"m":"$undefined","G":["$17",[]],"s":false,"S":true}
+18:I[35305,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"ThemeProvider"]
+19:I[83388,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"AuthProvider"]
+1a:I[5915,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"default"]
+1b:I[72251,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"DebugPanelProvider"]
+1c:I[52763,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"Header"]
 1d:I[43105,[],""]
 1e:I[52565,[],""]
-1f:I[72772,["177","static/chunks/app/layout-7b618135876407b6.js"],""]
-20:I[27873,["177","static/chunks/app/layout-7b618135876407b6.js"],"Toaster"]
+1f:I[72772,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],""]
+20:I[27873,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"Toaster"]
 21:I[77624,[],"ClientPageRoot"]
 22:I[34152,["397","static/chunks/app/tools/schedule-adjuster/page-d30249579c8887f3.js"],"default"]
 25:I[59636,[],"OutletBoundary"]
@@ -121,7 +152,7 @@ d:["$","meta",null,{"name":"theme-color","content":"#1a1a1a"}]
 e:["$","link",null,{"rel":"icon","href":"/favicon.ico"}]
 f:["$","link",null,{"rel":"apple-touch-icon","href":"/apple-touch-icon.png"}]
 10:["$","link",null,{"rel":"manifest","href":"/manifest.json"}]
-11:["$","body",null,{"className":"__variable_899129 __variable_25b0f6 __variable_7082a4 __variable_1c6a20 font-sans antialiased min-h-screen flex flex-col bg-background text-foreground","children":[["$","$L18",null,{"attribute":"class","defaultTheme":"dark","enableSystem":false,"disableTransitionOnChange":true,"children":["$","$L19",null,{"children":["$","$L1a",null,{"fallback":["$","div",null,{"children":"Something went wrong in AuthProvider or its children."}],"children":[" ",["$","$L1b",null,{"children":[["$","$L1c",null,{}],["$","main",null,{"className":"flex-grow","children":["$","$L1d",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L1e",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}],["$","footer",null,{"className":"border-t py-6","children":["$","div",null,{"className":"container mx-auto flex flex-col md:flex-row items-center justify-between px-4 text-sm text-muted-foreground","children":[["$","p",null,{"children":["© ",2025," VTuber Tools. All rights reserved."]}],["$","nav",null,{"className":"flex space-x-4 mt-4 md:mt-0","children":[["$","$L1f",null,{"href":"/privacy-policy","className":"hover:underline","children":"プライバシーポリシー"}],["$","$L1f",null,{"href":"/terms-of-service","className":"hover:underline","children":"利用規約"}]]}]]}]}]]}]]}]}]}],["$","$L20",null,{}]]}]
+11:["$","body",null,{"className":"__variable_899129 __variable_7082a4 __variable_d3b68d __variable_673cbc __variable_833808 __variable_efadf9 __variable_b364ae __variable_b47138 __variable_0b2fa1 __variable_6b7a11 __variable_b10654 __variable_c9d9a9 __variable_c612f4 __variable_d0a159 __variable_4a0304 __variable_493274 __variable_7aa952 __variable_1c6a20 __variable_c4d4a7 __variable_a778db __variable_7ecf6c __variable_51cae8 __variable_1c3d5f __variable_e5650a __variable_d83851 __variable_c05ba2 __variable_f1e2d3 font-sans antialiased min-h-screen flex flex-col bg-background text-foreground","children":[["$","$L18",null,{"attribute":"class","defaultTheme":"dark","enableSystem":false,"disableTransitionOnChange":true,"children":["$","$L19",null,{"children":["$","$L1a",null,{"fallback":["$","div",null,{"children":"Something went wrong in AuthProvider or its children."}],"children":[" ",["$","$L1b",null,{"children":[["$","$L1c",null,{}],["$","main",null,{"className":"flex-grow","children":["$","$L1d",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L1e",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}],["$","footer",null,{"className":"border-t py-6","children":["$","div",null,{"className":"container mx-auto flex flex-col md:flex-row items-center justify-between px-4 text-sm text-muted-foreground","children":[["$","p",null,{"children":["© ",2025," VTuber Tools. All rights reserved."]}],["$","nav",null,{"className":"flex space-x-4 mt-4 md:mt-0","children":[["$","$L1f",null,{"href":"/privacy-policy","className":"hover:underline","children":"プライバシーポリシー"}],["$","$L1f",null,{"href":"/terms-of-service","className":"hover:underline","children":"利用規約"}]]}]]}]}]]}]]}]}]}],["$","$L20",null,{}]]}]
 12:["$","$1","c",{"children":[null,["$","$L1d",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L1e",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}]
 13:["$","$1","c",{"children":[null,["$","$L1d",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L1e",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}]
 14:["$","$1","c",{"children":[["$","$L21",null,{"Component":"$22","searchParams":{},"params":{},"promises":["$@23","$@24"]}],null,["$","$L25",null,{"children":["$L26",["$","$L27",null,{"promise":"$@28"}]]}]]}]
