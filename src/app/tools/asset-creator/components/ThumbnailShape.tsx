@@ -176,6 +176,61 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
             />
           </svg>
         );
+      case 'triangle':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${(width as number) / 2},0 0,${height as number} ${width as number},${height as number}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'star':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${(width as number) * 0.5},0 ${(width as number) * 0.618},${(height as number) * 0.382} ${width as number},${(height as number) * 0.382} ${(width as number) * 0.691},${(height as number) * 0.618} ${(width as number) * 0.809},${height as number} ${(width as number) * 0.5},${(height as number) * 0.764} ${(width as number) * 0.191},${height as number} ${(width as number) * 0.309},${(height as number) * 0.618} 0,${(height as number) * 0.382} ${(width as number) * 0.382},${(height as number) * 0.382}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'heart':
+        return (
+          <svg {...commonSvgProps}>
+            <path
+              d={`M${(width as number) * 0.5},${(height as number) * 0.9} C${(width as number) * 0.5},${(height as number) * 0.9} ${(width as number) * 0.1},${(height as number) * 0.5} ${(width as number) * 0.1},${(height as number) * 0.3} C${(width as number) * 0.1},${(height as number) * 0.15} ${(width as number) * 0.25},${(height as number) * 0.1} ${(width as number) * 0.4},${(height as number) * 0.1} C${(width as number) * 0.5},${(height as number) * 0.1} ${(width as number) * 0.5},${(height as number) * 0.2} ${(width as number) * 0.5},${(height as number) * 0.2} C${(width as number) * 0.5},${(height as number) * 0.2} ${(width as number) * 0.5},${(height as number) * 0.1} ${(width as number) * 0.6},${(height as number) * 0.1} C${(width as number) * 0.75},${(height as number) * 0.1} ${(width as number) * 0.9},${(height as number) * 0.15} ${(width as number) * 0.9},${(height as number) * 0.3} C${(width as number) * 0.9},${(height as number) * 0.5} ${(width as number) * 0.5},${(height as number) * 0.9} ${(width as number) * 0.5},${(height as number) * 0.9} Z`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'diamond':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${(width as number) / 2},0 ${width as number},${(height as number) / 2} ${(width as number) / 2},${height as number} 0,${(height as number) / 2}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'polygon':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${(width as number) * 0.5},0 ${(width as number) * 0.9},${(height as number) * 0.3} ${(width as number) * 0.7},${(height as number) * 0.9} ${(width as number) * 0.3},${(height as number) * 0.9} ${(width as number) * 0.1},${(height as number) * 0.3}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
       case 'rectangle':
       case 'circle':
       default:

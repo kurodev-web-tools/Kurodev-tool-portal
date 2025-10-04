@@ -12,7 +12,7 @@ interface ElementPositionType {
 }
 
 export type LayerType = 'image' | 'text' | 'shape';
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star';
+export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star' | 'polygon' | 'heart' | 'diamond';
 
 export interface Layer {
   id: string;

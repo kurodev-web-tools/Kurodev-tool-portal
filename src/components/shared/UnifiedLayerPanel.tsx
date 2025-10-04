@@ -47,7 +47,7 @@ export interface UnifiedLayer {
   borderWidth?: number;
 }
 
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star';
+export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star' | 'polygon' | 'heart' | 'diamond';
 
 // コンテキストのインターフェース
 interface UnifiedLayerContext {
@@ -246,24 +246,6 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
   };
 
   const handleShapeSelect = (shapeType: string) => {
-    const layerCount = layers.filter(l => l.type === 'shape').length + 1;
-    const name = `図形${layerCount}`;
-    
-    addLayer({
-      type: 'shape',
-      name,
-      shapeType: shapeType as ShapeType,
-      visible: true,
-      locked: false,
-      x: isDesktop ? 100 : 50,
-      y: isDesktop ? 100 : 50,
-      width: isDesktop ? 100 : 80,
-      height: isDesktop ? 100 : 80,
-      backgroundColor: '#cccccc',
-      borderColor: '#000000',
-      borderWidth: isDesktop ? 2 : 1,
-    });
-    
     setShowShapeSelectorModal(false);
     if (onShapeSelect) {
       onShapeSelect(shapeType);
@@ -317,7 +299,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
       <div className="text-xs text-gray-400 px-2" role="note" aria-label="操作説明">
         ドラッグまたは↑↓ボタンで順序変更
       </div>
-      <ScrollArea className="h-64" role="region" aria-label="レイヤー一覧">
+      <ScrollArea className="h-[35vh] lg:h-[70vh] md:h-[55vh] sm:h-[35vh]" role="region" aria-label="レイヤー一覧">
         <div className="space-y-1">
           {layers.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
@@ -454,7 +436,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">図形を選択</h3>
             <div className="grid grid-cols-3 gap-3">
-              {['rectangle', 'circle', 'triangle', 'line', 'arrow', 'star'].map((shape) => (
+              {['rectangle', 'circle', 'triangle', 'line', 'arrow', 'star', 'polygon', 'heart', 'diamond'].map((shape) => (
                 <Button
                   key={shape}
                   variant="outline"

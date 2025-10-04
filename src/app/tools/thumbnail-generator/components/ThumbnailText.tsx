@@ -11,12 +11,18 @@ interface ThumbnailTextProps {
   text: string;
   color?: string;
   fontSize?: string;
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textShadow?: string;
   className?: string;
   x: number;
   y: number;
   width: number;
   height: number;
   rotation: number;
+  zIndex?: number;
   onDragStop: RndDragCallback;
   onResizeStop: (
     e: any,
@@ -41,12 +47,18 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   text,
   color = 'white',
   fontSize = '2rem',
+  fontFamily,
+  fontWeight,
+  fontStyle,
+  textDecoration,
+  textShadow,
   className,
   x,
   y,
   width,
   height,
   rotation,
+  zIndex = 0,
   onDragStop,
   onResizeStop,
   enableResizing,
@@ -170,13 +182,27 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: zIndex,
         }}
       >
         <div
           className="w-full h-full flex items-center justify-center"
           style={{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}
         >
-          <p className={cn("cursor-move", className)} style={{ color, fontSize, lineHeight: 1, whiteSpace: 'pre-wrap' }}>
+          <p 
+            className={cn("cursor-move", className)} 
+            style={{ 
+              color, 
+              fontSize, 
+              fontFamily,
+              fontWeight,
+              fontStyle,
+              textDecoration,
+              textShadow,
+              lineHeight: 1, 
+              whiteSpace: 'pre-wrap' 
+            }}
+          >
             {text}
           </p>
         </div>

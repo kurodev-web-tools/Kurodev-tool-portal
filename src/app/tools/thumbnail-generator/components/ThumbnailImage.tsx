@@ -30,6 +30,7 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   width,
   height,
   rotation,
+  zIndex = 0,
   onDragStop,
   onResize,
   onResizeStop,
@@ -157,6 +158,7 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
         enableResizing={enableResizing}
         disableDragging={disableDragging || isRotating}
         className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
+        style={{ zIndex: zIndex }}
       >
         <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
           <div style={imageStyle} />

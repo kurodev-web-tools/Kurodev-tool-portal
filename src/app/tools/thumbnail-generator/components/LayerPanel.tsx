@@ -103,40 +103,8 @@ export const LayerPanel: React.FC = () => {
   };
 
   const handleShapeSelect = (shapeType: ShapeType) => {
-    const layerCount = layers.filter(l => l.type === 'shape').length + 1;
-    const shapeNames = {
-      rectangle: '四角形',
-      circle: '円',
-      line: '線',
-      arrow: '矢印'
-    };
-    
-    const name = `${shapeNames[shapeType]} ${layerCount}`;
-    const initialProps: any = {
-      visible: true,
-      locked: false,
-      x: isDesktop ? 100 : 50,
-      y: isDesktop ? 100 : 50,
-      width: isDesktop ? 200 : 100,
-      height: isDesktop ? 100 : 50,
-      rotation: 0,
-      shapeType: shapeType,
-      backgroundColor: '#cccccc',
-      borderColor: '#000000',
-      borderWidth: isDesktop ? 2 : 1,
-    };
-    
-    // 線と矢印の場合はサイズを調整
-    if (shapeType === 'line' || shapeType === 'arrow') {
-      initialProps.width = isDesktop ? 200 : 100;
-      initialProps.height = isDesktop ? 5 : 3;
-    }
-    
-    addLayer({
-      type: 'shape',
-      name,
-      ...initialProps
-    });
+    // 図形追加はUnifiedLayerPanelのonShapeSelectで処理されるため、
+    // ここでは何もしない（重複追加を防ぐ）
   };
 
   const getLayerIcon = (type: string) => {

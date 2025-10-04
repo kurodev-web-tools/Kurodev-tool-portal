@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResizableDelta, Position } from 'react-rnd';
 import {
   Accordion,
@@ -346,7 +347,6 @@ export default function ThumbnailGeneratorPage() {
         width: isDesktop ? 300 : 150,
         height: isDesktop ? 300 : 150,
         src,
-        zIndex: 0,
       });
     }
     e.target.value = '';
@@ -384,7 +384,6 @@ export default function ThumbnailGeneratorPage() {
       backgroundColor: '#cccccc',
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
-      zIndex: 0,
     });
   };
 
@@ -401,7 +400,7 @@ export default function ThumbnailGeneratorPage() {
       text: currentText,
       color: '#000000',
       fontSize: isDesktop ? '2rem' : '1rem',
-      zIndex: 0,
+      // フォント設定はaddLayer関数内でcurrentFontSettingsから自動適用される
     });
   };
 
@@ -516,6 +515,136 @@ export default function ThumbnailGeneratorPage() {
                     className="flex-1"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* フォント設定 */}
+            <div className="space-y-3">
+              <h5 className="text-sm font-medium text-gray-300">フォント設定</h5>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-gray-400">フォントファミリー</Label>
+                  <Select
+                    value={selectedLayer.fontFamily || 'Arial, sans-serif'}
+                    onValueChange={(value) => updateLayer(selectedLayer.id, { fontFamily: value })}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* 日本語フォント */}
+                      <SelectItem value="Noto Sans JP, sans-serif">Noto Sans JP</SelectItem>
+                      <SelectItem value="M PLUS Rounded 1c, sans-serif">M PLUS Rounded 1c</SelectItem>
+                      <SelectItem value="Kosugi Maru, sans-serif">Kosugi Maru</SelectItem>
+                      <SelectItem value="Sawarabi Mincho, serif">Sawarabi Mincho</SelectItem>
+                      <SelectItem value="Noto Serif JP, serif">Noto Serif JP</SelectItem>
+                      
+                      {/* 英語フォント - Sans Serif */}
+                      <SelectItem value="Roboto, sans-serif">Roboto</SelectItem>
+                      <SelectItem value="Open Sans, sans-serif">Open Sans</SelectItem>
+                      <SelectItem value="Lato, sans-serif">Lato</SelectItem>
+                      <SelectItem value="Montserrat, sans-serif">Montserrat</SelectItem>
+                      <SelectItem value="Source Sans 3, sans-serif">Source Sans 3</SelectItem>
+                      <SelectItem value="Nunito, sans-serif">Nunito</SelectItem>
+                      <SelectItem value="Poppins, sans-serif">Poppins</SelectItem>
+                      <SelectItem value="Inter, sans-serif">Inter</SelectItem>
+                      
+                      {/* 英語フォント - Serif */}
+                      <SelectItem value="Playfair Display, serif">Playfair Display</SelectItem>
+                      <SelectItem value="Merriweather, serif">Merriweather</SelectItem>
+                      <SelectItem value="Lora, serif">Lora</SelectItem>
+                      <SelectItem value="Crimson Text, serif">Crimson Text</SelectItem>
+                      
+                      {/* 装飾フォント */}
+                      <SelectItem value="Bebas Neue, sans-serif">Bebas Neue</SelectItem>
+                      <SelectItem value="Oswald, sans-serif">Oswald</SelectItem>
+                      <SelectItem value="Anton, sans-serif">Anton</SelectItem>
+                      <SelectItem value="Dancing Script, cursive">Dancing Script</SelectItem>
+                      <SelectItem value="Pacifico, cursive">Pacifico</SelectItem>
+                      <SelectItem value="Great Vibes, cursive">Great Vibes</SelectItem>
+                      
+                      {/* モノスペースフォント */}
+                      <SelectItem value="Roboto Mono, monospace">Roboto Mono</SelectItem>
+                      <SelectItem value="Source Code Pro, monospace">Source Code Pro</SelectItem>
+                      <SelectItem value="Fira Code, monospace">Fira Code</SelectItem>
+                      <SelectItem value="JetBrains Mono, monospace">JetBrains Mono</SelectItem>
+                      
+                      {/* システムフォント（フォールバック） */}
+                      <SelectItem value="Arial, sans-serif">Arial (System)</SelectItem>
+                      <SelectItem value="Helvetica, sans-serif">Helvetica (System)</SelectItem>
+                      <SelectItem value="Georgia, serif">Georgia (System)</SelectItem>
+                      <SelectItem value="Times New Roman, serif">Times New Roman (System)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-400">フォントウェイト</Label>
+                  <Select
+                    value={selectedLayer.fontWeight || 'normal'}
+                    onValueChange={(value) => updateLayer(selectedLayer.id, { fontWeight: value })}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">通常</SelectItem>
+                      <SelectItem value="bold">太字</SelectItem>
+                      <SelectItem value="lighter">細字</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="300">300</SelectItem>
+                      <SelectItem value="400">400</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                      <SelectItem value="600">600</SelectItem>
+                      <SelectItem value="700">700</SelectItem>
+                      <SelectItem value="800">800</SelectItem>
+                      <SelectItem value="900">900</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-gray-400">フォントスタイル</Label>
+                  <Select
+                    value={selectedLayer.fontStyle || 'normal'}
+                    onValueChange={(value) => updateLayer(selectedLayer.id, { fontStyle: value })}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">通常</SelectItem>
+                      <SelectItem value="italic">イタリック</SelectItem>
+                      <SelectItem value="oblique">斜体</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-400">文字装飾</Label>
+                  <Select
+                    value={selectedLayer.textDecoration || 'none'}
+                    onValueChange={(value) => updateLayer(selectedLayer.id, { textDecoration: value })}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">なし</SelectItem>
+                      <SelectItem value="underline">下線</SelectItem>
+                      <SelectItem value="line-through">取り消し線</SelectItem>
+                      <SelectItem value="overline">上線</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-gray-400">文字シャドウ</Label>
+                <Input
+                  value={selectedLayer.textShadow || 'none'}
+                  onChange={(e) => updateLayer(selectedLayer.id, { textShadow: e.target.value })}
+                  placeholder="例: 2px 2px 4px rgba(0,0,0,0.5)"
+                  className="h-8 text-xs"
+                />
               </div>
             </div>
           </div>
@@ -873,6 +1002,7 @@ export default function ThumbnailGeneratorPage() {
                       <ThumbnailImage
                         key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
                         x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
+                        zIndex={layer.zIndex}
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
@@ -889,8 +1019,11 @@ export default function ThumbnailGeneratorPage() {
                     return (
                       <ThumbnailText
                         key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color}
-                        fontSize={layer.fontSize} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                        rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                        fontSize={layer.fontSize} fontFamily={layer.fontFamily} fontWeight={layer.fontWeight}
+                        fontStyle={layer.fontStyle} textDecoration={layer.textDecoration} textShadow={layer.textShadow}
+                        x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                        rotation={layer.rotation} zIndex={layer.zIndex}
+                        onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         enableResizing={isResizable} disableDragging={!isDraggable}
                       />
@@ -901,7 +1034,8 @@ export default function ThumbnailGeneratorPage() {
                         key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType as ShapeType}
                         backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
                         borderWidth={layer.borderWidth || 2} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                        rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                        rotation={layer.rotation} zIndex={layer.zIndex}
+                        onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
@@ -1404,14 +1538,6 @@ export default function ThumbnailGeneratorPage() {
                   </div>
                 )}
                 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setZoom(1)}
-                  className="w-full h-8"
-                >
-                  ズームリセット (100%)
-                </Button>
               </div>
             </div>
 

@@ -31,6 +31,7 @@ export interface BaseThumbnailComponentProps {
   width: number;
   height: number;
   rotation: number;
+  zIndex?: number;
   isSelected: boolean;
   isLocked: boolean;
   isDraggable: boolean;

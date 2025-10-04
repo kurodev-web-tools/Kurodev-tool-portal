@@ -1468,14 +1468,6 @@ function AssetCreatorPage() {
                   </div>
                 )}
                 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setZoom(1)}
-                  className="w-full h-8"
-                >
-                  ズームリセット (100%)
-                </Button>
               </div>
             </div>
 

@@ -12,6 +12,7 @@ interface ThumbnailShapeProps {
   borderColor: string;
   borderWidth: number;
   rotation: number;
+  zIndex?: number;
   onDragStop: RndDragCallback;
   onResize: (e: MouseEvent | TouchEvent, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
   onResizeStop: (e: MouseEvent | TouchEvent, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
@@ -38,6 +39,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   borderColor,
   borderWidth,
   rotation,
+  zIndex = 0,
   onDragStop,
   onResize,
   onResizeStop,
@@ -186,6 +188,61 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
             />
           </svg>
         );
+      case 'triangle':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${width / 2},0 0,${height} ${width},${height}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'star':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${width * 0.5},0 ${width * 0.618},${height * 0.382} ${width},${height * 0.382} ${width * 0.691},${height * 0.618} ${width * 0.809},${height} ${width * 0.5},${height * 0.764} ${width * 0.191},${height} ${width * 0.309},${height * 0.618} 0,${height * 0.382} ${width * 0.382},${height * 0.382}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'heart':
+        return (
+          <svg {...commonSvgProps}>
+            <path
+              d={`M${width * 0.5},${height * 0.9} C${width * 0.5},${height * 0.9} ${width * 0.1},${height * 0.5} ${width * 0.1},${height * 0.3} C${width * 0.1},${height * 0.15} ${width * 0.25},${height * 0.1} ${width * 0.4},${height * 0.1} C${width * 0.5},${height * 0.1} ${width * 0.5},${height * 0.2} ${width * 0.5},${height * 0.2} C${width * 0.5},${height * 0.2} ${width * 0.5},${height * 0.1} ${width * 0.6},${height * 0.1} C${width * 0.75},${height * 0.1} ${width * 0.9},${height * 0.15} ${width * 0.9},${height * 0.3} C${width * 0.9},${height * 0.5} ${width * 0.5},${height * 0.9} ${width * 0.5},${height * 0.9} Z`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'diamond':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${width / 2},0 ${width},${height / 2} ${width / 2},${height} 0,${height / 2}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'polygon':
+        return (
+          <svg {...commonSvgProps}>
+            <polygon
+              points={`${width * 0.5},0 ${width * 0.9},${height * 0.3} ${width * 0.7},${height * 0.9} ${width * 0.3},${height * 0.9} ${width * 0.1},${height * 0.3}`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
       case 'rectangle':
       case 'circle':
       default:
@@ -228,6 +285,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         enableResizing={enableResizing}
         disableDragging={disableDragging || isRotating}
         className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
+        style={{ zIndex: zIndex }}
       >
         <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
           {renderShape()}
