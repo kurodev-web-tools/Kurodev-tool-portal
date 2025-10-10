@@ -30,6 +30,9 @@ import {
   Sparkles,
   Wrench
 } from 'lucide-react';
+import { logger } from "@/lib/logger";
+import { siteConfig } from "@/config/site";
+import { tools as toolsData } from "@/data/tools";
 
 const PROFILE_SETTINGS_KEY = "vtuber-tools-profile-settings";
 
@@ -130,13 +133,13 @@ export function Header() {
   const isGitHubPages = basePath === '/Kurodev-tool-portal';
 
   // デバッグ用ログ
-  console.log('Header Debug:', { 
+  logger.debug('Header Debug', { 
     pathname, 
     isGitHubPages, 
     basePath, 
     envBasePath: process.env.NEXT_PUBLIC_BASE_PATH,
     windowPath: typeof window !== 'undefined' ? window.location.pathname : 'undefined'
-  });
+  }, 'Header');
 
   // activeTab の初期値を設定するロジック
   const initialActiveTab = () => {
@@ -161,8 +164,8 @@ export function Header() {
         const profile = JSON.parse(savedSettings);
         setAvatarSrc(profile.avatar);
       }
-    } catch (error) {
-      console.error("Failed to load profile settings for header", error);
+      } catch (error) {
+      logger.error("Failed to load profile settings for header", error, 'Header');
     }
   };
 
@@ -205,7 +208,7 @@ export function Header() {
   const isToolPage = pathname?.startsWith('/tools/') && currentTool;
 
   // デバッグ用ログ（詳細版）
-  console.log('Tool Page Debug:', { 
+  logger.debug('Tool Page Debug', { 
     currentTool, 
     isToolPage, 
     pathname,
@@ -226,12 +229,12 @@ export function Header() {
         willMatch: exactMatch || slashMatch
       };
     })
-  });
+  }, 'Header');
 
   // schedule-calendarツールの詳細デバッグ
   const scheduleTool = tools.find(t => t.id === 'schedule-calendar');
   if (scheduleTool) {
-    console.log('Schedule Calendar Debug (Fixed):', {
+    logger.debug('Schedule Calendar Debug (Fixed)', {
       pathname,
       basePath,
       toolHref: scheduleTool.href,
@@ -239,7 +242,7 @@ export function Header() {
       slashMatch: pathname === `${scheduleTool.href}/`,
       shouldMatch: pathname === scheduleTool.href || pathname === `${scheduleTool.href}/`,
       currentToolFound: !!currentTool
-    });
+    }, 'Header');
   }
 
   // タブを表示すべきかどうかを判定するヘルパー関数
@@ -258,7 +261,7 @@ export function Header() {
               <Wrench className="h-5 w-5 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              Kurodev Tools
+              {siteConfig.name}
             </span>
           </Link>
           
@@ -312,26 +315,14 @@ export function Header() {
         {shouldShowTabs() && (
           <div className="hidden md:block">
             <SearchBar 
-              items={tools.map(tool => ({
+              items={toolsData.map(tool => ({
                 id: tool.id,
                 title: tool.title,
                 description: tool.description,
                 status: tool.status,
                 href: tool.href,
-                iconName: tool.id === 'schedule-calendar' ? 'calendar' :
-                         tool.id === 'script-generator' ? 'brain' :
-                         tool.id === 'thumbnail-generator' ? 'image' :
-                         tool.id === 'branding-generator' ? 'sparkles' :
-                         tool.id === 'title-generator' ? 'trending-up' : 'wrench',
-                color: tool.id === 'schedule-calendar' ? 'from-blue-500 to-cyan-500' :
-                       tool.id === 'script-generator' ? 'from-blue-500 to-cyan-500' :
-                       tool.id === 'thumbnail-generator' ? 'from-green-500 to-emerald-500' :
-                       tool.id === 'branding-generator' ? 'from-orange-500 to-red-500' :
-                       tool.id === 'title-generator' ? 'from-indigo-500 to-blue-500' :
-                       tool.id === 'schedule-adjuster' ? 'from-purple-500 to-pink-500' :
-                       tool.id === 'asset-creator' ? 'from-pink-500 to-rose-500' :
-                       tool.id === 'virtual-bg-generator' ? 'from-cyan-500 to-blue-500' :
-                       'from-gray-500 to-gray-600'
+                iconName: tool.iconName,
+                color: tool.color
               }))}
               onItemClick={(item) => {
                 const fullPath = basePath ? `${basePath}${item.href}` : item.href;

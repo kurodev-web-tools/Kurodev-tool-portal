@@ -1,19 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { StatusFilter } from "@/components/ui/status-filter";
 import { SwipeableStats } from "@/components/ui/swipeable-stats";
 import { QuickAccessSection } from "@/components/quick-access-section";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { PageNavigation } from "@/components/ui/page-navigation";
 import { useQuickAccess } from "@/hooks/use-quick-access";
-import { useLoading } from "@/hooks/use-loading";
-import { PageSkeleton, ToolCardSkeleton } from "@/components/ui/skeleton";
-import { ErrorDisplay, NetworkStatus } from "@/components/ui/error-display";
-import { ProgressBar } from "@/components/ui/progress-bar";
+import { tools } from "@/data/tools";
+
+// スイートの型定義
+interface Suite {
+  id: string;
+  title: string;
+  description: string;
+  status: 'released' | 'beta' | 'development';
+  href?: string;
+  iconName?: string; // StatusFilterのItem型に合わせてオプショナルに
+  color?: string;
+  stats?: string;
+}
 
 // 拡張されたダミーデータ
-const suites = [
+const suites: Suite[] = [
   {
     id: "suite-1",
     title: "企画準備",
@@ -29,6 +37,7 @@ const suites = [
     title: "動画公開",
     description: "コンテンツの公開とオーディエンスへのリーチを最大化するツール群。タイトル生成、サムネイル作成、SEO最適化などを自動化します。",
     status: "development",
+    href: "/tools/title-generator",
     iconName: "trending-up",
     color: "from-blue-500 to-cyan-500",
     stats: "5つのツール"
@@ -38,135 +47,29 @@ const suites = [
     title: "配信強化",
     description: "オーディエンスとのインタラクションを強化するツール群。コメント分析、感情分析、リアルタイム支援などで配信・ライブをサポートします。",
     status: "development",
+    href: "/tools",
     iconName: "users",
     color: "from-green-500 to-emerald-500",
     stats: "6つのツール"
   },
 ] as const;
 
-// ツールデータ（統計計算用）
-const tools = [
-  {
-    id: "tool-1",
-    title: "スケジュールカレンダー",
-    description: "配信・ライブのスケジュールを管理するツール。",
-    status: "released" as const,
-    href: "/tools/schedule-calendar",
-    iconName: "calendar",
-    color: "from-blue-500 to-cyan-500",
-    category: "planning",
-    tags: ["スケジュール", "管理", "配信"],
-    usageCount: 150,
-    rating: 4.2
-  },
-  {
-    id: "tool-2",
-    title: "企画・台本サポートAI",
-    description: "コンテンツの企画や台本作成をAIがサポート。",
-    status: "beta" as const,
-    href: "/tools/script-generator",
-    iconName: "brain",
-    color: "from-blue-500 to-cyan-500",
-    category: "planning",
-    tags: ["AI", "台本", "企画"],
-    usageCount: 89,
-    rating: 4.5
-  },
-  {
-    id: "tool-3",
-    title: "サムネイル自動生成ツール",
-    description: "動画・コンテンツのサムネイルをAIが自動生成。",
-    status: "released" as const,
-    href: "/tools/thumbnail-generator",
-    iconName: "image",
-    color: "from-green-500 to-emerald-500",
-    category: "production",
-    tags: ["AI", "サムネイル", "画像生成"],
-    usageCount: 320,
-    rating: 4.7
-  },
-  {
-    id: "tool-4",
-    title: "コンセプト・ブランディング提案",
-    description: "AIがあなたのブランドコンセプトを提案します。",
-    status: "development" as const,
-    href: "/tools/branding-generator",
-    iconName: "sparkles",
-    color: "from-orange-500 to-red-500",
-    category: "branding",
-    tags: ["AI", "ブランディング", "コンセプト"],
-    usageCount: 45,
-    rating: 4.0
-  },
-  {
-    id: "tool-5",
-    title: "動画タイトル・概要欄自動生成AI",
-    description: "AIが動画・コンテンツのタイトルと概要欄を自動生成。",
-    status: "development" as const,
-    href: "/tools/title-generator",
-    iconName: "trending-up",
-    color: "from-indigo-500 to-blue-500",
-    category: "production",
-    tags: ["AI", "タイトル", "SEO"],
-    usageCount: 67,
-    rating: 4.3
-  },
-  {
-    id: "tool-6",
-    title: "配信スケジュール自動調整",
-    description: "コラボ相手との配信スケジュールを自動調整。",
-    status: "development" as const,
-    href: "/tools/schedule-adjuster",
-    iconName: "calendar",
-    color: "from-purple-500 to-pink-500",
-    category: "collaboration",
-    tags: ["スケジュール", "コラボ", "自動調整"],
-    usageCount: 23,
-    rating: 3.8
-  },
-  {
-    id: "tool-7",
-    title: "イベント用素材制作",
-    description: "Canvaのようにイベント用の素材を制作。",
-    status: "development" as const,
-    href: "/tools/asset-creator",
-    iconName: "image",
-    color: "from-pink-500 to-rose-500",
-    category: "production",
-    tags: ["素材", "デザイン", "イベント"],
-    usageCount: 78,
-    rating: 4.1
-  },
-  {
-    id: "tool-8",
-    title: "バーチャル背景自動生成AI",
-    description: "AIが配信・ライブ用のバーチャル背景を自動生成。",
-    status: "development" as const,
-    href: "/tools/virtual-bg-generator",
-    iconName: "image",
-    color: "from-cyan-500 to-blue-500",
-    category: "production",
-    tags: ["AI", "背景", "配信"],
-    usageCount: 112,
-    rating: 4.4
-  }
-];
-
-
 export default function Home() {
   const quickAccess = useQuickAccess(tools);
 
-  const handleSuiteClick = (suite: any) => {
-    // スイートを最近使用に追加
-    quickAccess.addToRecent({
-      id: suite.id,
-      title: suite.title,
-      description: suite.description,
-      status: suite.status,
-      href: suite.href,
-      iconName: suite.iconName,
-      color: suite.color,
-    });
+  const handleSuiteClick = (suite: Suite) => {
+    // スイートを最近使用に追加（hrefがある場合のみ）
+    if (suite.href) {
+      quickAccess.addToRecent({
+        id: suite.id,
+        title: suite.title,
+        description: suite.description,
+        status: suite.status,
+        href: suite.href,
+        iconName: suite.iconName,
+        color: suite.color,
+      });
+    }
   };
 
   return (

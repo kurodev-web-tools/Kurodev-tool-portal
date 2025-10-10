@@ -1,0 +1,183 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ToolCard スナップショット デフォルトの見た目が変わっていない 1`] = `
+<div
+  aria-describedby="tool-1-description"
+  aria-label="テストツール - これはテスト用のツールです"
+  class="text-card-foreground gap-6 rounded-xl border py-6 h-full flex flex-col group card-interactive hover:shadow-blue-500/20 border-gray-800 shadow-sm bg-gray-900/30 hover:bg-gray-900/40 cursor-pointer"
+  data-slot="card"
+  role="button"
+  tabindex="0"
+>
+  <div
+    class="@container/card-header auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 pb-4 flex-shrink-0 hidden md:block"
+    data-slot="card-header"
+  >
+    <div
+      class="flex items-start justify-between mb-3"
+    >
+      <div
+        class="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg text-2xl hover-scale-sm"
+      >
+        📅
+      </div>
+      <span
+        class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden [a&]:hover:bg-primary/90 text-xs font-medium bg-yellow-200 text-yellow-900 border-yellow-300 dark:bg-yellow-800 dark:text-yellow-100 dark:border-yellow-600 status-beta"
+        data-slot="badge"
+      >
+        ベータ版
+      </span>
+    </div>
+    <div
+      class="text-lg md:text-xl font-bold group-hover:text-blue-600 transition-smooth leading-tight tracking-wide"
+      data-slot="card-title"
+    >
+      テストツール
+    </div>
+    <div
+      class="text-xs md:text-sm text-gray-600 dark:text-gray-400 leading-relaxed"
+      data-slot="card-description"
+    >
+      これはテスト用のツールです
+    </div>
+  </div>
+  <div
+    class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 pb-2 flex-shrink-0 md:hidden"
+    data-slot="card-header"
+  >
+    <div
+      class="flex items-center justify-between mb-2"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg text-xl hover-scale-sm"
+        >
+          📅
+        </div>
+        <div>
+          <div
+            class="text-sm md:text-base font-bold group-hover:text-blue-600 transition-smooth leading-tight tracking-wide"
+            data-slot="card-title"
+          >
+            テストツール
+          </div>
+        </div>
+      </div>
+      <span
+        class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden [a&]:hover:bg-primary/90 text-xs font-medium bg-yellow-200 text-yellow-900 border-yellow-300 dark:bg-yellow-800 dark:text-yellow-100 dark:border-yellow-600 status-beta"
+        data-slot="badge"
+      >
+        ベータ版
+      </span>
+    </div>
+    <div
+      class="text-xs md:text-sm text-gray-500 dark:text-gray-300 leading-relaxed"
+      data-slot="card-description"
+      id="tool-1-description"
+    >
+      これはテスト用のツールです
+    </div>
+  </div>
+  <div
+    class="px-6 flex-grow pb-4 hidden md:block"
+    data-slot="card-content"
+  >
+    <div
+      class="flex items-center gap-2 text-xs md:text-sm text-gray-400 dark:text-gray-300"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-users h-4 w-4"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+        />
+        <path
+          d="M16 3.128a4 4 0 0 1 0 7.744"
+        />
+        <path
+          d="M22 21v-2a4 4 0 0 0-3-3.87"
+        />
+        <circle
+          cx="9"
+          cy="7"
+          r="4"
+        />
+      </svg>
+      <span>
+        利用可能
+      </span>
+    </div>
+  </div>
+  <div
+    class="px-6 flex-grow pb-2 md:hidden"
+    data-slot="card-content"
+  />
+  <div
+    class="flex items-center px-6 [.border-t]:pt-6 pt-0 flex-shrink-0"
+    data-slot="card-footer"
+  >
+    <a
+      href="/tools/test-tool"
+    >
+      ツールを使用する
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-arrow-right h-4 w-4 group-hover:translate-x-1 transition-smooth"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M5 12h14"
+        />
+        <path
+          d="m12 5 7 7-7 7"
+        />
+      </svg>
+    </a>
+    <a
+      href="/tools/test-tool"
+    >
+      使用する
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-arrow-right h-3 w-3 group-hover:translate-x-1 transition-smooth"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M5 12h14"
+        />
+        <path
+          d="m12 5 7 7-7 7"
+        />
+      </svg>
+    </a>
+  </div>
+</div>
+`;

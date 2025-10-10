@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -20,7 +21,7 @@ interface StatsCardsProps {
   className?: string;
 }
 
-export function StatsCards({
+export const StatsCards = React.memo(function StatsCards({
   totalTools,
   availableTools,
   betaTools,
@@ -28,7 +29,7 @@ export function StatsCards({
   totalSuites,
   className = ""
 }: StatsCardsProps) {
-  const stats = [
+  const stats = React.useMemo(() => [
     {
       title: "総ツール数",
       value: totalTools,
@@ -64,7 +65,7 @@ export function StatsCards({
       color: "from-purple-500 to-indigo-500",
       description: "連鎖ツールスイート"
     }
-  ];
+  ], [totalTools, availableTools, betaTools, developmentTools, totalSuites]);
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 ${className}`}>
@@ -109,7 +110,7 @@ export function StatsCards({
       ))}
     </div>
   );
-}
+});
 
 interface ProgressCardProps {
   title: string;

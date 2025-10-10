@@ -61,9 +61,9 @@ export const optimizeImageUrl = (
   if (!extension) return src;
 
   // 最適な形式を決定
-  let targetFormat = format;
+  let targetFormat: string = format;
   if (format === 'auto') {
-    targetFormat = getOptimalFormat(extension) as any;
+    targetFormat = getOptimalFormat(extension);
   }
 
   // ファイル名を生成

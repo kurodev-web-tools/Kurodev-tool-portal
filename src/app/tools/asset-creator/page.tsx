@@ -9,7 +9,6 @@ import { useSidebar } from '@/hooks/use-sidebar';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -34,6 +33,7 @@ import { Toolbar } from './components/Toolbar';
 import { EnhancedPreview, usePreviewKeyboardShortcuts } from './components/EnhancedPreview';
 import { useCanvasOperations } from './hooks/useCanvasOperations';
 import { AssetExportSettingsPanel, AssetExportSettings } from './components/AssetExportSettingsPanel';
+import { logger } from '@/lib/logger';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -103,7 +103,7 @@ function AssetCreatorPage() {
       size = { width: 'min(1800px, 90vw)', maxWidth: 'none' };
     }
 
-    console.log('Preview size:', { isDesktop, isPreviewDedicatedMode, isSidebarOpen, size });
+    logger.debug('Preview size', { isDesktop, isPreviewDedicatedMode, isSidebarOpen, size }, 'AssetCreator');
     return size;
   }, [isDesktop, isPreviewDedicatedMode, isSidebarOpen]);
 
@@ -308,7 +308,7 @@ function AssetCreatorPage() {
       const filenames = await Promise.all(promises);
       toast.success(`${filenames.length}個のファイルをエクスポートしました`);
     } catch (error) {
-      console.error('Batch export failed:', error);
+      logger.error('Batch export failed', error, 'AssetCreator');
       toast.error('バッチエクスポートに失敗しました');
     } finally {
       setIsExporting(false);
@@ -338,7 +338,7 @@ function AssetCreatorPage() {
       
       await handleAdvancedExport(element, settings);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed', error, 'AssetCreator');
       toast.error('エクスポートに失敗しました');
     }
   }, [handleAdvancedExport]);
@@ -1606,7 +1606,7 @@ function AssetCreatorPage() {
             ]}
             onTabClick={(tabId) => {
               // タブの状態管理が必要な場合はここで実装
-              console.log('Tab clicked:', tabId);
+              logger.debug('Tab clicked', { tabId }, 'AssetCreator');
             }}
           />
         )}

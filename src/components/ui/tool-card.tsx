@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 import { Badge } from "./badge";
@@ -31,7 +32,7 @@ const iconMap = {
   "bar-chart": "📊",
 };
 
-export function ToolCard({
+export const ToolCard = React.memo(function ToolCard({
   id,
   title,
   description,
@@ -183,4 +184,4 @@ export function ToolCard({
 
   // hrefがある場合は、外側のLinkでラップせず、Card内のボタンでリンクを処理
   return CardComponent;
-}
+});

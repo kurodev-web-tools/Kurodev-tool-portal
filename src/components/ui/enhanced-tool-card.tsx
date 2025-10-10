@@ -1,5 +1,6 @@
 'use client';
 
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,8 +100,8 @@ const renderStars = (rating: number) => {
   return stars;
 };
 
-export function EnhancedToolCard({ item, onItemClick, className }: EnhancedToolCardProps) {
-  const Icon = getToolIcon(item.iconName);
+export const EnhancedToolCard = React.memo(function EnhancedToolCard({ item, onItemClick, className }: EnhancedToolCardProps) {
+  const Icon = React.useMemo(() => getToolIcon(item.iconName), [item.iconName]);
 
   return (
     <Card 
@@ -189,4 +190,4 @@ export function EnhancedToolCard({ item, onItemClick, className }: EnhancedToolC
       </CardContent>
     </Card>
   );
-}
+});

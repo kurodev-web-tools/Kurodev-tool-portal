@@ -177,7 +177,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
   const handleAddLayer = (type: 'text' | 'image' | 'shape') => {
     const layerCount = layers.filter(l => l.type === type).length + 1;
     let name = '';
-    let initialProps: any = {
+    let initialProps: Partial<UnifiedLayer> = {
       visible: true,
       locked: false,
       x: isDesktop ? 100 : 50,
@@ -242,7 +242,9 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
         break;
     }
 
-    addLayer(initialProps);
+    if (initialProps.type && initialProps.name) {
+      addLayer(initialProps as Omit<UnifiedLayer, 'id' | 'rotation' | 'zIndex'>);
+    }
   };
 
   const handleShapeSelect = (shapeType: string) => {

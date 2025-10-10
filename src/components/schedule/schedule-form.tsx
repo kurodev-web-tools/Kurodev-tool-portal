@@ -24,7 +24,7 @@ import { format } from 'date-fns';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { Plus, Calendar, Clock, Bell } from 'lucide-react';
+import { Calendar, Clock, Bell } from 'lucide-react';
 
 const scheduleSchema = z.object({
   title: z.string().max(50, { message: "タイトルは50文字までです。" }).optional(),

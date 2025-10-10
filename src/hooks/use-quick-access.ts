@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface QuickAccessItem {
   id: string;
@@ -82,7 +83,7 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
           popularTools: popularToolsData,
         });
       } catch (error) {
-        console.error('Failed to load quick access data:', error);
+        logger.error('Failed to load quick access data', error, 'useQuickAccess');
         setState({
           recentTools: [],
           favoriteTools: [],
@@ -108,7 +109,7 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
       try {
         localStorage.setItem(STORAGE_KEYS.RECENT, JSON.stringify(newRecentTools));
       } catch (error) {
-        console.error('Failed to save recent tools:', error);
+        logger.error('Failed to save recent tools', error, 'useQuickAccess');
       }
 
       return {
@@ -137,7 +138,7 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
       try {
         localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(newFavoriteTools));
       } catch (error) {
-        console.error('Failed to save favorite tools:', error);
+        logger.error('Failed to save favorite tools', error, 'useQuickAccess');
       }
 
       return {
@@ -158,7 +159,7 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
       try {
         localStorage.removeItem(STORAGE_KEYS.RECENT);
       } catch (error) {
-        console.error('Failed to clear recent tools:', error);
+        logger.error('Failed to clear recent tools', error, 'useQuickAccess');
       }
 
       return {
@@ -174,7 +175,7 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
       try {
         localStorage.removeItem(STORAGE_KEYS.FAVORITES);
       } catch (error) {
-        console.error('Failed to clear favorite tools:', error);
+        logger.error('Failed to clear favorite tools', error, 'useQuickAccess');
       }
 
       return {

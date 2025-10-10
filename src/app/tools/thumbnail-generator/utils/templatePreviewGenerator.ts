@@ -243,3 +243,5 @@ export class TemplatePreviewGenerator {
     ctx.fillText('📷', 0, 0);
   }
 }
+
+

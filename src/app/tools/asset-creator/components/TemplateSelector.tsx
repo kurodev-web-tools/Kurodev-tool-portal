@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React from 'react';
 import { ResponsiveImage } from '@/components/ui/optimized-image';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -8,25 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTemplate } from '../contexts/TemplateContext';
-import { loadTemplates } from '@/lib/templateLoader';
-import { createGenreDisplayMapping } from '@/lib/genreMapping';
+import { useTemplateManagement, useCustomAspectRatio, Template } from '@/hooks/useTemplateManagement';
 
-// テンプレートの型定義
-export interface ThumbnailTemplate {
-  id: string;
-  name: string;
-  genre: string; // ジャンルプロパティを動的に変更
-  initialText: string;
-  initialTextColor: string;
-  initialFontSize: string;
-  initialImageSrc: string; // 必須に変更
-  initialBackgroundImagePosition?: { x: number; y: number; width: number; height: number };
-  initialCharacterImagePosition?: { x: number; y: number; width: number; height: number };
-  initialTextPosition?: { x: number; y: number; width: number; height: number };
-  supportedAspectRatios: string[];
-}
-
-
+// 型エイリアス（後方互換性のため）
+export type ThumbnailTemplate = Template;
 
 const aspectRatios = ['1:1', '4:3', '9:16', '16:9'];
 
@@ -43,66 +28,19 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
     setCustomAspectRatio 
   } = useTemplate();
 
-  // 動的テンプレート読み込み
-  const [templates, setTemplates] = useState<ThumbnailTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // カスタムフックでテンプレート管理
+  const {
+    filteredTemplates,
+    availableGenres,
+    genreNames,
+    isLoading
+  } = useTemplateManagement({ aspectRatio, customAspectRatio });
 
-  useEffect(() => {
-    const loadTemplatesData = async () => {
-      try {
-        setIsLoading(true);
-        console.log('🔄 テンプレート読み込み開始...');
-        const loadedTemplates = await loadTemplates();
-        console.log('✅ テンプレート読み込み完了:', loadedTemplates.length, '個');
-        console.log('📝 読み込まれたジャンル:', [...new Set(loadedTemplates.map(t => t.genre))]);
-        setTemplates(loadedTemplates);
-      } catch (error) {
-        console.error('❌ テンプレート読み込み失敗:', error);
-        setTemplates([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTemplatesData();
-  }, []);
-
-  const handleCustomAspectRatioChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'width' | 'height') => {
-    const value = parseInt(e.target.value, 10);
-    const newRatio = { ...customAspectRatio, [type]: value };
-    if (!isNaN(value) && value > 0) {
-      setCustomAspectRatio(newRatio);
-      setAspectRatio('custom');
-    }
-  };
-
-  // 選択中のアスペクト比でテンプレートをフィルタリング
-  const filteredTemplates = useMemo(() => {
-    console.log('🎯 現在のアスペクト比:', aspectRatio);
-    const filtered = templates.filter(t => 
-      aspectRatio === 'custom' || t.supportedAspectRatios.includes(aspectRatio)
-    );
-    console.log('🔍 フィルタリング前のテンプレート数:', templates.length);
-    console.log('🔍 フィルタリング後のテンプレート数:', filtered.length);
-    console.log('📋 フィルタリング後のジャンル:', [...new Set(filtered.map(t => t.genre))]);
-    return filtered;
-  }, [templates, aspectRatio]);
-
-  // フィルタリングされたテンプレートからユニークなジャンルを取得
-  const availableGenres = useMemo(() => {
-    const genres = [...new Set(filteredTemplates.map(t => t.genre))];
-    console.log('🔍 利用可能なジャンル:', genres);
-    console.log('📊 フィルタリングされたテンプレート数:', filteredTemplates.length);
-    console.log('📋 全テンプレート数:', templates.length);
-    console.log('🎯 現在のアスペクト比:', aspectRatio);
-    console.log('📝 全ジャンル（フィルタリング前）:', [...new Set(templates.map(t => t.genre))]);
-    return genres;
-  }, [filteredTemplates, templates, aspectRatio]);
-
-  // ジャンルの表示名マッピングを動的に生成
-  const genreNames = useMemo(() => 
-    createGenreDisplayMapping(availableGenres),
-    [availableGenres]
+  // カスタムアスペクト比のヘルパー
+  const { handleCustomAspectRatioChange } = useCustomAspectRatio(
+    customAspectRatio,
+    setCustomAspectRatio,
+    setAspectRatio
   );
 
   if (isLoading) {

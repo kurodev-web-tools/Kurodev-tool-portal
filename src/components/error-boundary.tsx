@@ -1,6 +1,9 @@
+'use client';
+
 import React, { Component, ErrorInfo, PropsWithChildren } from 'react';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { logger } from "@/lib/logger";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -57,7 +60,7 @@ export class ErrorBoundary extends Component<PropsWithChildren, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // エラーログの送信やトラッキングをここで実装
-    console.error('Uncaught error:', error, errorInfo);
+    logger.error('Uncaught error', { error, errorInfo }, 'ErrorBoundary');
     
     // ユーザーへの通知
     toast.error('エラーが発生しました。', {
