@@ -33,6 +33,11 @@ export interface Layer {
   text?: string;
   color?: string;
   fontSize?: string;
+  fontFamily?: string; // Google Fonts対応
+  fontWeight?: string; // フォントウェイト (100, 200...900, normal, bold, lighter)
+  fontStyle?: string; // フォントスタイル (normal, italic, oblique)
+  textDecoration?: string; // 文字装飾 (none, underline, line-through, overline)
+  textShadow?: string; // 文字シャドウ (例: "2px 2px 4px rgba(0,0,0,0.5)")
   shapeType?: ShapeType;
   backgroundColor?: string;
   borderColor?: string;
@@ -85,16 +90,19 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, []);
 
   const addLayer = useCallback((layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
-    const maxZIndex = layers.reduce((max, l) => Math.max(max, l.zIndex), -1);
     const newLayer: Layer = { 
       ...layer, 
       id: uuidv4(), 
       rotation: 0, 
-      zIndex: maxZIndex + 1 
+      zIndex: 0, // 一時的に0に設定、後で配列順序に基づいて更新
     };
-    setLayers((prevLayers) => [...prevLayers, newLayer]);
+    setLayers((prevLayers) => {
+      const newLayers = [newLayer, ...prevLayers]; // 新しいレイヤーを一番上に追加
+      // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
+      return newLayers.map((l, index) => ({ ...l, zIndex: newLayers.length - 1 - index }));
+    });
     setSelectedLayerId(newLayer.id);
-  }, [layers]);
+  }, []);
 
   const removeLayer = useCallback((id: string) => {
     setLayers((prevLayers) => prevLayers.filter((layer) => layer.id !== id));
@@ -114,43 +122,55 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
       const newLayers = Array.from(prevLayers);
       const [removed] = newLayers.splice(startIndex, 1);
       newLayers.splice(endIndex, 0, removed);
-      // zIndexを再割り当て
-      return newLayers.map((layer, index) => ({ ...layer, zIndex: index }));
+      // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
+      return newLayers.map((l, index) => ({ ...l, zIndex: newLayers.length - 1 - index }));
     });
   }, []);
 
   const duplicateLayer = useCallback((id: string) => {
-    const layerToDuplicate = layers.find((layer) => layer.id === id);
-    if (!layerToDuplicate) return;
-
-    const duplicatedLayer: Layer = {
-      ...layerToDuplicate,
-      id: uuidv4(),
-      name: `${layerToDuplicate.name}のコピー`,
-      x: layerToDuplicate.x + 20,
-      y: layerToDuplicate.y + 20,
-      zIndex: layers.length, // 必ず一番上にくるように
-    };
-
-    const index = layers.findIndex((layer) => layer.id === id);
-    const newLayers = [...layers];
-    newLayers.splice(index + 1, 0, duplicatedLayer);
-    setLayers(newLayers.map((l, i) => ({ ...l, zIndex: i }))); // zIndex再割当て
-  }, [layers]);
+    setLayers((prevLayers) => {
+      const layerToDuplicate = prevLayers.find((layer) => layer.id === id);
+      if (!layerToDuplicate) {
+        return prevLayers;
+      }
+      const duplicatedLayer: Layer = {
+        ...layerToDuplicate,
+        id: uuidv4(),
+        name: `${layerToDuplicate.name}のコピー`,
+        x: layerToDuplicate.x + 20,
+        y: layerToDuplicate.y + 20,
+      };
+      const index = prevLayers.findIndex((layer) => layer.id === id);
+      const newLayers = [...prevLayers];
+      newLayers.splice(index + 1, 0, duplicatedLayer);
+      // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
+      return newLayers.map((l, index) => ({ ...l, zIndex: newLayers.length - 1 - index }));
+    });
+  }, []);
 
   const moveLayerUp = useCallback((id: string) => {
-    const index = layers.findIndex((layer) => layer.id === id);
-    if (index > 0) {
-      reorderLayers(index, index - 1);
-    }
-  }, [layers, reorderLayers]);
+    setLayers((prevLayers) => {
+      const index = prevLayers.findIndex((layer) => layer.id === id);
+      if (index <= 0) return prevLayers;
+      const newLayers = [...prevLayers];
+      const [movedLayer] = newLayers.splice(index, 1);
+      newLayers.splice(index - 1, 0, movedLayer);
+      // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
+      return newLayers.map((l, index) => ({ ...l, zIndex: newLayers.length - 1 - index }));
+    });
+  }, []);
 
   const moveLayerDown = useCallback((id: string) => {
-    const index = layers.findIndex((layer) => layer.id === id);
-    if (index < layers.length - 1 && index !== -1) {
-      reorderLayers(index, index + 1);
-    }
-  }, [layers, reorderLayers]);
+    setLayers((prevLayers) => {
+      const index = prevLayers.findIndex((layer) => layer.id === id);
+      if (index < 0 || index >= prevLayers.length - 1) return prevLayers;
+      const newLayers = [...prevLayers];
+      const [movedLayer] = newLayers.splice(index, 1);
+      newLayers.splice(index + 1, 0, movedLayer);
+      // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
+      return newLayers.map((l, index) => ({ ...l, zIndex: newLayers.length - 1 - index }));
+    });
+  }, []);
 
   useEffect(() => {
     const initialLayers: Layer[] = [];
@@ -173,7 +193,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         height: '100%', // 100%に変更
         rotation: 0,
         src: selectedTemplate.initialImageSrc,
-        zIndex: 0, // zIndexを明示的に設定
+        zIndex: 0, // 一時的に0、後で再計算
         isBackground: true, // 背景フラグを設定
       });
     }
@@ -193,12 +213,19 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         text: selectedTemplate.initialText,
         color: selectedTemplate.initialTextColor,
         fontSize: selectedTemplate.initialFontSize,
-        zIndex: 1, // zIndexを明示的に設定
+        zIndex: 0, // 一時的に0、後で再計算
       });
     }
 
-    setLayers(initialLayers);
-    setSelectedLayerId(initialLayers.length > 1 ? initialLayers[1].id : initialLayers[0]?.id || null);
+    // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
+    // テキストが先に追加されるように配列を逆にしてからzIndexを設定
+    const layersWithZIndex = initialLayers.reverse().map((l, index) => ({ 
+      ...l, 
+      zIndex: initialLayers.length - 1 - index 
+    }));
+    
+    setLayers(layersWithZIndex);
+    setSelectedLayerId(layersWithZIndex.length > 0 ? layersWithZIndex[0]?.id || null : null);
 
   }, [selectedTemplate]);
 

@@ -11,6 +11,11 @@ interface ThumbnailTextProps {
   text: string;
   color?: string;
   fontSize?: string;
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textShadow?: string;
   className?: string;
   x: number;
   y: number;
@@ -36,6 +41,11 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   text,
   color = 'white',
   fontSize = '2rem',
+  fontFamily,
+  fontWeight,
+  fontStyle,
+  textDecoration,
+  textShadow,
   className,
   x,
   y,
@@ -165,7 +175,20 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
           className="w-full h-full flex items-center justify-center"
           style={{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}
         >
-          <p className={cn("cursor-move", className)} style={{ color, fontSize, lineHeight: 1, whiteSpace: 'pre-wrap' }}>
+          <p 
+            className={cn("cursor-move", className)} 
+            style={{ 
+              color, 
+              fontSize, 
+              fontFamily,
+              fontWeight,
+              fontStyle,
+              textDecoration,
+              textShadow,
+              lineHeight: 1, 
+              whiteSpace: 'pre-wrap' 
+            }}
+          >
             {text}
           </p>
         </div>
