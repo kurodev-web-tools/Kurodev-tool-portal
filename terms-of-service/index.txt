@@ -1,43 +1,11 @@
 1:"$Sreact.fragment"
-2:I[56609,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],""]
-16:I[16307,[],""]
-:HL["/Kurodev-tool-portal/_next/static/media/0484562807a97172-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/0c1a05f6642d3ad4-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/0e9d289c6eb42bf7-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/155cae559bbd1a77-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/1bc72ecfe6e6f869-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/1f3fe8c6df3d47c1-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/3703c28dcda155b1-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/443896d591e4f761-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/47cbc4e2adbc5db9-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/4c285fdca692ea22-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/4de1fea1a954a5b6-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/5c0c2bcbaa4149ca-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/62c97acc3aa63787-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/6c25f6e897d845a3-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/6d664cce900333ee-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/72b894ddc38a7cc1-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/739c2d8941231bb4-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/7f06be3f780a819a-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/87069f06a4f1ee13-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/8888a3826f4a3af4-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+2:I[80725,["177","static/chunks/app/layout-95e18978eef7e533.js"],""]
+16:I[25287,[],""]
 :HL["/Kurodev-tool-portal/_next/static/media/904be59b21bd51cb-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/9cf9c6e84ed13b5e-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/b0ae0c3d5e298d03-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/b957ea75a84b6ea7-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/ba2138f0d9bce0a9-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/bb3ef058b751a6ad-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/be955174636e5369-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/c7b4fd33734710f7-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/e400baae650c21fc-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/Kurodev-tool-portal/_next/static/media/e4af272ccee01ff0-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/e807dee2426166ad-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/eaead17c7dbfcd5d-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/eafabf029ad39a43-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/media/ee40bb094c99a29a-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/Kurodev-tool-portal/_next/static/media/f2dba9fbcf2f771b-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/css/bdacc7621bbcffc0.css","style"]
-:HL["/Kurodev-tool-portal/_next/static/css/95a220f98eba43ef.css","style"]
+:HL["/Kurodev-tool-portal/_next/static/css/030f705255d08781.css","style"]
+:HL["/Kurodev-tool-portal/_next/static/css/9c0d7c36b7dd2417.css","style"]
 3:Tb33,{
   "@context": "https://schema.org",
   "@type": "WebApplication",
@@ -54,7 +22,7 @@
     "name": "Kurodev Tools"
   },
   "datePublished": "2025-01-01",
-  "dateModified": "2025-10-04",
+  "dateModified": "2025-10-10",
   "inLanguage": "ja-JP",
   "isAccessibleForFree": true,
   "applicationCategory": "MultimediaApplication",
@@ -122,20 +90,20 @@
       }
     ]
   }
-}0:{"P":null,"b":"build-1759585301988","p":"/Kurodev-tool-portal","c":["","terms-of-service",""],"i":false,"f":[[["",{"children":["terms-of-service",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/bdacc7621bbcffc0.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/95a220f98eba43ef.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["terms-of-service","$L12",{"children":["__PAGE__","$L13",{},null,false]},null,false]},["$L14",[],[]],false],"$L15",false]],"m":"$undefined","G":["$16",[]],"s":false,"S":true}
-17:I[35305,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"ThemeProvider"]
-18:I[83388,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"AuthProvider"]
-19:I[5915,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"default"]
-1a:I[72251,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"DebugPanelProvider"]
-1b:I[52763,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"Header"]
-1c:I[43105,[],""]
-1d:I[52565,[],""]
-1e:I[72772,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],""]
-1f:I[27873,["177","static/chunks/app/layout-e44579c9ffab7f9e.js"],"Toaster"]
-20:I[59636,[],"OutletBoundary"]
-22:I[109,[],"AsyncMetadataOutlet"]
-24:I[59636,[],"ViewportBoundary"]
-26:I[59636,[],"MetadataBoundary"]
+}0:{"P":null,"b":"build-1760095887039","p":"/Kurodev-tool-portal","c":["","terms-of-service",""],"i":false,"f":[[["",{"children":["terms-of-service",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/030f705255d08781.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/9c0d7c36b7dd2417.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["terms-of-service","$L12",{"children":["__PAGE__","$L13",{},null,false]},null,false]},["$L14",[],[]],false],"$L15",false]],"m":"$undefined","G":["$16",[]],"s":false,"S":true}
+17:I[13031,["177","static/chunks/app/layout-95e18978eef7e533.js"],"ThemeProvider"]
+18:I[39866,["177","static/chunks/app/layout-95e18978eef7e533.js"],"AuthProvider"]
+19:I[64770,["177","static/chunks/app/layout-95e18978eef7e533.js"],"ErrorBoundary"]
+1a:I[86903,["177","static/chunks/app/layout-95e18978eef7e533.js"],"DebugPanelProvider"]
+1b:I[79748,["177","static/chunks/app/layout-95e18978eef7e533.js"],"Header"]
+1c:I[421,[],""]
+1d:I[43073,[],""]
+1e:I[60152,["177","static/chunks/app/layout-95e18978eef7e533.js"],""]
+1f:I[28859,["177","static/chunks/app/layout-95e18978eef7e533.js"],"Toaster"]
+20:I[57528,[],"OutletBoundary"]
+22:I[95089,[],"AsyncMetadataOutlet"]
+24:I[57528,[],"ViewportBoundary"]
+26:I[57528,[],"MetadataBoundary"]
 27:"$Sreact.suspense"
 4:["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.gstatic.com"}]
 5:["$","meta",null,{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}]
@@ -150,13 +118,13 @@ d:["$","meta",null,{"name":"theme-color","content":"#1a1a1a"}]
 e:["$","link",null,{"rel":"icon","href":"/favicon.ico"}]
 f:["$","link",null,{"rel":"apple-touch-icon","href":"/apple-touch-icon.png"}]
 10:["$","link",null,{"rel":"manifest","href":"/manifest.json"}]
-11:["$","body",null,{"className":"__variable_899129 __variable_7082a4 __variable_d3b68d __variable_673cbc __variable_833808 __variable_efadf9 __variable_b364ae __variable_b47138 __variable_0b2fa1 __variable_6b7a11 __variable_b10654 __variable_c9d9a9 __variable_c612f4 __variable_d0a159 __variable_4a0304 __variable_493274 __variable_7aa952 __variable_1c6a20 __variable_c4d4a7 __variable_a778db __variable_7ecf6c __variable_51cae8 __variable_1c3d5f __variable_e5650a __variable_d83851 __variable_c05ba2 __variable_f1e2d3 font-sans antialiased min-h-screen flex flex-col bg-background text-foreground","children":[["$","$L17",null,{"attribute":"class","defaultTheme":"dark","enableSystem":false,"disableTransitionOnChange":true,"children":["$","$L18",null,{"children":["$","$L19",null,{"fallback":["$","div",null,{"children":"Something went wrong in AuthProvider or its children."}],"children":[" ",["$","$L1a",null,{"children":[["$","$L1b",null,{}],["$","main",null,{"className":"flex-grow","children":["$","$L1c",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L1d",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}],["$","footer",null,{"className":"border-t py-6","children":["$","div",null,{"className":"container mx-auto flex flex-col md:flex-row items-center justify-between px-4 text-sm text-muted-foreground","children":[["$","p",null,{"children":["© ",2025," VTuber Tools. All rights reserved."]}],["$","nav",null,{"className":"flex space-x-4 mt-4 md:mt-0","children":[["$","$L1e",null,{"href":"/privacy-policy","className":"hover:underline","children":"プライバシーポリシー"}],["$","$L1e",null,{"href":"/terms-of-service","className":"hover:underline","children":"利用規約"}]]}]]}]}]]}]]}]}]}],["$","$L1f",null,{}]]}]
+11:["$","body",null,{"className":"__variable_899129 __variable_c612f4 __variable_0b2fa1 __variable_a04b37 __variable_1d144d __variable_62376a __variable_8e100f __variable_f2fd7e __variable_fd9f78 __variable_b58dab __variable_17bca5 __variable_43f8cb __variable_62c122 __variable_30a018 __variable_0d48bf __variable_c0f2a5 __variable_52d399 __variable_3276a5 __variable_8b809e __variable_c4b463 __variable_3dc9b2 __variable_05cfd8 __variable_f6a9ea __variable_4d34c5 __variable_01b734 __variable_596052 __variable_f519db font-sans antialiased min-h-screen flex flex-col bg-background text-foreground","children":[["$","$L17",null,{"attribute":"class","defaultTheme":"dark","enableSystem":false,"disableTransitionOnChange":true,"children":["$","$L18",null,{"children":["$","$L19",null,{"children":[" ",["$","$L1a",null,{"children":[["$","$L1b",null,{}],["$","main",null,{"className":"flex-grow","children":["$","$L1c",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L1d",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}],["$","footer",null,{"className":"border-t py-6","children":["$","div",null,{"className":"container mx-auto flex flex-col md:flex-row items-center justify-between px-4 text-sm text-muted-foreground","children":[["$","p",null,{"children":["© ",2025," ","Kurodev Tools",". All rights reserved."]}],["$","nav",null,{"className":"flex space-x-4 mt-4 md:mt-0","children":[["$","$L1e",null,{"href":"/privacy-policy","className":"hover:underline","children":"プライバシーポリシー"}],["$","$L1e",null,{"href":"/terms-of-service","className":"hover:underline","children":"利用規約"}]]}]]}]}]]}]]}]}]}],["$","$L1f",null,{}]]}]
 12:["$","$1","c",{"children":[null,["$","$L1c",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L1d",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}]
 13:["$","$1","c",{"children":[["$","div",null,{"className":"container mx-auto p-4","children":[["$","h1",null,{"className":"text-4xl font-bold mb-4","children":"利用規約"}],["$","p",null,{"className":"text-lg mb-8","children":"この利用規約は、VTuberツールポータル（以下「当サービス」といいます）が提供するサービスの利用に関する条件を定めるものです。"}],["$","h2",null,{"className":"text-2xl font-semibold mb-4","children":"1. 適用"}],["$","p",null,{"className":"mb-4","children":"本規約は、ユーザーと当サービスとの間の、当サービスの利用に関わる一切の関係に適用されるものとします。"}],["$","h2",null,{"className":"text-2xl font-semibold mb-4","children":"2. 利用登録"}],["$","p",null,{"className":"mb-4","children":"当サービスにおいて利用登録が必要な場合、ユーザーは当サービスの定める方法によって利用登録を申請し、当サービスがこれを承認することによって、利用登録が完了するものとします。"}],["$","h2",null,{"className":"text-2xl font-semibold mb-4","children":"3. 禁止事項"}],["$","p",null,{"className":"mb-4","children":"ユーザーは、当サービスの利用にあたり、以下の行為をしてはなりません。"}],["$","ul",null,{"className":"list-disc list-inside mb-8","children":[["$","li",null,{"children":"法令または公序良俗に違反する行為"}],["$","li",null,{"children":"犯罪行為に関連する行為"}],["$","li",null,{"children":"当サービスのサーバーまたはネットワークの機能を破壊したり、妨害したりする行為"}],["$","li",null,{"children":"当サービスの運営を妨害するおそれのある行為"}],["$","li",null,{"children":"他のユーザーに関する個人情報等を収集または蓄積する行為"}],["$","li",null,{"children":"不正アクセスをする、またはこれを試みる行為"}],["$","li",null,{"children":"当サービスが許諾しない方法で、当サービスに関する広告、宣伝、勧誘、または営業行為を行う行為"}],["$","li",null,{"children":"その他、当サービスが不適切と判断する行為"}]]}],["$","h2",null,{"className":"text-2xl font-semibold mb-4","children":"4. 免責事項"}],["$","p",null,{"className":"mb-4","children":"当サービスは、当サービスに起因してユーザーに生じたあらゆる損害について一切の責任を負いません。"}],["$","h2",null,{"className":"text-2xl font-semibold mb-4","children":"5. 規約の変更"}],["$","p",null,{"className":"mb-4","children":"当サービスは、必要と判断した場合には、ユーザーに通知することなくいつでも本規約を変更することができるものとします。"}]]}],null,["$","$L20",null,{"children":["$L21",["$","$L22",null,{"promise":"$@23"}]]}]]}]
 14:["$","div","l",{"className":"flex items-center justify-center min-h-screen","children":[["$","div",null,{"className":"animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"}],["$","p",null,{"className":"ml-4 text-lg","children":"Loading..."}]]}]
 15:["$","$1","h",{"children":[null,[["$","$L24",null,{"children":"$L25"}],["$","meta",null,{"name":"next-size-adjust","content":""}]],["$","$L26",null,{"children":["$","div",null,{"hidden":true,"children":["$","$27",null,{"fallback":null,"children":"$L28"}]}]}]]}]
 25:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
 21:null
-29:I[49397,[],"IconMark"]
+29:I[63713,[],"IconMark"]
 23:{"metadata":[["$","title","0",{"children":"VTuber配信ワークフロー連鎖ツール ポータル"}],["$","meta","1",{"name":"description","content":"VTuber・配信者・クリエイター向けの配信ワークフロー連鎖ツールポータル。スケジュール管理、素材制作、配信準備を効率化する無料ツール集。"}],["$","meta","2",{"name":"author","content":"Kurodev Tools"}],["$","meta","3",{"name":"keywords","content":"VTuber,配信者,クリエイター,配信ツール,ワークフロー,スケジュール管理,素材制作,配信準備,無料ツール,配信支援"}],["$","meta","4",{"name":"creator","content":"Kurodev Tools"}],["$","meta","5",{"name":"publisher","content":"Kurodev Tools"}],["$","meta","6",{"name":"robots","content":"index, follow"}],["$","meta","7",{"name":"googlebot","content":"index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1"}],["$","meta","8",{"name":"msapplication-TileColor","content":"#1a1a1a"}],["$","meta","9",{"name":"theme-color","content":"#1a1a1a"}],["$","meta","10",{"name":"apple-mobile-web-app-capable","content":"yes"}],["$","meta","11",{"name":"apple-mobile-web-app-status-bar-style","content":"black-translucent"}],["$","meta","12",{"name":"apple-mobile-web-app-title","content":"VTuber Tools Portal"}],["$","meta","13",{"name":"application-name","content":"VTuber Tools Portal"}],["$","meta","14",{"name":"mobile-web-app-capable","content":"yes"}],["$","link","15",{"rel":"canonical","href":"https://kurodev-web-tools.github.io/"}],["$","meta","16",{"name":"format-detection","content":"telephone=no, address=no, email=no"}],["$","meta","17",{"name":"google-site-verification","content":"your-google-verification-code"}],["$","meta","18",{"property":"og:title","content":"VTuber配信ワークフロー連鎖ツール ポータル"}],["$","meta","19",{"property":"og:description","content":"VTuber・配信者・クリエイター向けの配信ワークフロー連鎖ツールポータル。スケジュール管理、素材制作、配信準備を効率化する無料ツール集。"}],["$","meta","20",{"property":"og:url","content":"https://kurodev-web-tools.github.io/"}],["$","meta","21",{"property":"og:site_name","content":"VTuber Tools Portal"}],["$","meta","22",{"property":"og:locale","content":"ja_JP"}],["$","meta","23",{"property":"og:image","content":"https://kurodev-web-tools.github.io/og-image.png"}],["$","meta","24",{"property":"og:image:width","content":"1200"}],["$","meta","25",{"property":"og:image:height","content":"630"}],["$","meta","26",{"property":"og:image:alt","content":"VTuber Tools Portal"}],["$","meta","27",{"property":"og:type","content":"website"}],["$","meta","28",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","29",{"name":"twitter:title","content":"VTuber配信ワークフロー連鎖ツール ポータル"}],["$","meta","30",{"name":"twitter:description","content":"VTuber・配信者・クリエイター向けの配信ワークフロー連鎖ツールポータル。"}],["$","meta","31",{"name":"twitter:image","content":"https://kurodev-web-tools.github.io/og-image.png"}],["$","link","32",{"rel":"icon","href":"/Kurodev-tool-portal/favicon.ico","type":"image/x-icon","sizes":"16x16"}],["$","$L29","33",{}]],"error":null,"digest":"$undefined"}
 28:"$23:metadata"
