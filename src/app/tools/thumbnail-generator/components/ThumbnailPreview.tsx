@@ -5,6 +5,7 @@ import { toPng } from 'html-to-image';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { ResizableDelta, Position } from 'react-rnd';
 
 import { useTemplate } from '../contexts/TemplateContext';
@@ -36,7 +37,7 @@ export default function ThumbnailPreview({ isShiftKeyDown }: ThumbnailPreviewPro
         link.href = dataUrl;
         link.click();
       } catch (err) {
-        console.error('サムネイルの生成に失敗しました', err);
+        logger.error('サムネイル生成失敗', err, 'ThumbnailPreview');
         toast.error("画像の生成に失敗しました", {
           description: "時間をおいて再度お試しいただくか、別の画像でお試しください。",
         });

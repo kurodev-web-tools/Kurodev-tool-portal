@@ -37,6 +37,7 @@ import { useCanvasOperations } from '../asset-creator/hooks/useCanvasOperations'
 import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
 import { FontSelector } from '@/components/shared/FontSelector';
 import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
+import { logger } from '@/lib/logger';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -199,11 +200,11 @@ export default function ThumbnailGeneratorPage() {
             resolve();
           };
           const onError = () => {
-            img.removeEventListener('load', onLoad);
-            img.removeEventListener('error', onError);
-            console.warn('画像の読み込みに失敗しました:', img.src);
-            resolve(); // エラーでも続行
-          };
+          img.removeEventListener('load', onLoad);
+          img.removeEventListener('error', onError);
+          logger.warn('画像の読み込みに失敗しました', { src: img.src }, 'ThumbnailGenerator');
+          resolve(); // エラーでも続行
+        };
           img.addEventListener('load', onLoad);
           img.addEventListener('error', onError);
         }
@@ -974,7 +975,7 @@ export default function ThumbnailGeneratorPage() {
       
       await handleSingleExport(element, settings);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('エクスポート失敗', error, 'ThumbnailGenerator');
       toast.error('エクスポートに失敗しました');
     }
   }, []);
@@ -1726,10 +1727,10 @@ export default function ThumbnailGeneratorPage() {
               { id: "tools", label: "ツール", icon: <Construction className="h-4 w-4" /> },
               { id: "layers", label: "レイヤー", icon: <Layers className="h-4 w-4" /> }
             ]}
-            onTabClick={(tabId) => {
-              // タブの状態管理が必要な場合はここで実装
-              console.log('Tab clicked:', tabId);
-            }}
+          onTabClick={(tabId) => {
+            // タブの状態管理が必要な場合はここで実装
+            logger.debug('タブクリック', { tabId }, 'ThumbnailGenerator');
+          }}
           />
         )}
 

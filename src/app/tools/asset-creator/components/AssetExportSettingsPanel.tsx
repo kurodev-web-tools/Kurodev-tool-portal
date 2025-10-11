@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 // エクスポート設定の型定義（イベント用素材に特化）
@@ -145,7 +146,7 @@ export const AssetExportSettingsPanel: React.FC<AssetExportSettingsPanelProps> =
     try {
       await onExport(element, settings);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('エクスポート失敗', error, 'AssetExportSettingsPanel');
       toast.error('エクスポートに失敗しました');
     }
   };

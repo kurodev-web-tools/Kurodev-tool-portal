@@ -2,6 +2,8 @@
  * パフォーマンス最適化用のユーティリティ関数
  */
 
+import { logger } from './logger';
+
 /**
  * デバウンス関数
  * 連続して呼び出される関数の実行を遅延させる
@@ -115,7 +117,7 @@ export function endPerformanceMeasure(name: string): number | null {
       const measure = performance.getEntriesByName(name)[0];
       return measure.duration;
     } catch (error) {
-      console.warn(`Performance measure failed for ${name}:`, error);
+      logger.warn('パフォーマンス計測失敗', { name, error }, 'performance');
       return null;
     }
   }
@@ -130,7 +132,7 @@ export async function dynamicImport<T>(importFn: () => Promise<T>): Promise<T> {
   try {
     return await importFn();
   } catch (error) {
-    console.error('Dynamic import failed:', error);
+    logger.error('動的import失敗', error, 'performance');
     throw error;
   }
 }

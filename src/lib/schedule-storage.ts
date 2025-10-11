@@ -1,6 +1,7 @@
 // src/lib/schedule-storage.ts
 import { v4 as uuidv4 } from 'uuid';
 import { ScheduleItem } from '@/types/schedule';
+import { logger } from './logger';
 
 const STORAGE_KEY = 'vtuber-schedule-calendar-items';
 
@@ -10,7 +11,7 @@ export function loadSchedules(): ScheduleItem[] {
     const item = localStorage.getItem(STORAGE_KEY);
     return item ? JSON.parse(item) : [];
   } catch (error) {
-    console.error("Failed to load schedules from localStorage", error);
+    logger.error('スケジュール読み込み失敗', error, 'scheduleStorage');
     return [];
   }
 }
@@ -20,7 +21,7 @@ export function saveSchedules(schedules: ScheduleItem[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
   } catch (error) {
-    console.error("Failed to save schedules to localStorage", error);
+    logger.error('スケジュール保存失敗', error, 'scheduleStorage');
   }
 }
 

@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function ScheduleList() {
   const { schedules, selectedDate, setIsModalOpen, setEditingSchedule, refreshSchedules } = useSchedule();
@@ -37,7 +38,7 @@ export function ScheduleList() {
         toast.success('スケジュールを削除しました。');
         refreshSchedules();
       } catch (error) {
-        console.error("Failed to delete schedule", error);
+        logger.error('スケジュール削除失敗', error, 'ScheduleList');
         toast.error('スケジュールの削除に失敗しました。');
       }
       setScheduleIdToDelete(null);

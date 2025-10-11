@@ -16,6 +16,7 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 // validateRequired and cn are imported but not used in this simplified version
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
+import { logger } from '@/lib/logger';
 
 interface Idea {
   id: number;
@@ -90,7 +91,7 @@ export default function ScriptGeneratorPage() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       const script = `【${idea.title}】\n\n${dummyScript.introduction}\n\n${idea.description}\n\n${dummyScript.body}\n\n${dummyScript.conclusion}`;
       // ここで台本を保存または表示する処理を実装
-      console.log('Generated script:', script);
+      logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.length }, 'ScriptGenerator');
     }, "台本生成中にエラーが発生しました");
     setIsGeneratingScript(false);
   }, [handleAsyncError]);

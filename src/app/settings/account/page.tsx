@@ -64,7 +64,7 @@ export default function AccountPage() {
       description: "この操作は元に戻せません。",
       action: {
         label: "OK",
-        onClick: () => console.log("OK clicked"),
+        onClick: () => {}, // 不要なログを削除
       },
     });
   };

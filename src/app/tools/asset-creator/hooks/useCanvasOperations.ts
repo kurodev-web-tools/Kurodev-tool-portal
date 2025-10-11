@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { logger } from '@/lib/logger';
 
 interface CanvasState {
   layers: any[];
@@ -75,7 +76,7 @@ export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId
       localStorage.setItem('asset-creator-save', JSON.stringify(saveData));
       return true;
     } catch (error) {
-      console.error('保存に失敗しました:', error);
+      logger.error('保存失敗', error, 'useCanvasOperations');
       return false;
     }
   }, []);
@@ -88,7 +89,7 @@ export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId
         return JSON.parse(saveData);
       }
     } catch (error) {
-      console.error('ロードに失敗しました:', error);
+      logger.error('ロード失敗', error, 'useCanvasOperations');
     }
     return null;
   }, []);

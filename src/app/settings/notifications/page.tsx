@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 const NOTIFICATION_SETTINGS_KEY = "vtuber-tools-notification-settings";
 
@@ -32,7 +33,7 @@ export default function NotificationsPage() {
         setSettings(JSON.parse(savedSettings));
       }
     } catch (error) {
-      console.error("Failed to load notification settings from localStorage", error);
+      logger.error('通知設定読み込み失敗', error, 'NotificationsPage');
       toast.error("通知設定の読み込みに失敗しました。");
     } finally {
       setIsLoaded(true);
@@ -45,7 +46,7 @@ export default function NotificationsPage() {
       try {
         localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(newSettings));
       } catch (error) {
-        console.error("Failed to save notification settings to localStorage", error);
+        logger.error('通知設定保存失敗', error, 'NotificationsPage');
         toast.error("通知設定の保存に失敗しました。");
       }
       return newSettings;
@@ -57,7 +58,7 @@ export default function NotificationsPage() {
       localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
       toast.success("通知設定を保存しました。");
     } catch (error) {
-      console.error("Failed to save notification settings to localStorage", error);
+      logger.error('通知設定保存失敗', error, 'NotificationsPage');
       toast.error("通知設定の保存に失敗しました。");
     }
   };

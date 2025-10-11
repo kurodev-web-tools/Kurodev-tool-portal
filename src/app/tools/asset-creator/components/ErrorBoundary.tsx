@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -31,7 +32,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Asset Creator Error:', error, errorInfo);
+    logger.error('Asset Creator Error', { error, errorInfo }, 'ErrorBoundary');
     
     // エラー情報をローカルストレージに保存（デバッグ用）
     try {
@@ -58,7 +59,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       
       localStorage.setItem('assetCreatorErrors', JSON.stringify(existingErrors));
     } catch (storageError) {
-      console.error('Failed to save error to localStorage:', storageError);
+      logger.error('localStorage保存失敗', storageError, 'ErrorBoundary');
     }
 
     this.setState({
@@ -178,7 +179,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, rese
 export const setupGlobalErrorHandling = () => {
   // 未処理のPromise拒否をキャッチ
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
+    logger.error('Unhandled promise rejection', { reason: event.reason }, 'GlobalErrorHandler');
     
     toast.error('処理中にエラーが発生しました', {
       description: '操作を再試行してください。',
@@ -190,7 +191,7 @@ export const setupGlobalErrorHandling = () => {
 
   // 一般的なJavaScriptエラーをキャッチ
   window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
+    logger.error('Global error', { error: event.error }, 'GlobalErrorHandler');
     
     toast.error('予期しないエラーが発生しました', {
       description: 'ページをリロードしてください。',

@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ThumbnailTemplate } from '@/types/template';
 import { useTemplate } from '../contexts/TemplateContext';
 import { TemplatePreviewGenerator } from '../utils/templatePreviewGenerator';
+import { logger } from '@/lib/logger';
 
 interface TemplateManagerProps {
   templates: ThumbnailTemplate[];
@@ -63,7 +64,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       const preview = await TemplatePreviewGenerator.generatePreview(newTemplate);
       newTemplate.preview = preview;
     } catch (error) {
-      console.warn('プレビュー画像の生成に失敗しました:', error);
+      logger.warn('プレビュー画像生成失敗', { error }, 'TemplateManager');
     }
     
     onTemplatesChange([...templates, newTemplate]);

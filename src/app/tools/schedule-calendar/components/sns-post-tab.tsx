@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function SnsPostTab() {
   const { schedules, selectedDate } = useSchedule();
@@ -72,7 +73,7 @@ export function SnsPostTab() {
       await navigator.clipboard.writeText(postContent);
       toast.success('クリップボードにコピーしました！');
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      logger.error('コピー失敗', err, 'SnsPostTab');
       toast.error('コピーに失敗しました。');
     }
   };

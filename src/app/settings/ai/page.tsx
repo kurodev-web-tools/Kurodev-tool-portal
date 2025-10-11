@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 const AI_SETTINGS_KEY = "vtuber-tools-ai-settings";
 
@@ -32,7 +33,7 @@ export default function AiSettingsPage() {
         setSettings(JSON.parse(savedSettings));
       }
     } catch (error) {
-      console.error("Failed to load AI settings from localStorage", error);
+      logger.error('AI設定読み込み失敗', error, 'AiSettingsPage');
       toast.error("AI設定の読み込みに失敗しました。");
     } finally {
       setIsLoaded(true);
@@ -44,7 +45,7 @@ export default function AiSettingsPage() {
       localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings));
       toast.success("AI設定を保存しました。");
     } catch (error) {
-      console.error("Failed to save AI settings to localStorage", error);
+      logger.error('AI設定保存失敗', error, 'AiSettingsPage');
       toast.error("AI設定の保存に失敗しました。");
     }
   };

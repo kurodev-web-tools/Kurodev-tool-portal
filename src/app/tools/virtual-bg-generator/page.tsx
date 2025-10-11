@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { logger } from "@/lib/logger";
 import {
   Select,
   SelectContent,
@@ -114,7 +115,7 @@ export default function VirtualBackgroundGeneratorPage() {
   const handleGenerate = useCallback(async () => {
     const promptError = validatePrompt(prompt);
     if (promptError) {
-      console.error('バリデーションエラー:', promptError);
+      logger.error('バリデーションエラー', { error: promptError }, 'VirtualBgGenerator');
       // トーストでエラーを表示
       if (typeof window !== 'undefined' && window.alert) {
         window.alert(promptError);
@@ -151,7 +152,7 @@ export default function VirtualBackgroundGeneratorPage() {
       setCopiedPrompt(true);
       setTimeout(() => setCopiedPrompt(false), 2000);
     } catch (err) {
-      console.error('コピーに失敗しました:', err);
+      logger.error('コピー失敗', err, 'VirtualBgGenerator');
     }
   }, [prompt]);
 
@@ -185,7 +186,7 @@ export default function VirtualBackgroundGeneratorPage() {
       // Blob URLを解放
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('ダウンロードエラー:', error);
+      logger.error('ダウンロードエラー', error, 'VirtualBgGenerator');
       // フォールバック: 元の方法でダウンロード
     const link = document.createElement('a');
     link.href = imageUrl;

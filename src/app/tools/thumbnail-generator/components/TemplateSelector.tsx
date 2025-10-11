@@ -17,6 +17,7 @@ import { TemplateManager } from './TemplateManager';
 import { AutoGenerationPanel } from './AutoGenerationPanel';
 import { ThumbnailTemplate, aspectRatios } from '@/types/template';
 import { templates } from '@/data/template-definitions';
+import { logger } from '@/lib/logger';
 
 interface TemplateSelectorProps {
   onSelectTemplate: (template: ThumbnailTemplate) => void;
@@ -575,7 +576,7 @@ const CustomTemplateCreator: React.FC<CustomTemplateCreatorProps> = ({ onCreateT
       
       toast.success('画像をアップロードし、プレビューを生成しました！');
     } catch (error) {
-      console.error('Image upload failed:', error);
+      logger.error('画像アップロード失敗', error, 'TemplateSelector');
       toast.error('画像のアップロードに失敗しました');
     } finally {
       setIsUploading(false);

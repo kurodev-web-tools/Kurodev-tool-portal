@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Template } from '../hooks/useTemplateManagement';
+import { logger } from './logger';
 
 const TEMPLATES_BASE_DIR = path.join(process.cwd(), 'public', 'templates', 'asset-creator');
 
@@ -16,8 +17,7 @@ export const scanTemplates = async (): Promise<Template[]> => {
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name);
 
-  console.log(`検出されたジャンル: ${genres.join(', ')}`);
-  console.log(`BasePath: ${basePath}`);
+  logger.debug('ジャンル検出完了', { genres: genres.join(', '), basePath }, 'templateScanner');
 
   for (const genre of genres) {
     for (const aspectRatio of aspectRatios) {

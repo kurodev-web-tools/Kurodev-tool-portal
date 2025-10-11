@@ -3,6 +3,8 @@
  * プレビュー画像の生成やリサイズを行う
  */
 
+import { logger } from '@/lib/logger';
+
 /**
  * 画像をリサイズしてDataURLを生成
  * @param imageSrc 元画像のDataURLまたはURL
@@ -75,7 +77,7 @@ export const generatePreviewFromTemplate = async (
   try {
     return await resizeImageToDataURL(templateImageSrc, 320, 180, 0.7);
   } catch (error) {
-    console.error('Failed to generate preview:', error);
+    logger.error('プレビュー生成失敗', error, 'imageUtils');
     // フォールバック: 元画像をそのまま返す
     return templateImageSrc;
   }

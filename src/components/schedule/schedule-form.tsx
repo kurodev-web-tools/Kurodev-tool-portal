@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/form';
 import { addSchedule, updateSchedule } from '@/lib/schedule-storage';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
@@ -109,7 +110,7 @@ export function ScheduleForm() {
       setEditingSchedule(null);
       setReminders([]);
     } catch (error) {
-      console.error("Failed to save schedule", error);
+      logger.error('スケジュール保存失敗', error, 'ScheduleForm');
       toast.error("処理に失敗しました。");
     }
   };

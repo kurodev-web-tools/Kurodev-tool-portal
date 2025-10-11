@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useErrorHandler } from "@/hooks/use-error-handler";
 import { validateTitle, validateDescription } from "@/lib/validation";
+import { logger } from "@/lib/logger";
 import {
   Tabs,
   TabsContent,
@@ -49,7 +50,7 @@ export default function TitleGeneratorPage() {
     
     if (titleError || descriptionError) {
       // エラーメッセージを表示（実際の実装では適切なエラー表示を行う）
-      console.error('バリデーションエラー:', titleError || descriptionError);
+      logger.error('バリデーションエラー', { error: titleError || descriptionError }, 'TitleGenerator');
       return;
     }
 
@@ -106,7 +107,7 @@ Instagram: @your_instagram`;
       setCopiedItem(type);
       setTimeout(() => setCopiedItem(null), 2000);
     } catch (err) {
-      console.error('コピーに失敗しました:', err);
+      logger.error('コピー失敗', err, 'TitleGenerator');
     }
   }, []);
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EnhancedFilter } from '@/components/ui/enhanced-filter';
 import { EnhancedToolCard } from '@/components/ui/enhanced-tool-card';
+import { logger } from '@/lib/logger';
 
 export interface ToolItem {
   id: string;
@@ -32,7 +33,7 @@ export function EnhancedToolsSection({ tools, className, onItemClick }: Enhanced
   const handleItemClick = (item: ToolItem) => {
     // hrefが存在するかチェック
     if (!item.href) {
-      console.error('Tool href is undefined:', item);
+      logger.error('Tool href is undefined', { item }, 'EnhancedToolsSection');
       return;
     }
 

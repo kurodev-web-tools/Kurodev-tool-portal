@@ -26,6 +26,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Sidebar, SidebarToggle } from "@/components/layouts/Sidebar";
+import { logger } from "@/lib/logger";
 
 type ActivityStatus = "active" | "pre-activity";
 
@@ -46,7 +47,7 @@ export default function BrandingGeneratorPage() {
   const handleAnalyzeClick = useCallback(async () => {
     // バリデーション（例：活動状況が選択されているか）
     if (!activityStatus) {
-      console.error('活動状況を選択してください');
+      logger.error('バリデーションエラー', { error: '活動状況を選択してください' }, 'BrandingGenerator');
       return;
     }
 

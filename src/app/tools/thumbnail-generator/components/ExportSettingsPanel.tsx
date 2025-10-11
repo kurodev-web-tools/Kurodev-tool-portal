@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { logger } from '@/lib/logger';
 
 // エクスポート設定の型定義
 export interface ExportSettings {
@@ -168,7 +169,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
     try {
       await onExport(settings);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('エクスポート失敗', error, 'ExportSettingsPanel');
     }
   };
 

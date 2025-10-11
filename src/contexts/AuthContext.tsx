@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 const AUTH_USER_KEY = 'vtuber-tools-auth-user';
 
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(JSON.parse(savedUser));
       }
     } catch (error) {
-      console.error("Failed to load user from localStorage", error);
+      logger.error('ユーザー情報読み込み失敗', error, 'AuthContext');
     } finally {
       setIsLoading(false); // 読み込み完了
     }
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success("ログインしました。");
       router.push('/');
     } catch (error) {
-      console.error("Failed to save user to localStorage", error);
+      logger.error('ログイン処理失敗', error, 'AuthContext');
       toast.error("ログイン処理に失敗しました。");
     }
   };
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.info("ログアウトしました。");
       router.push('/login');
     } catch (error) {
-      console.error("Failed to remove user from localStorage", error);
+      logger.error('ログアウト処理失敗', error, 'AuthContext');
     }
   };
 

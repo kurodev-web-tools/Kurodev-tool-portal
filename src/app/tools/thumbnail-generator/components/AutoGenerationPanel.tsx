@@ -34,6 +34,7 @@ import {
   DEFAULT_AUTO_GENERATION_CONFIG 
 } from '../services/TemplateAutoGenerator';
 import { ThumbnailTemplate } from '@/types/template';
+import { logger } from '@/lib/logger';
 
 interface AutoGenerationPanelProps {
   onTemplateGenerated: (template: ThumbnailTemplate) => void;
@@ -98,7 +99,7 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
       setGeneratedTemplates(results);
       toast.success(`${generationCount}個のテンプレートを生成しました！`);
     } catch (error) {
-      console.error('Generation failed:', error);
+      logger.error('テンプレート生成失敗', error, 'AutoGenerationPanel');
       toast.error('テンプレート生成に失敗しました');
     } finally {
       setIsGenerating(false);
