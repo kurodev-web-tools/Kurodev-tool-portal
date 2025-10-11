@@ -98,29 +98,26 @@ function AssetCreatorPage() {
   // プレビューエリアのサイズ計算
   const getPreviewSize = React.useCallback(() => {
     if (!isDesktop) {
-      // モバイル表示：画面幅を最大限活用しつつ、高さも制限
+      // モバイル表示：画面幅を最大限活用
       if (isPreviewDedicatedMode) {
         // フルスクリーン表示時は画面幅の95%を使用
-        return { width: '95vw', maxWidth: 'none', maxHeight: '80vh' };
+        return { width: '95vw', maxWidth: 'none' };
       }
       // 通常表示時は画面幅の90%を使用（サイドバー分を考慮）
-      return { width: '90vw', maxWidth: 'none', maxHeight: '40vh' };
+      return { width: '90vw', maxWidth: 'none' };
     }
 
-    let size;
     // プレビュー専用モード
     if (isPreviewDedicatedMode) {
-      size = { width: 'min(2000px, 95vw)', maxWidth: 'none' };
-    }
-    // サイドバーの状態に応じて動的調整
-    else if (isSidebarOpen) {
-      size = { width: 'min(1500px, 75vw)', maxWidth: 'none' };
-    } else {
-      size = { width: 'min(1800px, 90vw)', maxWidth: 'none' };
+      return { width: 'min(2000px, 95vw)', maxWidth: 'none' };
     }
 
-    logger.debug('Preview size', { isDesktop, isPreviewDedicatedMode, isSidebarOpen, size }, 'AssetCreator');
-    return size;
+    // サイドバーの状態に応じて動的調整
+    if (isSidebarOpen) {
+      return { width: 'min(1600px, 80vw)', maxWidth: 'none' };
+    } else {
+      return { width: 'min(1800px, 90vw)', maxWidth: 'none' };
+    }
   }, [isDesktop, isPreviewDedicatedMode, isSidebarOpen]);
 
   // キャンバス操作機能
@@ -1003,69 +1000,63 @@ function AssetCreatorPage() {
     </Tabs>
   );
 
-  const renderPreview = () => {
-    const getAspectRatio = () => {
-      if (aspectRatio === 'custom') {
-        return `${customAspectRatio.width} / ${customAspectRatio.height}`;
-      }
-      return aspectRatio.replace(':', ' / ');
-    };
-
-    return (
-      <>
-        {/* ツールバー - デスクトップのみ表示 */}
-        {isDesktop && (
-          <Toolbar
+  const renderPreview = () => (
+    <>
+      {/* ツールバー - デスクトップのみ表示 */}
+      {isDesktop && (
+        <Toolbar
+          zoom={zoom}
+          setZoom={setZoom}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onSave={handleSave}
+          onDownload={handleDownloadThumbnail}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          isPreviewDedicatedMode={isPreviewDedicatedMode}
+          onTogglePreviewMode={() => setIsPreviewDedicatedMode(!isPreviewDedicatedMode)}
+        />
+      )}
+      
+      {/* モバイル表示でのフルスクリーン表示時の戻るボタン */}
+      {!isDesktop && isPreviewDedicatedMode && (
+        <div className="absolute top-2 left-2 z-20">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsPreviewDedicatedMode(false)}
+            className="bg-background/90 backdrop-blur-sm shadow-lg"
+          >
+            <Minimize2 className="h-4 w-4 mr-1" />
+            通常表示に戻る
+          </Button>
+        </div>
+      )}
+      
+      {/* プレビューエリア */}
+      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
+        <div className="flex items-center justify-center h-full p-4 lg:p-8">
+          <EnhancedPreview
             zoom={zoom}
-            setZoom={setZoom}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            onSave={handleSave}
-            onDownload={handleDownloadThumbnail}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            isPreviewDedicatedMode={isPreviewDedicatedMode}
-            onTogglePreviewMode={() => setIsPreviewDedicatedMode(!isPreviewDedicatedMode)}
-          />
-        )}
-        
-        {/* モバイル表示でのフルスクリーン表示時の戻るボタン */}
-        {!isDesktop && isPreviewDedicatedMode && (
-          <div className="absolute top-2 left-2 z-20">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsPreviewDedicatedMode(false)}
-              className="bg-background/90 backdrop-blur-sm shadow-lg"
-            >
-              <Minimize2 className="h-4 w-4 mr-1" />
-              通常表示に戻る
-            </Button>
-          </div>
-        )}
-        
-        {/* プレビューエリア */}
-        <div className={`${isDesktop ? 'flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative' : 'flex-shrink-0 bg-gray-100 dark:bg-gray-900 relative max-h-[50vh] overflow-auto'}`}>
-          <div className={`${isDesktop ? 'flex items-center justify-center h-full p-4 lg:p-8' : 'flex items-center justify-center p-4'}`}>
-            <EnhancedPreview
-              zoom={zoom}
-              onZoomReset={() => setZoom(1)}
-              className="w-full"
-              aspectRatio={aspectRatio}
-              customAspectRatio={customAspectRatio}
-              showGrid={showGrid}
-              setShowGrid={setShowGrid}
-              showAspectGuide={showAspectGuide}
-              setShowAspectGuide={setShowAspectGuide}
-              showSafeArea={showSafeArea}
-              setShowSafeArea={setShowSafeArea}
-              gridSize={gridSize}
-              setGridSize={setGridSize}
-            >
+            onZoomReset={() => setZoom(1)}
+            className="w-full"
+            aspectRatio={aspectRatio}
+            customAspectRatio={customAspectRatio}
+            showGrid={showGrid}
+            setShowGrid={setShowGrid}
+            showAspectGuide={showAspectGuide}
+            setShowAspectGuide={setShowAspectGuide}
+            showSafeArea={showSafeArea}
+            setShowSafeArea={setShowSafeArea}
+            gridSize={gridSize}
+            setGridSize={setGridSize}
+          >
             <div
               id="thumbnail-preview"
               style={{ 
-                aspectRatio: getAspectRatio(),
+                aspectRatio: aspectRatio === 'custom' 
+                  ? `${customAspectRatio.width}/${customAspectRatio.height}` 
+                  : (aspectRatio || '16:9').replace(':', '/'),
                 ...getPreviewSize()
               }}
               className="bg-card relative border rounded-md shadow-lg"
@@ -1146,7 +1137,6 @@ function AssetCreatorPage() {
         </div>
       </>
     );
-  };
 
   const renderMobileControls = () => (
     <div className="p-2 lg:p-4 space-y-3">
@@ -1773,12 +1763,13 @@ function AssetCreatorPage() {
         />
       )}
 
-      <div className="flex flex-col lg:flex-row flex-grow lg:h-full">
-        <main className="flex-1 flex flex-col lg:h-full p-2 pt-16 lg:p-4 lg:pt-4">
-          <div className={`${isDesktop ? 'flex-1 flex flex-col min-h-[600px] lg:min-h-0' : 'flex-shrink-0'}`}>
-            {renderPreview()}
+      <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
+        <main className="flex-1 overflow-y-auto">
+          <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
+            <div className={`${isDesktop ? '' : 'max-h-[85vh] overflow-hidden'}`}>
+              {renderPreview()}
+            </div>
           </div>
-          
           {/* モバイル用コントロール - プレビュー専用モード時は非表示 */}
           {!isDesktop && !isPreviewDedicatedMode && (
             <div className="border-t bg-background/95 backdrop-blur-sm">

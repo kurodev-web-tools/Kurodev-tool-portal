@@ -1700,7 +1700,7 @@ export default function ThumbnailGeneratorPage() {
       <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
         <main className="flex-1 overflow-y-auto">
           <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
-            <div className={`${isDesktop ? '' : 'max-h-[70vh] overflow-hidden'}`}>
+            <div className={`${isDesktop ? '' : 'max-h-[85vh] overflow-hidden'}`}>
               {renderPreview()}
             </div>
           </div>
