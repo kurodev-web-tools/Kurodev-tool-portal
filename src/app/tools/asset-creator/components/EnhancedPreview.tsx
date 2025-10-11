@@ -168,10 +168,6 @@ export const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
       {/* メインコンテンツエリア */}
       <div 
         className="relative w-full h-full flex items-center justify-center"
-        style={{ 
-          transform: `scale(${zoom})`,
-          transformOrigin: 'center',
-        }}
       >
         {children}
       </div>
