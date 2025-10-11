@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { ThumbnailTemplate, templates, ObjectPosition, ColorPalette, FontSettings } from '../components/TemplateSelector';
+import { ThumbnailTemplate, ObjectPosition, ColorPalette, FontSettings } from '@/types/template';
+import { templates } from '@/data/template-definitions';
 import { v4 as uuidv4 } from 'uuid';
 import { useMediaQuery } from '@/hooks/use-media-query';
 

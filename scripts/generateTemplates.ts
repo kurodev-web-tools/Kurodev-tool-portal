@@ -1,14 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { ThumbnailTemplate } from '../src/types/template';
+import { Template } from '../src/hooks/useTemplateManagement';
 import { scanTemplates } from '../src/lib/templateScanner';
 
 const OUTPUT_FILE = path.join(process.cwd(), 'src', 'data', 'templates.json');
 const TEMPLATES_BASE_DIR = path.join(process.cwd(), 'public', 'templates', 'asset-creator');
 
 // 既存のハードコードされたテンプレートデータを解析
-const analyzeExistingTemplates = (): { [key: string]: ThumbnailTemplate } => {
-  const existingTemplates: { [key: string]: ThumbnailTemplate } = {};
+const analyzeExistingTemplates = (): { [key: string]: Template } => {
+  const existingTemplates: { [key: string]: Template } = {};
   
   // TemplateSelector.tsxから既存のテンプレートデータを読み込み
   try {
@@ -29,19 +29,25 @@ const analyzeExistingTemplates = (): { [key: string]: ThumbnailTemplate } => {
 };
 
 // ファイルの存在確認と整合性チェック
-const validateTemplates = (templates: ThumbnailTemplate[]): { valid: ThumbnailTemplate[], invalid: ThumbnailTemplate[] } => {
-  const valid: ThumbnailTemplate[] = [];
-  const invalid: ThumbnailTemplate[] = [];
+const validateTemplates = (templates: Template[]): { valid: Template[], invalid: Template[] } => {
+  const valid: Template[] = [];
+  const invalid: Template[] = [];
   
   for (const template of templates) {
-    // basePathを除いた実際のファイルパスで存在確認
-    const actualImagePath = template.initialImageSrc.replace(/^\/Kurodev-tool-portal/, '');
-    const imagePath = path.join(process.cwd(), 'public', actualImagePath);
-    if (fs.existsSync(imagePath)) {
-      valid.push(template);
+    // initialImageSrcが存在する場合のみファイル存在確認
+    if (template.initialImageSrc) {
+      // basePathを除いた実際のファイルパスで存在確認
+      const actualImagePath = template.initialImageSrc.replace(/^\/Kurodev-tool-portal/, '');
+      const imagePath = path.join(process.cwd(), 'public', actualImagePath);
+      if (fs.existsSync(imagePath)) {
+        valid.push(template);
+      } else {
+        console.warn(`Template image not found: ${template.initialImageSrc} (checked: ${imagePath})`);
+        invalid.push(template);
+      }
     } else {
-      console.warn(`Template image not found: ${template.initialImageSrc} (checked: ${imagePath})`);
-      invalid.push(template);
+      // initialImageSrcが存在しないテンプレートも有効とする
+      valid.push(template);
     }
   }
   
@@ -49,7 +55,7 @@ const validateTemplates = (templates: ThumbnailTemplate[]): { valid: ThumbnailTe
 };
 
 // 既存データとの整合性チェック
-const checkDataConsistency = (scannedTemplates: ThumbnailTemplate[], existingTemplates: { [key: string]: ThumbnailTemplate }) => {
+const checkDataConsistency = (scannedTemplates: Template[], existingTemplates: { [key: string]: Template }) => {
   console.log('\n=== Data Consistency Check ===');
   console.log(`Scanned templates: ${scannedTemplates.length}`);
   console.log(`Existing templates: ${Object.keys(existingTemplates).length}`);
@@ -66,11 +72,14 @@ const checkDataConsistency = (scannedTemplates: ThumbnailTemplate[], existingTem
   // 不足しているファイルの特定
   const missingFiles: string[] = [];
   for (const template of scannedTemplates) {
-    // basePathを除いた実際のファイルパスで存在確認
-    const actualImagePath = template.initialImageSrc.replace(/^\/Kurodev-tool-portal/, '');
-    const imagePath = path.join(process.cwd(), 'public', actualImagePath);
-    if (!fs.existsSync(imagePath)) {
-      missingFiles.push(template.initialImageSrc);
+    // initialImageSrcが存在する場合のみファイル存在確認
+    if (template.initialImageSrc) {
+      // basePathを除いた実際のファイルパスで存在確認
+      const actualImagePath = template.initialImageSrc.replace(/^\/Kurodev-tool-portal/, '');
+      const imagePath = path.join(process.cwd(), 'public', actualImagePath);
+      if (!fs.existsSync(imagePath)) {
+        missingFiles.push(template.initialImageSrc);
+      }
     }
   }
   
@@ -88,7 +97,7 @@ export const generateTemplates = async () => {
     const existingTemplates = analyzeExistingTemplates();
     
     // ファイルシステムからテンプレートをスキャン
-    const scannedTemplates: ThumbnailTemplate[] = await scanTemplates();
+    const scannedTemplates: Template[] = await scanTemplates();
     
     // 整合性チェック
     const consistency = checkDataConsistency(scannedTemplates, existingTemplates);

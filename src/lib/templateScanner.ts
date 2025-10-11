@@ -1,11 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { ThumbnailTemplate } from '../types/template';
+import { Template } from '../hooks/useTemplateManagement';
 
 const TEMPLATES_BASE_DIR = path.join(process.cwd(), 'public', 'templates', 'asset-creator');
 
-export const scanTemplates = async (): Promise<ThumbnailTemplate[]> => {
-  const templates: ThumbnailTemplate[] = [];
+export const scanTemplates = async (): Promise<Template[]> => {
+  const templates: Template[] = [];
   const aspectRatios = ['1x1', '4x3', '9x16', '16x9'];
 
   // basePathを環境変数から取得（本番環境では'/Kurodev-tool-portal'）

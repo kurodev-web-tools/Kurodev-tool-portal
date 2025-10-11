@@ -35,50 +35,12 @@ import { EnhancedPreview, usePreviewKeyboardShortcuts } from './components/Enhan
 import { useCanvasOperations } from './hooks/useCanvasOperations';
 import { AssetExportSettingsPanel, AssetExportSettings } from './components/AssetExportSettingsPanel';
 import { logger } from '@/lib/logger';
+import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
+import { FontSelector } from '@/components/shared/FontSelector';
+import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
-// textShadowをパースする関数
-const parseTextShadow = (shadow: string | undefined): { x: number; y: number; blur: number; color: string; opacity: number } => {
-  if (!shadow || shadow === 'none') {
-    return { x: 0, y: 0, blur: 0, color: '#000000', opacity: 0.5 };
-  }
-  
-  // 例: "2px 2px 4px rgba(0,0,0,0.5)" をパース
-  const match = shadow.match(/(-?\d+)px\s+(-?\d+)px\s+(\d+)px\s+rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-  if (match) {
-    return {
-      x: parseInt(match[1]),
-      y: parseInt(match[2]),
-      blur: parseInt(match[3]),
-      color: `#${parseInt(match[4]).toString(16).padStart(2, '0')}${parseInt(match[5]).toString(16).padStart(2, '0')}${parseInt(match[6]).toString(16).padStart(2, '0')}`,
-      opacity: match[7] ? parseFloat(match[7]) : 1,
-    };
-  }
-  
-  // 簡易形式（例: "2px 2px 4px #000000"）
-  const simpleMatch = shadow.match(/(-?\d+)px\s+(-?\d+)px\s+(\d+)px\s+(#[0-9a-fA-F]{6})/);
-  if (simpleMatch) {
-    return {
-      x: parseInt(simpleMatch[1]),
-      y: parseInt(simpleMatch[2]),
-      blur: parseInt(simpleMatch[3]),
-      color: simpleMatch[4],
-      opacity: 1,
-    };
-  }
-  
-  return { x: 0, y: 0, blur: 0, color: '#000000', opacity: 0.5 };
-};
-
-// textShadow文字列を生成する関数
-const buildTextShadow = (x: number, y: number, blur: number, color: string, opacity: number): string => {
-  const r = parseInt(color.slice(1, 3), 16);
-  const g = parseInt(color.slice(3, 5), 16);
-  const b = parseInt(color.slice(5, 7), 16);
-  return `${x}px ${y}px ${blur}px rgba(${r},${g},${b},${opacity})`;
-};
 
 function AssetCreatorPage() {
   // UI状態管理
@@ -652,58 +614,10 @@ function AssetCreatorPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs text-gray-400">フォントファミリー</Label>
-                  <Select
+                  <FontSelector
                     value={selectedLayer.fontFamily || 'Arial, sans-serif'}
                     onValueChange={(value) => updateLayer(selectedLayer.id, { fontFamily: value })}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 日本語フォント */}
-                      <SelectItem value="Noto Sans JP, sans-serif">Noto Sans JP</SelectItem>
-                      <SelectItem value="M PLUS Rounded 1c, sans-serif">M PLUS Rounded 1c</SelectItem>
-                      <SelectItem value="Kosugi Maru, sans-serif">Kosugi Maru</SelectItem>
-                      <SelectItem value="Sawarabi Mincho, serif">Sawarabi Mincho</SelectItem>
-                      <SelectItem value="Noto Serif JP, serif">Noto Serif JP</SelectItem>
-                      
-                      {/* 英語フォント - Sans Serif */}
-                      <SelectItem value="Roboto, sans-serif">Roboto</SelectItem>
-                      <SelectItem value="Open Sans, sans-serif">Open Sans</SelectItem>
-                      <SelectItem value="Lato, sans-serif">Lato</SelectItem>
-                      <SelectItem value="Montserrat, sans-serif">Montserrat</SelectItem>
-                      <SelectItem value="Source Sans 3, sans-serif">Source Sans 3</SelectItem>
-                      <SelectItem value="Nunito, sans-serif">Nunito</SelectItem>
-                      <SelectItem value="Poppins, sans-serif">Poppins</SelectItem>
-                      <SelectItem value="Inter, sans-serif">Inter</SelectItem>
-                      
-                      {/* 英語フォント - Serif */}
-                      <SelectItem value="Playfair Display, serif">Playfair Display</SelectItem>
-                      <SelectItem value="Merriweather, serif">Merriweather</SelectItem>
-                      <SelectItem value="Lora, serif">Lora</SelectItem>
-                      <SelectItem value="Crimson Text, serif">Crimson Text</SelectItem>
-                      
-                      {/* 装飾フォント */}
-                      <SelectItem value="Bebas Neue, sans-serif">Bebas Neue</SelectItem>
-                      <SelectItem value="Oswald, sans-serif">Oswald</SelectItem>
-                      <SelectItem value="Anton, sans-serif">Anton</SelectItem>
-                      <SelectItem value="Dancing Script, cursive">Dancing Script</SelectItem>
-                      <SelectItem value="Pacifico, cursive">Pacifico</SelectItem>
-                      <SelectItem value="Great Vibes, cursive">Great Vibes</SelectItem>
-                      
-                      {/* モノスペースフォント */}
-                      <SelectItem value="Roboto Mono, monospace">Roboto Mono</SelectItem>
-                      <SelectItem value="Source Code Pro, monospace">Source Code Pro</SelectItem>
-                      <SelectItem value="Fira Code, monospace">Fira Code</SelectItem>
-                      <SelectItem value="JetBrains Mono, monospace">JetBrains Mono</SelectItem>
-                      
-                      {/* システムフォント（フォールバック） */}
-                      <SelectItem value="Arial, sans-serif">Arial (System)</SelectItem>
-                      <SelectItem value="Helvetica, sans-serif">Helvetica (System)</SelectItem>
-                      <SelectItem value="Georgia, serif">Georgia (System)</SelectItem>
-                      <SelectItem value="Times New Roman, serif">Times New Roman (System)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
                 <div>
                   <Label className="text-xs text-gray-400">フォントウェイト</Label>
@@ -947,35 +861,11 @@ function AssetCreatorPage() {
           <div className="space-y-3">
             <div>
               <Label className="text-sm font-medium">図形の種類</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <Button 
-                  variant={selectedLayer.shapeType === 'rectangle' ? 'default' : 'outline'}
-                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'rectangle' })}
-                  size="sm"
-                >
-                  四角形
-                </Button>
-                <Button 
-                  variant={selectedLayer.shapeType === 'circle' ? 'default' : 'outline'}
-                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'circle' })}
-                  size="sm"
-                >
-                  円
-                </Button>
-                <Button 
-                  variant={selectedLayer.shapeType === 'line' ? 'default' : 'outline'}
-                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'line' })}
-                  size="sm"
-                >
-                  線
-                </Button>
-                <Button 
-                  variant={selectedLayer.shapeType === 'arrow' ? 'default' : 'outline'}
-                  onClick={() => updateLayer(selectedLayer.id, { shapeType: 'arrow' })}
-                  size="sm"
-                >
-                  矢印
-                </Button>
+              <div className="mt-2">
+                <ShapeTypeSelector
+                  value={selectedLayer.shapeType || 'rectangle'}
+                  onChange={(shape) => updateLayer(selectedLayer.id, { shapeType: shape })}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -1050,7 +940,7 @@ function AssetCreatorPage() {
         <TabsTrigger value="export">エクスポート</TabsTrigger>
       </TabsList>
       <TabsContent value="settings" className="mt-4">
-        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate?.id || null} />
       </TabsContent>
       <TabsContent value="tools" className="mt-4">
         {renderToolsPanel()}
@@ -1096,7 +986,7 @@ function AssetCreatorPage() {
         <TabsTrigger value="export" className="text-xs">エクスポート</TabsTrigger>
       </TabsList>
       <TabsContent value="settings" className="mt-4">
-        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate?.id || null} />
       </TabsContent>
       <TabsContent value="export" className="mt-4">
         <AssetExportSettingsPanel 

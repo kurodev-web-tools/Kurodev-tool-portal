@@ -31,27 +31,23 @@ export function useTemplateManagement({ aspectRatio, customAspectRatio }: UseTem
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // テンプレート読み込み
+  // テンプレート読み込み（同期的に即座に実行）
   useEffect(() => {
-    const loadTemplatesData = async () => {
-      try {
-        setIsLoading(true);
-        logger.debug('テンプレート読み込み開始', undefined, 'useTemplateManagement');
-        const loadedTemplates = await loadTemplates();
-        logger.debug('テンプレート読み込み完了', { 
-          count: loadedTemplates.length, 
-          genres: [...new Set(loadedTemplates.map(t => t.genre))] 
-        }, 'useTemplateManagement');
-        setTemplates(loadedTemplates);
-      } catch (error) {
-        logger.error('テンプレート読み込み失敗', error, 'useTemplateManagement');
-        setTemplates([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTemplatesData();
+    try {
+      setIsLoading(true);
+      logger.debug('テンプレート読み込み開始', undefined, 'useTemplateManagement');
+      const loadedTemplates = loadTemplates();
+      logger.debug('テンプレート読み込み完了', { 
+        count: loadedTemplates.length, 
+        genres: [...new Set(loadedTemplates.map(t => t.genre))] 
+      }, 'useTemplateManagement');
+      setTemplates(loadedTemplates);
+      setIsLoading(false);
+    } catch (error) {
+      logger.error('テンプレート読み込み失敗', error, 'useTemplateManagement');
+      setTemplates([]);
+      setIsLoading(false);
+    }
   }, []);
 
   // 選択中のアスペクト比でテンプレートをフィルタリング

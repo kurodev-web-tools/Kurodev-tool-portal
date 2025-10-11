@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
-import { ThumbnailTemplate } from '../components/TemplateSelector';
-import { loadTemplates } from '@/lib/templateLoader';
+import { Template } from '@/hooks/useTemplateManagement';
 import { v4 as uuidv4 } from 'uuid';
 
 // ElementPositionTypeを定義
@@ -45,8 +44,8 @@ export interface Layer {
 }
 
 interface TemplateContextType {
-  selectedTemplate: ThumbnailTemplate | null;
-  setSelectedTemplate: (template: ThumbnailTemplate | null) => void;
+  selectedTemplate: Template | null;
+  setSelectedTemplate: (template: Template | null) => void;
   currentText: string;
   setCurrentText: (text: string) => void;
   layers: Layer[];
@@ -68,26 +67,26 @@ interface TemplateContextType {
 
 const TemplateContext = createContext<TemplateContextType | null>(null);
 
+// デフォルトテンプレート定義
+const DEFAULT_TEMPLATE: Template = {
+  id: 'default',
+  name: 'デフォルト',
+  genre: 'simple',
+  initialText: 'テキスト',
+  initialTextColor: '#000000',
+  initialFontSize: '4rem',
+  initialImageSrc: '',
+  supportedAspectRatios: ['1:1', '4:3', '9:16', '16:9'],
+};
+
 export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [selectedTemplate, setSelectedTemplate] = useState<ThumbnailTemplate | null>(null);
-  const [currentText, setCurrentText] = useState<string>('');
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(DEFAULT_TEMPLATE);
+  const [currentText, setCurrentText] = useState<string>(DEFAULT_TEMPLATE.initialText);
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [customAspectRatio, setCustomAspectRatio] = useState({ width: 16, height: 9 });
 
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-
-  // 初期テンプレートのロード
-  useEffect(() => {
-    const load = async () => {
-      const templates = await loadTemplates();
-      if (templates.length > 0) {
-        setSelectedTemplate(templates[0]);
-        setCurrentText(templates[0].initialText);
-      }
-    };
-    load();
-  }, []);
 
   const addLayer = useCallback((layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
     const newLayer: Layer = { 

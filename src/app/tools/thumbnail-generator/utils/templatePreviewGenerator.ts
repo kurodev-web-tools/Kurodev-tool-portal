@@ -1,4 +1,4 @@
-import { ThumbnailTemplate } from '../components/TemplateSelector';
+import { ThumbnailTemplate } from '@/types/template';
 
 /**
  * テンプレートのプレビュー画像を生成するユーティリティ

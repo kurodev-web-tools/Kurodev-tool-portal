@@ -3,7 +3,7 @@
  * 将来のAI自動生成機能に備えた構造設計
  */
 
-import { ThumbnailTemplate } from '../components/TemplateSelector';
+import { ThumbnailTemplate } from '@/types/template';
 
 // 自動生成の設定
 export interface AutoGenerationConfig {

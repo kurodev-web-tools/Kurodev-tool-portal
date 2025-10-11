@@ -33,7 +33,7 @@ import {
   GenerationResult,
   DEFAULT_AUTO_GENERATION_CONFIG 
 } from '../services/TemplateAutoGenerator';
-import { ThumbnailTemplate } from './TemplateSelector';
+import { ThumbnailTemplate } from '@/types/template';
 
 interface AutoGenerationPanelProps {
   onTemplateGenerated: (template: ThumbnailTemplate) => void;

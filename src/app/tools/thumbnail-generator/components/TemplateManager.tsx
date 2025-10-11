@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Edit, Trash2, Eye, Download, Upload, Save, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ThumbnailTemplate } from './TemplateSelector';
+import { ThumbnailTemplate } from '@/types/template';
 import { useTemplate } from '../contexts/TemplateContext';
 import { TemplatePreviewGenerator } from '../utils/templatePreviewGenerator';
 
