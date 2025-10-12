@@ -1,5 +1,12 @@
+/**
+ * レイヤー操作のためのカスタムフック
+ * 
+ * thumbnail-generator と asset-creator で共通して使用される
+ * レイヤー操作フックを提供します。
+ */
+
 import { useCallback, useMemo } from 'react';
-import { Layer } from '../types';
+import { Layer } from '@/types/layers';
 import {
   updateLayerPosition,
   updateLayerSize,
@@ -14,6 +21,10 @@ import {
 
 /**
  * レイヤー操作のためのカスタムフック
+ * 
+ * @param layers - レイヤー配列
+ * @param setLayers - レイヤー更新関数
+ * @returns レイヤー操作用のハンドラーとメモ化された値
  */
 export const useLayerOperations = (
   layers: Layer[],
@@ -45,16 +56,16 @@ export const useLayerOperations = (
 
   // レイヤーの可視性更新
   const handleLayerVisibilityUpdate = useCallback(
-    (layerId: string, isVisible: boolean) => {
-      setLayers((prevLayers: Layer[]) => updateLayerVisibility(prevLayers, layerId, isVisible));
+    (layerId: string, visible: boolean) => {
+      setLayers((prevLayers: Layer[]) => updateLayerVisibility(prevLayers, layerId, visible));
     },
     [setLayers]
   );
 
   // レイヤーのロック状態更新
   const handleLayerLockUpdate = useCallback(
-    (layerId: string, isLocked: boolean) => {
-      setLayers((prevLayers: Layer[]) => updateLayerLock(prevLayers, layerId, isLocked));
+    (layerId: string, locked: boolean) => {
+      setLayers((prevLayers: Layer[]) => updateLayerLock(prevLayers, layerId, locked));
     },
     [setLayers]
   );
@@ -85,6 +96,10 @@ export const useLayerOperations = (
 
 /**
  * 選択されたレイヤーのための操作フック
+ * 
+ * @param layers - レイヤー配列
+ * @param selectedLayerId - 選択中のレイヤーID
+ * @returns 選択されたレイヤーと編集可能かどうか
  */
 export const useSelectedLayer = (
   layers: Layer[],
@@ -110,6 +125,11 @@ export const useSelectedLayer = (
 
 /**
  * キーボードイベントを処理するフック
+ * 
+ * @param onDelete - 削除時のコールバック
+ * @param onCopy - コピー時のコールバック
+ * @param onPaste - ペースト時のコールバック
+ * @returns キーボードイベントハンドラー
  */
 export const useKeyboardShortcuts = (
   onDelete: () => void,
@@ -138,3 +158,4 @@ export const useKeyboardShortcuts = (
 
   return { handleKeyDown };
 };
+
