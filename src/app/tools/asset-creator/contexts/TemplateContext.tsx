@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { Template } from '@/hooks/useTemplateManagement';
 import { v4 as uuidv4 } from 'uuid';
+import { Layer, LayerType, ShapeType } from '@/types/layers';
 
 // ElementPositionTypeを定義
 interface ElementPositionType {
@@ -10,38 +11,8 @@ interface ElementPositionType {
   height: number;
 }
 
-export type LayerType = 'image' | 'text' | 'shape';
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star' | 'polygon' | 'heart' | 'diamond';
-
-export interface Layer {
-  id: string;
-  type: LayerType;
-  name: string;
-  visible: boolean;
-  locked: boolean;
-  x: number;
-  y: number;
-  width: number | string; // string型を追加して'100%'などを許容
-  height: number | string;
-  rotation: number;
-  zIndex: number; // zIndexプロパティを追加
-  opacity?: number; // 不透明度プロパティを追加
-  isBackground?: boolean; // 背景画像フラグを追加
-  // Type-specific properties
-  src?: string | null;
-  text?: string;
-  color?: string;
-  fontSize?: string;
-  fontFamily?: string; // Google Fonts対応
-  fontWeight?: string; // フォントウェイト (100, 200...900, normal, bold, lighter)
-  fontStyle?: string; // フォントスタイル (normal, italic, oblique)
-  textDecoration?: string; // 文字装飾 (none, underline, line-through, overline)
-  textShadow?: string; // 文字シャドウ (例: "2px 2px 4px rgba(0,0,0,0.5)")
-  shapeType?: ShapeType;
-  backgroundColor?: string;
-  borderColor?: string;
-  borderWidth?: number;
-}
+// 共通型を再エクスポート
+export type { Layer, LayerType, ShapeType };
 
 interface TemplateContextType {
   selectedTemplate: Template | null;
@@ -89,12 +60,12 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
   const addLayer = useCallback((layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
-    const newLayer: Layer = { 
+    const newLayer = { 
       ...layer, 
       id: uuidv4(), 
       rotation: 0, 
       zIndex: 0, // 一時的に0に設定、後で配列順序に基づいて更新
-    };
+    } as Layer;
     setLayers((prevLayers) => {
       const newLayers = [newLayer, ...prevLayers]; // 新しいレイヤーを一番上に追加
       // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
@@ -112,7 +83,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     setLayers((prevLayers) =>
-      prevLayers.map((layer) => (layer.id === id ? { ...layer, ...updates } : layer))
+      prevLayers.map((layer) => (layer.id === id ? { ...layer, ...updates } as Layer : layer))
     );
   }, []);
 
@@ -132,13 +103,13 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (!layerToDuplicate) {
         return prevLayers;
       }
-      const duplicatedLayer: Layer = {
+      const duplicatedLayer = {
         ...layerToDuplicate,
         id: uuidv4(),
         name: `${layerToDuplicate.name}のコピー`,
         x: layerToDuplicate.x + 20,
         y: layerToDuplicate.y + 20,
-      };
+      } as Layer;
       const index = prevLayers.findIndex((layer) => layer.id === id);
       const newLayers = [...prevLayers];
       newLayers.splice(index + 1, 0, duplicatedLayer);
@@ -180,21 +151,26 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
 
     if (selectedTemplate.initialImageSrc) {
-      initialLayers.push({
-        id: 'background-image', // 固定IDに変更
+      // 背景画像は親要素の100%サイズで表示
+      // ThumbnailImageコンポーネントがisBackgroundフラグを検知して、
+      // 親コンテナのサイズに自動的にフィットするようになっている
+      const imageLayer: any = {
+        id: 'background-image',
         type: 'image',
         name: '背景画像',
         visible: true,
         locked: false,
         x: 0,
         y: 0,
-        width: '100%', // 100%に変更
-        height: '100%', // 100%に変更
+        width: 1920, // 実際の表示はThumbnailImageコンポーネントで100%に調整
+        height: 1080,
         rotation: 0,
         src: selectedTemplate.initialImageSrc,
-        zIndex: 0, // 一時的に0、後で再計算
-        isBackground: true, // 背景フラグを設定
-      });
+        zIndex: 0,
+        isBackground: true, // 背景画像フラグ
+      };
+      
+      initialLayers.push(imageLayer as Layer);
     }
 
     if (selectedTemplate.initialText) {
@@ -213,7 +189,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         color: selectedTemplate.initialTextColor,
         fontSize: selectedTemplate.initialFontSize,
         zIndex: 0, // 一時的に0、後で再計算
-      });
+      } as Layer);
     }
 
     // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
@@ -221,12 +197,12 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     const layersWithZIndex = initialLayers.reverse().map((l, index) => ({ 
       ...l, 
       zIndex: initialLayers.length - 1 - index 
-    }));
+    } as Layer));
     
     setLayers(layersWithZIndex);
     setSelectedLayerId(layersWithZIndex.length > 0 ? layersWithZIndex[0]?.id || null : null);
 
-  }, [selectedTemplate]);
+  }, [selectedTemplate, aspectRatio, customAspectRatio]);
 
   const contextValue = useMemo(() => ({
     selectedTemplate,

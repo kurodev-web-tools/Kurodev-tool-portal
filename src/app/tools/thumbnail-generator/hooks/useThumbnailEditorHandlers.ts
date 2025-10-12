@@ -299,14 +299,14 @@ export const useThumbnailEditorHandlers = (params: UseThumbnailEditorHandlersPar
         width: isDesktop ? 300 : 150,
         height: isDesktop ? 300 : 150,
         src,
-      });
+      } as any);
     }
     e.target.value = '';
   }, [addLayer, isDesktop]);
 
   const handleAddShape = React.useCallback((shapeType: ShapeType) => {
     const offset = layers.filter(l => l.type === 'shape').length * (isDesktop ? 20 : 5);
-    const shapeCount = layers.filter(l => l.shapeType === shapeType).length + 1;
+    const shapeCount = layers.filter(l => l.type === 'shape' && 'shapeType' in l && l.shapeType === shapeType).length + 1;
     let name = '';
     const initialX = isDesktop ? 550 : 10;
     const initialY = isDesktop ? 250 : 10;
@@ -336,7 +336,7 @@ export const useThumbnailEditorHandlers = (params: UseThumbnailEditorHandlersPar
       backgroundColor: '#cccccc',
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
-    });
+    } as any);
   }, [addLayer, layers, isDesktop]);
 
   const handleAddText = React.useCallback(() => {
@@ -353,7 +353,7 @@ export const useThumbnailEditorHandlers = (params: UseThumbnailEditorHandlersPar
       color: '#000000',
       fontSize: isDesktop ? '2rem' : '1rem',
       // フォント設定はaddLayer関数内でcurrentFontSettingsから自動適用される
-    });
+    } as any);
   }, [addLayer, layers, currentText, isDesktop]);
 
   // 保存機能

@@ -3,6 +3,7 @@ import { ThumbnailTemplate, ObjectPosition, ColorPalette, FontSettings } from '@
 import { templates } from '@/data/template-definitions';
 import { v4 as uuidv4 } from 'uuid';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { Layer, LayerType, ShapeType } from '@/types/layers';
 
 // ElementPositionTypeを定義
 interface ElementPositionType {
@@ -12,37 +13,8 @@ interface ElementPositionType {
   height: number;
 }
 
-export type LayerType = 'image' | 'text' | 'shape';
-export type ShapeType = 'rectangle' | 'circle' | 'line' | 'arrow' | 'triangle' | 'star' | 'polygon' | 'heart' | 'diamond';
-
-export interface Layer {
-  id: string;
-  type: LayerType;
-  name: string;
-  visible: boolean;
-  locked: boolean;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  zIndex: number;
-  opacity?: number;
-  // Type-specific properties
-  src?: string | null;
-  text?: string;
-  color?: string;
-  fontSize?: string;
-  fontFamily?: string;
-  fontWeight?: string;
-  fontStyle?: string;
-  textDecoration?: string;
-  textShadow?: string;
-  shapeType?: ShapeType;
-  backgroundColor?: string;
-  borderColor?: string;
-  borderWidth?: number;
-}
+// 共通型を再エクスポート
+export type { Layer, LayerType, ShapeType };
 
 interface TemplateContextType {
   selectedTemplate: ThumbnailTemplate;
@@ -151,22 +123,22 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [currentFontSettings, setCurrentFontSettings] = useState<FontSettings>(templates[0].fontSettings);
 
   const addLayer = (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => {
-    const newLayer: Layer = { 
+    const newLayer = { 
       ...layer, 
       id: uuidv4(), 
       rotation: 0, 
       zIndex: 0, // 一時的に0に設定、後で配列順序に基づいて更新
       // テキストレイヤーの場合、明示的にフォント設定が指定されていない場合のみデフォルトフォントを適用
       // テンプレートから追加される場合は既にフォント設定が含まれているため、そのまま使用
-      ...(layer.type === 'text' && !layer.fontFamily && {
+      ...(layer.type === 'text' && !('fontFamily' in layer && layer.fontFamily) && {
         fontFamily: 'Arial, sans-serif', // デフォルトフォント
-        fontSize: layer.fontSize || '2rem',
-        fontWeight: layer.fontWeight || 'normal',
-        fontStyle: layer.fontStyle || 'normal',
-        textDecoration: layer.textDecoration || 'none',
-        textShadow: layer.textShadow || 'none',
+        fontSize: ('fontSize' in layer && layer.fontSize) || '2rem',
+        fontWeight: ('fontWeight' in layer && layer.fontWeight) || 'normal',
+        fontStyle: ('fontStyle' in layer && layer.fontStyle) || 'normal',
+        textDecoration: ('textDecoration' in layer && layer.textDecoration) || 'none',
+        textShadow: ('textShadow' in layer && layer.textShadow) || 'none',
       })
-    };
+    } as Layer;
     setLayers((prevLayers) => {
       const newLayers = [newLayer, ...prevLayers]; // 新しいレイヤーを一番上に追加
       // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
@@ -184,7 +156,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const updateLayer = (id: string, updates: Partial<Layer>) => {
     setLayers((prevLayers) =>
-      prevLayers.map((layer) => (layer.id === id ? { ...layer, ...updates } : layer))
+      prevLayers.map((layer) => (layer.id === id ? { ...layer, ...updates } as Layer : layer))
     );
   };
 
@@ -204,11 +176,11 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (!layerToDuplicate) {
         return prevLayers;
       }
-      const duplicatedLayer: Layer = {
+      const duplicatedLayer = {
         ...layerToDuplicate,
         id: uuidv4(),
         name: `${layerToDuplicate.name}のコピー`,
-      };
+      } as Layer;
       const index = prevLayers.findIndex((layer) => layer.id === id);
       const newLayers = [...prevLayers];
       newLayers.splice(index + 1, 0, duplicatedLayer);
@@ -249,9 +221,8 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     
     // テンプレートのオブジェクトをレイヤーに変換
     const templateLayers: Layer[] = template.layout.objects.map((obj, index) => {
-      const layer: Layer = {
+      const baseLayer = {
         id: uuidv4(),
-        type: obj.type === 'text' ? 'text' : obj.type === 'image' ? 'image' : 'shape',
         name: obj.type === 'text' ? 'テキスト' : obj.type === 'image' ? '画像' : '図形',
         visible: obj.visible,
         locked: obj.locked || false,
@@ -266,19 +237,38 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       // タイプ別のプロパティ設定
       if (obj.type === 'text' && obj.content) {
-        layer.text = obj.content.text || '';
-        layer.color = obj.content.color || template.colorPalette.text;
-        layer.fontSize = obj.content.fontSize || template.fontSettings.size;
+        return {
+          ...baseLayer,
+          type: 'text' as const,
+          text: obj.content.text || '',
+          color: obj.content.color || template.colorPalette.text,
+          fontSize: obj.content.fontSize || template.fontSettings.size,
+        } as Layer;
       } else if (obj.type === 'image' && obj.content) {
-        layer.src = obj.content.imageSrc || null;
+        return {
+          ...baseLayer,
+          type: 'image' as const,
+          src: obj.content.imageSrc || null,
+        } as Layer;
       } else if (obj.type === 'shape' && obj.content) {
-        layer.shapeType = obj.content.shapeType as ShapeType;
-        layer.backgroundColor = obj.content.backgroundColor || template.colorPalette.primary;
-        layer.borderColor = obj.content.borderColor || template.colorPalette.accent;
-        layer.borderWidth = obj.content.borderWidth || 0;
+        return {
+          ...baseLayer,
+          type: 'shape' as const,
+          shapeType: (obj.content.shapeType as ShapeType) || 'rectangle',
+          backgroundColor: obj.content.backgroundColor || template.colorPalette.primary,
+          borderColor: obj.content.borderColor || template.colorPalette.accent,
+          borderWidth: obj.content.borderWidth || 0,
+        } as Layer;
       }
 
-      return layer;
+      // フォールバック（通常は到達しない）
+      return {
+        ...baseLayer,
+        type: 'text' as const,
+        text: '',
+        color: '#000000',
+        fontSize: '2rem',
+      } as Layer;
     });
 
     setLayers(templateLayers);
@@ -388,7 +378,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // テンプレートのオブジェクトをレイヤーに変換
     const templateLayers: Layer[] = selectedTemplate.layout.objects.map((obj) => {
-      const layer: Layer = {
+      const baseLayer = {
         id: uuidv4(),
         type: obj.type === 'text' ? 'text' : obj.type === 'image' ? 'image' : 'shape',
         name: obj.type === 'text' ? 'テキスト' : obj.type === 'image' ? '画像' : '図形',
@@ -405,24 +395,43 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       // タイプ別のプロパティ設定
       if (obj.type === 'text' && obj.content) {
-        layer.text = obj.content.text || '';
-        layer.color = obj.content.color || selectedTemplate.colorPalette.text;
-        layer.fontSize = obj.content.fontSize || selectedTemplate.fontSettings.size;
-        layer.fontFamily = obj.content.fontFamily || selectedTemplate.fontSettings.family;
-        layer.fontWeight = selectedTemplate.fontSettings.weight;
-        layer.fontStyle = selectedTemplate.fontSettings.style;
-        layer.textDecoration = selectedTemplate.fontSettings.textDecoration;
-        layer.textShadow = selectedTemplate.fontSettings.textShadow;
+        return {
+          ...baseLayer,
+          type: 'text' as const,
+          text: obj.content.text || '',
+          color: obj.content.color || selectedTemplate.colorPalette.text,
+          fontSize: obj.content.fontSize || selectedTemplate.fontSettings.size,
+          fontFamily: obj.content.fontFamily || selectedTemplate.fontSettings.family,
+          fontWeight: selectedTemplate.fontSettings.weight,
+          fontStyle: selectedTemplate.fontSettings.style,
+          textDecoration: selectedTemplate.fontSettings.textDecoration,
+          textShadow: selectedTemplate.fontSettings.textShadow,
+        } as Layer;
       } else if (obj.type === 'image' && obj.content) {
-        layer.src = obj.content.imageSrc || null;
+        return {
+          ...baseLayer,
+          type: 'image' as const,
+          src: obj.content.imageSrc || null,
+        } as Layer;
       } else if (obj.type === 'shape' && obj.content) {
-        layer.shapeType = obj.content.shapeType as ShapeType;
-        layer.backgroundColor = obj.content.backgroundColor || selectedTemplate.colorPalette.primary;
-        layer.borderColor = obj.content.borderColor || selectedTemplate.colorPalette.accent;
-        layer.borderWidth = obj.content.borderWidth || 0;
+        return {
+          ...baseLayer,
+          type: 'shape' as const,
+          shapeType: (obj.content.shapeType as ShapeType) || 'rectangle',
+          backgroundColor: obj.content.backgroundColor || selectedTemplate.colorPalette.primary,
+          borderColor: obj.content.borderColor || selectedTemplate.colorPalette.accent,
+          borderWidth: obj.content.borderWidth || 0,
+        } as Layer;
       }
 
-      return layer;
+      // フォールバック
+      return {
+        ...baseLayer,
+        type: 'text' as const,
+        text: '',
+        color: '#000000',
+        fontSize: '2rem',
+      } as Layer;
     });
 
     // レガシーサポート：オブジェクトが空の場合は既存のロジックを使用
@@ -457,7 +466,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
           fontStyle: selectedTemplate.fontSettings.style,
           textDecoration: selectedTemplate.fontSettings.textDecoration,
           textShadow: selectedTemplate.fontSettings.textShadow,
-        });
+        } as Layer);
       }
       
       // 背景画像（中間層）
@@ -475,16 +484,16 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
           rotation: 0,
           zIndex: 500,
           src: selectedTemplate.initialImageSrc,
-        });
+        } as Layer);
       }
       
       // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
-      const updatedInitialLayers = initialLayers.map((l, index) => ({ ...l, zIndex: initialLayers.length - 1 - index }));
+      const updatedInitialLayers = initialLayers.map((l, index) => ({ ...l, zIndex: initialLayers.length - 1 - index } as Layer));
       setLayers(updatedInitialLayers);
       setSelectedLayerId(updatedInitialLayers.length > 0 ? updatedInitialLayers[0].id : null);
     } else {
       // 配列順序に基づいてzIndexを更新（上が最前面になるように逆順）
-      const updatedTemplateLayers = templateLayers.map((l, index) => ({ ...l, zIndex: templateLayers.length - 1 - index }));
+      const updatedTemplateLayers = templateLayers.map((l, index) => ({ ...l, zIndex: templateLayers.length - 1 - index } as Layer));
       setLayers(updatedTemplateLayers);
       setSelectedLayerId(updatedTemplateLayers.length > 0 ? updatedTemplateLayers[0].id : null);
     }

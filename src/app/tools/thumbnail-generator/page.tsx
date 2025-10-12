@@ -38,6 +38,7 @@ import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
 import { FontSelector } from '@/components/shared/FontSelector';
 import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
 import { logger } from '@/lib/logger';
+import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -87,12 +88,16 @@ export default function ThumbnailGeneratorPage() {
 
   // シャドウの有効/無効状態を同期
   React.useEffect(() => {
-    if (selectedLayer?.textShadow && selectedLayer.textShadow !== 'none') {
-      setShadowEnabled(true);
+    if (selectedLayer && isTextLayer(selectedLayer)) {
+      if (selectedLayer.textShadow && selectedLayer.textShadow !== 'none') {
+        setShadowEnabled(true);
+      } else {
+        setShadowEnabled(false);
+      }
     } else {
       setShadowEnabled(false);
     }
-  }, [selectedLayer?.textShadow]);
+  }, [selectedLayer]);
 
   // プレビューエリアのサイズ計算
   const getPreviewSize = React.useCallback(() => {
@@ -362,14 +367,14 @@ export default function ThumbnailGeneratorPage() {
         width: isDesktop ? 300 : 150,
         height: isDesktop ? 300 : 150,
         src,
-      });
+      } as any);
     }
     e.target.value = '';
   };
 
   const handleAddShape = (shapeType: ShapeType) => {
     const offset = layers.filter(l => l.type === 'shape').length * (isDesktop ? 20 : 5);
-    const shapeCount = layers.filter(l => l.shapeType === shapeType).length + 1;
+    const shapeCount = layers.filter(l => l.type === 'shape' && 'shapeType' in l && l.shapeType === shapeType).length + 1;
     let name = '';
     const initialX = isDesktop ? 550 : 10;
     const initialY = isDesktop ? 250 : 10;
@@ -399,7 +404,7 @@ export default function ThumbnailGeneratorPage() {
       backgroundColor: '#cccccc',
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
-    });
+    } as any);
   };
 
   const handleAddText = () => {
@@ -416,7 +421,7 @@ export default function ThumbnailGeneratorPage() {
       color: '#000000',
       fontSize: isDesktop ? '2rem' : '1rem',
       // フォント設定はaddLayer関数内でcurrentFontSettingsから自動適用される
-    });
+    } as any);
   };
 
   if (!selectedTemplate) {
@@ -487,7 +492,7 @@ export default function ThumbnailGeneratorPage() {
       </div>
 
       {/* テキストレイヤーの設定 */}
-      {selectedLayer?.type === 'text' && (
+      {selectedLayer && isTextLayer(selectedLayer) && (
         <div className="space-y-4">
           <h4 className="font-medium">テキスト設定</h4>
           <div className="space-y-3">
@@ -728,7 +733,7 @@ export default function ThumbnailGeneratorPage() {
       )}
 
       {/* 画像レイヤーの設定 */}
-      {selectedLayer?.type === 'image' && (
+      {selectedLayer && isImageLayer(selectedLayer) && (
         <div className="space-y-4">
           <h4 className="font-medium">画像設定</h4>
           <div className="space-y-3">
@@ -780,7 +785,7 @@ export default function ThumbnailGeneratorPage() {
       )}
 
       {/* 図形レイヤーの設定 */}
-      {selectedLayer?.type === 'shape' && (
+      {selectedLayer && isShapeLayer(selectedLayer) && (
         <div className="space-y-4">
           <h4 className="font-medium">図形設定</h4>
           <div className="space-y-3">
@@ -1177,7 +1182,9 @@ export default function ThumbnailGeneratorPage() {
               {/* 選択中レイヤー情報 */}
               <div className="p-2 bg-secondary/50 rounded-md">
                 <p className="text-xs text-muted-foreground mb-1">選択中</p>
-                <p className="text-sm font-medium">{selectedLayer.name}</p>
+                <p className="text-sm font-medium truncate" title={selectedLayer.name}>
+                  {selectedLayer.name.length > 15 ? selectedLayer.name.substring(0, 12) + '...' : selectedLayer.name}
+                </p>
               </div>
               
               {/* 位置調整 */}

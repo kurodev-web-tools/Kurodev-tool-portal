@@ -133,24 +133,38 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
     width: '100%',
     height: '100%',
     backgroundImage: src ? `url(${src})` : 'none',
-    backgroundSize: 'cover', // containからcoverに変更
+    backgroundSize: 'cover', // プレビューエリア全体を覆う
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   };
+
+  // 背景画像の場合は絶対配置の通常divとして表示
+  if (isBackground) {
+    return (
+      <div
+        className="absolute inset-0"
+        style={{
+          ...imageStyle,
+          zIndex: zIndex,
+        }}
+        title={alt}
+      />
+    );
+  }
 
   return (
     <>
       <Rnd
         ref={nodeRef}
-        size={isBackground ? { width: '100%', height: '100%' } : { width, height }}
-        position={isBackground ? { x: 0, y: 0 } : position}
+        size={{ width, height }}
+        position={position}
         onDragStart={() => {
-          if (isRotating || isBackground) {
+          if (isRotating) {
             return false;
           }
         }}
         onDrag={(e, d) => {
-          if (!isRotating && !isBackground) {
+          if (!isRotating) {
             setPosition({ x: d.x, y: d.y });
           }
         }}
@@ -158,11 +172,11 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
         onResize={onResize}
         onResizeStop={onResizeStop}
         lockAspectRatio={lockAspectRatio}
-        enableResizing={isBackground ? false : enableResizing}
-        disableDragging={isBackground || disableDragging || isRotating}
+        enableResizing={enableResizing}
+        disableDragging={disableDragging || isRotating}
         className={cn(
           "border border-dashed border-transparent transition-colors duration-200",
-          { "hover:border-gray-500": !isBackground && isSelected }
+          { "hover:border-gray-500": isSelected }
         )}
         onClick={onSelect}
         style={{ zIndex }}
@@ -171,11 +185,11 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
           <div style={imageStyle} title={alt} />
         </div>
       </Rnd>
-      {isSelected && !isLocked && !isBackground && (
+      {isSelected && !isLocked && (
         <div
           ref={rotateHandleRef}
           onMouseDown={handleRotateStartMouse}
-          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50" // z-indexを高く設定
+          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50"
           style={{
             left: position.x + (width as number) / 2,
             top: position.y - 30,

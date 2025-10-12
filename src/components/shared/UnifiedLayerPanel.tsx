@@ -21,44 +21,21 @@ import {
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { Layer, ShapeType, isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 
-// 汎用的なレイヤー型定義
-export interface UnifiedLayer {
-  id: string;
-  type: 'image' | 'text' | 'shape';
-  name: string;
-  visible: boolean;
-  locked: boolean;
-  x: number;
-  y: number;
-  width: number | string; // string型を追加して'100%'などを許容
-  height: number | string;
-  rotation: number;
-  zIndex?: number;
-  opacity?: number;
-  // Type-specific properties
-  src?: string | null;
-  text?: string;
-  color?: string;
-  fontSize?: string;
-  shapeType?: ShapeType;
-  backgroundColor?: string;
-  borderColor?: string;
-  borderWidth?: number;
-}
-
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star' | 'polygon' | 'heart' | 'diamond';
+// 後方互換性のためのエイリアス
+export type UnifiedLayer = Layer;
 
 // コンテキストのインターフェース
 interface UnifiedLayerContext {
-  layers: UnifiedLayer[];
-  updateLayer: (id: string, updates: Partial<UnifiedLayer>) => void;
+  layers: Layer[];
+  updateLayer: (id: string, updates: Partial<Layer>) => void;
   removeLayer: (id: string) => void;
   selectedLayerId: string | null;
   setSelectedLayerId: (id: string | null) => void;
   reorderLayers: (startIndex: number, endIndex: number) => void;
   duplicateLayer: (id: string) => void;
-  addLayer: (layer: Omit<UnifiedLayer, 'id' | 'rotation' | 'zIndex'>) => void;
+  addLayer: (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => void;
   moveLayerUp: (id: string) => void;
   moveLayerDown: (id: string) => void;
 }
@@ -161,17 +138,29 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
     }
   };
 
-  const getLayerPreview = (layer: UnifiedLayer) => {
-    switch (layer.type) {
-      case 'text':
-        return layer.text || 'テキスト';
-      case 'image':
-        return layer.name || '画像';
-      case 'shape':
-        return layer.name || '図形';
-      default:
-        return layer.name || 'レイヤー';
+  // 文字列を省略する関数（最大文字数を超えた場合）
+  const truncateText = (text: string, maxLength: number = 15): string => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength - 3) + '...';
+  };
+
+  const getLayerPreview = (layer: UnifiedLayer): string => {
+    if (isTextLayer(layer)) {
+      return truncateText(layer.text || 'テキスト', isDesktop ? 20 : 12);
+    } else if (isImageLayer(layer)) {
+      return truncateText(layer.name || '画像', isDesktop ? 20 : 12);
+    } else if (isShapeLayer(layer)) {
+      return truncateText(layer.name || '図形', isDesktop ? 20 : 12);
     }
+    return 'レイヤー';
+  };
+
+  // 完全な名前を取得（title用）
+  const getFullLayerName = (layer: UnifiedLayer): string => {
+    if (isTextLayer(layer)) {
+      return layer.text || 'テキスト';
+    }
+    return layer.name || 'レイヤー';
   };
 
   const handleAddLayer = (type: 'text' | 'image' | 'shape') => {
@@ -217,7 +206,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
               y: isDesktop ? 100 : 50,
               width: isDesktop ? 200 : 150,
               height: isDesktop ? 150 : 120,
-            });
+            } as any);
           }
         };
         input.click();
@@ -359,7 +348,10 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                                 <div className="text-sm font-medium truncate">
                                   {getLayerTypeLabel(layer)}
                                 </div>
-                                <div className="text-xs text-gray-400 truncate">
+                                <div 
+                                  className="text-xs text-gray-400 truncate" 
+                                  title={getFullLayerName(layer)}
+                                >
                                   {getLayerPreview(layer)}
                                 </div>
                               </div>

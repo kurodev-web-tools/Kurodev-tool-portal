@@ -279,14 +279,14 @@ export const useAssetEditorHandlers = (params: UseAssetEditorHandlersParams): As
         width: isDesktop ? 300 : 150,
         height: isDesktop ? 300 : 150,
         src,
-      });
+      } as any);
     }
     e.target.value = '';
   }, [addLayer, isDesktop]);
 
   const handleAddShape = React.useCallback((shapeType: ShapeType) => {
     const offset = layers.filter(l => l.type === 'shape').length * (isDesktop ? 20 : 5);
-    const shapeCount = layers.filter(l => l.shapeType === shapeType).length + 1;
+    const shapeCount = layers.filter(l => l.type === 'shape' && 'shapeType' in l && l.shapeType === shapeType).length + 1;
     let name = '';
     const initialX = isDesktop ? 550 : 10;
     const initialY = isDesktop ? 250 : 10;
@@ -316,7 +316,7 @@ export const useAssetEditorHandlers = (params: UseAssetEditorHandlersParams): As
       backgroundColor: '#cccccc',
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
-    });
+    } as any);
     // 履歴に追加
     setTimeout(() => addToHistory(layers, selectedLayerId), 0);
   }, [addLayer, layers, isDesktop, addToHistory, selectedLayerId]);
@@ -334,7 +334,7 @@ export const useAssetEditorHandlers = (params: UseAssetEditorHandlersParams): As
       text: currentText,
       color: '#000000',
       fontSize: isDesktop ? '2rem' : '1rem',
-    });
+    } as any);
     // 履歴に追加
     setTimeout(() => addToHistory(layers, selectedLayerId), 0);
   }, [addLayer, layers, currentText, isDesktop, addToHistory, selectedLayerId]);

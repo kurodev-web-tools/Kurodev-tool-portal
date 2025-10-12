@@ -90,7 +90,7 @@ export const findLayerById = (layers: Layer[], layerId: string | null): Layer | 
 
 // レイヤーのフィルタリング（メモ化用）
 export const filterVisibleLayers = (layers: Layer[]): Layer[] => {
-  return layers.filter(layer => layer.isVisible);
+  return layers.filter(layer => layer.visible);
 };
 
 // レイヤーの並び順を反転（メモ化用）

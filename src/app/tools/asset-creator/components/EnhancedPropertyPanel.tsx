@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { RotateCcw } from 'lucide-react';
 import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
 import { FontSelector } from '@/components/shared/FontSelector';
+import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 
 export const EnhancedPropertyPanel: React.FC = () => {
   const { layers, updateLayer, selectedLayerId } = useTemplate();
@@ -20,12 +21,16 @@ export const EnhancedPropertyPanel: React.FC = () => {
   const [shadowEnabled, setShadowEnabled] = React.useState(false);
 
   React.useEffect(() => {
-    if (selectedLayer?.textShadow && selectedLayer.textShadow !== 'none') {
-      setShadowEnabled(true);
+    if (selectedLayer && isTextLayer(selectedLayer)) {
+      if (selectedLayer.textShadow && selectedLayer.textShadow !== 'none') {
+        setShadowEnabled(true);
+      } else {
+        setShadowEnabled(false);
+      }
     } else {
       setShadowEnabled(false);
     }
-  }, [selectedLayer?.textShadow]);
+  }, [selectedLayer]);
 
   if (!selectedLayer) {
     return (
@@ -53,6 +58,7 @@ export const EnhancedPropertyPanel: React.FC = () => {
   };
 
   const handleShadowChange = (param: 'x' | 'y' | 'blur' | 'color' | 'opacity', value: number | string) => {
+    if (!selectedLayer || !isTextLayer(selectedLayer)) return;
     const current = parseTextShadow(selectedLayer.textShadow);
     const updated = { ...current, [param]: value };
     const newShadow = buildTextShadow(updated.x, updated.y, updated.blur, updated.color, updated.opacity);
@@ -139,7 +145,7 @@ export const EnhancedPropertyPanel: React.FC = () => {
       </Card>
 
       {/* テキストプロパティ */}
-      {selectedLayer.type === 'text' && (
+      {isTextLayer(selectedLayer) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">テキスト設定</CardTitle>
@@ -370,7 +376,7 @@ export const EnhancedPropertyPanel: React.FC = () => {
       )}
 
       {/* 図形プロパティ */}
-      {selectedLayer.type === 'shape' && (
+      {isShapeLayer(selectedLayer) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">図形設定</CardTitle>
@@ -426,7 +432,7 @@ export const EnhancedPropertyPanel: React.FC = () => {
       )}
 
       {/* 画像プロパティ */}
-      {selectedLayer.type === 'image' && (
+      {isImageLayer(selectedLayer) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">画像設定</CardTitle>

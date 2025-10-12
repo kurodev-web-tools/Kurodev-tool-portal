@@ -126,7 +126,7 @@ export const EnhancedLayerPanel: React.FC = () => {
           size="sm" 
           variant="outline" 
           onClick={() => addLayer({ 
-            type: 'text', 
+            type: 'text' as const,
             name: 'テキスト', 
             text: '新しいテキスト',
             visible: true,
@@ -137,7 +137,7 @@ export const EnhancedLayerPanel: React.FC = () => {
             height: 50,
             color: '#000000',
             fontSize: '2rem'
-          })}
+          } as any)}
           title="テキストレイヤーを追加"
           aria-label="テキストレイヤーを追加"
         >
@@ -155,7 +155,7 @@ export const EnhancedLayerPanel: React.FC = () => {
               if (file) {
                 const src = URL.createObjectURL(file);
                 addLayer({ 
-                  type: 'image', 
+                  type: 'image' as const,
                   name: file.name, 
                   src,
                   visible: true,
@@ -164,7 +164,7 @@ export const EnhancedLayerPanel: React.FC = () => {
                   y: 50,
                   width: 200,
                   height: 150
-                });
+                } as any);
               }
             };
             input.click();
@@ -178,7 +178,7 @@ export const EnhancedLayerPanel: React.FC = () => {
           size="sm" 
           variant="outline" 
           onClick={() => addLayer({ 
-            type: 'shape', 
+            type: 'shape' as const,
             name: '図形', 
             shapeType: 'rectangle',
             visible: true,
@@ -190,7 +190,7 @@ export const EnhancedLayerPanel: React.FC = () => {
             backgroundColor: '#cccccc',
             borderColor: '#000000',
             borderWidth: 2
-          })}
+          } as any)}
           title="図形レイヤーを追加"
           aria-label="図形レイヤーを追加"
         >
