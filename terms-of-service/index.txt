@@ -22,7 +22,7 @@
     "name": "Kurodev Tools"
   },
   "datePublished": "2025-01-01",
-  "dateModified": "2025-10-12",
+  "dateModified": "2025-10-14",
   "inLanguage": "ja-JP",
   "isAccessibleForFree": true,
   "applicationCategory": "MultimediaApplication",
@@ -90,7 +90,7 @@
       }
     ]
   }
-}0:{"P":null,"b":"build-1760260898950","p":"/Kurodev-tool-portal","c":["","terms-of-service",""],"i":false,"f":[[["",{"children":["terms-of-service",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/d93641af9d77c098.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/9c0d7c36b7dd2417.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["terms-of-service","$L12",{"children":["__PAGE__","$L13",{},null,false]},null,false]},["$L14",[],[]],false],"$L15",false]],"m":"$undefined","G":["$16",[]],"s":false,"S":true}
+}0:{"P":null,"b":"build-1760407445335","p":"/Kurodev-tool-portal","c":["","terms-of-service",""],"i":false,"f":[[["",{"children":["terms-of-service",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/d93641af9d77c098.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/9c0d7c36b7dd2417.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["terms-of-service","$L12",{"children":["__PAGE__","$L13",{},null,false]},null,false]},["$L14",[],[]],false],"$L15",false]],"m":"$undefined","G":["$16",[]],"s":false,"S":true}
 17:I[13031,["177","static/chunks/app/layout-95e18978eef7e533.js"],"ThemeProvider"]
 18:I[39866,["177","static/chunks/app/layout-95e18978eef7e533.js"],"AuthProvider"]
 19:I[64770,["177","static/chunks/app/layout-95e18978eef7e533.js"],"ErrorBoundary"]
