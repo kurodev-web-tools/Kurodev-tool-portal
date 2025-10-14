@@ -11,12 +11,12 @@ import { Minimize2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toolbar } from '../../asset-creator/components/Toolbar';
 import { EnhancedPreview } from '../../asset-creator/components/EnhancedPreview';
-import ThumbnailText from './ThumbnailText';
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailShape from './ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { ThumbnailToolsPanel } from './ThumbnailToolsPanel';
-import { Layer, ShapeType } from '../contexts/TemplateContext';
+import { Layer, ShapeType } from '@/types/layers';
 import { ThumbnailEditorHandlers } from '../hooks/useThumbnailEditorHandlers';
 
 export interface ThumbnailPreviewAreaProps {
@@ -208,6 +208,7 @@ export const ThumbnailPreviewArea: React.FC<ThumbnailPreviewAreaProps> = ({
                         onRotate={() => {}}
                         onRotateStop={() => {}}
                         zIndex={layer.zIndex}
+                        updateLayer={updateLayer}
                       />
                     );
                   } else if (layer.type === 'text') {
@@ -234,6 +235,7 @@ export const ThumbnailPreviewArea: React.FC<ThumbnailPreviewAreaProps> = ({
                         enableResizing={isResizable}
                         disableDragging={!isDraggable}
                         zIndex={layer.zIndex}
+                        updateLayer={updateLayer}
                       />
                     );
                   } else if (layer.type === 'shape' && layer.shapeType) {
@@ -258,6 +260,7 @@ export const ThumbnailPreviewArea: React.FC<ThumbnailPreviewAreaProps> = ({
                         enableResizing={isResizable}
                         disableDragging={!isDraggable}
                         zIndex={layer.zIndex}
+                        updateLayer={updateLayer}
                       />
                     );
                   }

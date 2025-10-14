@@ -24,9 +24,9 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import styles from './EnhancedPreview.module.css';
 
 import { useTemplate } from '../contexts/TemplateContext';
-import ThumbnailText from './ThumbnailText';
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailShape from './ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 
 interface EnhancedPreviewProps {
   isShiftKeyDown: boolean;

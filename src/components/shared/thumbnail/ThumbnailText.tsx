@@ -1,30 +1,59 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Rnd, ResizableDelta, RndDragCallback } from 'react-rnd';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { Rnd, RndDragCallback, ResizableDelta, Position } from 'react-rnd';
 import { cn } from '@/lib/utils';
-import { useTemplate } from '../contexts/TemplateContext';
 import { RotateCw } from 'lucide-react';
-import {
-  BaseThumbnailComponentProps,
-  ResizeDirection,
-  Position,
-} from '../types/component-types';
+import { Layer } from '@/types/layers';
 
-interface ThumbnailImageProps extends Omit<BaseThumbnailComponentProps, 'onResize' | 'onResizeStop' | 'onDragStop'> {
-  src: string | null | undefined;
-  alt: string;
+interface ThumbnailTextProps {
+  id: string;
+  isSelected: boolean;
+  text: string;
+  color?: string;
+  fontSize?: string;
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textShadow?: string;
+  className?: string;
+  x: number;
+  y: number;
+  width: number | string;
+  height: number | string;
+  rotation: number;
+  zIndex?: number;
   onDragStop: RndDragCallback;
-  onResize: (e: MouseEvent | TouchEvent, dir: ResizeDirection, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
-  onResizeStop: (e: MouseEvent | TouchEvent, dir: ResizeDirection, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
-  lockAspectRatio: boolean;
+  onResizeStop: (
+    e: any,
+    dir: string,
+    ref: HTMLElement,
+    delta: ResizableDelta,
+    position: Position
+  ) => void;
+  enableResizing: boolean;
   disableDragging: boolean;
-  isDraggable: boolean; // 追加
+  onSelect?: () => void;
+  isLocked?: boolean;
+  isDraggable?: boolean;
+  onRotateStart?: () => void;
+  onRotate?: () => void;
+  onRotateStop?: () => void;
+  updateLayer?: (id: string, updates: Partial<Layer>) => void;
 }
 
-export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
+const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   id,
   isSelected,
-  src,
-  alt,
+  text,
+  color = 'white',
+  fontSize = '2rem',
+  fontFamily,
+  fontWeight,
+  fontStyle,
+  textDecoration,
+  textShadow,
+  className,
   x,
   y,
   width,
@@ -32,19 +61,17 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   rotation,
   zIndex = 0,
   onDragStop,
-  onResize,
   onResizeStop,
-  onSelect, // 追加
-  isLocked, // 追加
-  isDraggable, // 追加
-  lockAspectRatio,
   enableResizing,
   disableDragging,
-  onRotateStart, // 追加
-  onRotate, // 追加
-  onRotateStop, // 追加
+  onSelect,
+  isLocked,
+  isDraggable,
+  onRotateStart,
+  onRotate,
+  onRotateStop,
+  updateLayer,
 }) => {
-  const { updateLayer } = useTemplate();
   const [position, setPosition] = useState({ x, y });
   const [isRotating, setIsRotating] = useState(false);
   const nodeRef = useRef<Rnd>(null);
@@ -65,14 +92,18 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const widthNum = typeof width === 'number' ? width : parseFloat(width.toString());
+    const heightNum = typeof height === 'number' ? height : parseFloat(height.toString());
+    const centerX = parentRect.left + position.x + widthNum / 2;
+    const centerY = parentRect.top + position.y + heightNum / 2;
 
     const handleRotating = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - centerX;
       const dy = moveEvent.clientY - centerY;
       const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-      updateLayer(id, { rotation: angle });
+      if (updateLayer) {
+        updateLayer(id, { rotation: angle });
+      }
     };
 
     const handleRotateEnd = () => {
@@ -96,15 +127,19 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const widthNum = typeof width === 'number' ? width : parseFloat(width.toString());
+    const heightNum = typeof height === 'number' ? height : parseFloat(height.toString());
+    const centerX = parentRect.left + position.x + widthNum / 2;
+    const centerY = parentRect.top + position.y + heightNum / 2;
 
     const handleRotating = (moveEvent: TouchEvent) => {
       if (moveEvent.touches.length === 0) return;
       const dx = moveEvent.touches[0].clientX - centerX;
       const dy = moveEvent.touches[0].clientY - centerY;
       const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-      updateLayer(id, { rotation: angle });
+      if (updateLayer) {
+        updateLayer(id, { rotation: angle });
+      }
     };
 
     const handleRotateEnd = () => {
@@ -127,14 +162,6 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
     }
   }, [handleRotateStartTouch]);
 
-  const imageStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    backgroundImage: src ? `url(${src})` : 'none',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  };
-
   return (
     <>
       <Rnd
@@ -145,6 +172,8 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
           if (isRotating) {
             return false;
           }
+          // ドラッグ開始時にレイヤーを選択状態にする
+          onSelect?.();
         }}
         onDrag={(e, d) => {
           if (!isRotating) {
@@ -152,25 +181,48 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
           }
         }}
         onDragStop={onDragStop}
-        onResize={onResize}
         onResizeStop={onResizeStop}
-        lockAspectRatio={lockAspectRatio}
+        minWidth={50}
+        minHeight={20}
         enableResizing={enableResizing}
         disableDragging={disableDragging || isRotating}
         className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
-        style={{ zIndex: zIndex }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: zIndex,
+        }}
       >
-        <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
-          <div style={imageStyle} />
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}
+        >
+          <p 
+            className={cn("cursor-move", className)} 
+            style={{ 
+              color, 
+              fontSize, 
+              fontFamily,
+              fontWeight,
+              fontStyle,
+              textDecoration,
+              textShadow,
+              lineHeight: 1, 
+              whiteSpace: 'pre-wrap' 
+            }}
+          >
+            {text}
+          </p>
         </div>
       </Rnd>
       {isSelected && (
         <div
           ref={rotateHandleRef}
           onMouseDown={handleRotateStartMouse}
-          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-10"
+          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50"
           style={{
-            left: position.x + width / 2,
+            left: typeof width === 'number' ? position.x + width / 2 : position.x + parseFloat(width.toString()) / 2,
             top: position.y - 30,
             transform: 'translateX(-50%)',
           }}
@@ -182,5 +234,6 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   );
 };
 
-export default React.memo(ThumbnailImage);
+export default React.memo(ThumbnailText);
 /* eslint-enable @typescript-eslint/no-explicit-any */
+

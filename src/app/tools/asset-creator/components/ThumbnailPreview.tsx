@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 import { ResizableDelta, Position } from 'react-rnd';
 
 import { useTemplate, Layer } from '../contexts/TemplateContext'; // Layerをimport
-import ThumbnailText from './ThumbnailText';
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailShape from './ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 
 interface ThumbnailPreviewProps {
   isShiftKeyDown: boolean;

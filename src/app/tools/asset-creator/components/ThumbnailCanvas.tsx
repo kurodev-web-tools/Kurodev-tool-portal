@@ -4,9 +4,9 @@ import React from 'react';
 import { ResizableDelta, Position } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { Layer } from '../contexts/TemplateContext'; // Layerのimport元を修正
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailText from './ThumbnailText';
-import ThumbnailShape from './ThumbnailShape';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 
 interface ThumbnailCanvasProps {
   selectedTemplateId: string;

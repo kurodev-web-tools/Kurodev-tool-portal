@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Rnd, RndDragCallback, ResizableDelta, Position } from 'react-rnd';
-import { ShapeType, useTemplate } from '../contexts/TemplateContext';
 import { cn } from '@/lib/utils';
 import { RotateCw } from 'lucide-react';
+import { ShapeType, Layer } from '@/types/layers';
 
 interface ThumbnailShapeProps {
   id: string;
@@ -14,21 +15,22 @@ interface ThumbnailShapeProps {
   rotation: number;
   zIndex?: number;
   onDragStop: RndDragCallback;
-  onResize: (e: MouseEvent | TouchEvent, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
-  onResizeStop: (e: MouseEvent | TouchEvent, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
-  lockAspectRatio: boolean;
+  onResize?: (e: any, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
+  onResizeStop: (e: any, dir: string, elementRef: HTMLElement, delta: ResizableDelta, position: Position) => void;
+  lockAspectRatio?: boolean;
   enableResizing: boolean;
   disableDragging: boolean;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  width: number | string;
+  height: number | string;
   onSelect?: () => void;
   isLocked?: boolean;
   isDraggable?: boolean;
   onRotateStart?: () => void;
   onRotate?: () => void;
   onRotateStop?: () => void;
+  updateLayer?: (id: string, updates: Partial<Layer>) => void;
 }
 
 const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
@@ -43,7 +45,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   onDragStop,
   onResize,
   onResizeStop,
-  lockAspectRatio,
+  lockAspectRatio = false,
   enableResizing,
   disableDragging,
   x,
@@ -56,8 +58,8 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   onRotateStart,
   onRotate,
   onRotateStop,
+  updateLayer,
 }) => {
-  const { updateLayer } = useTemplate();
   const [position, setPosition] = useState({ x: x || 0, y: y || 0 });
   const [isRotating, setIsRotating] = useState(false);
   const nodeRef = useRef<Rnd>(null);
@@ -78,14 +80,18 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const widthNum = typeof width === 'number' ? width : parseFloat(width.toString());
+    const heightNum = typeof height === 'number' ? height : parseFloat(height.toString());
+    const centerX = parentRect.left + position.x + widthNum / 2;
+    const centerY = parentRect.top + position.y + heightNum / 2;
 
     const handleRotating = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - centerX;
       const dy = moveEvent.clientY - centerY;
-      const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // +90度でハンドルの初期位置を上にする
-      updateLayer(id, { rotation: angle });
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+      if (updateLayer) {
+        updateLayer(id, { rotation: angle });
+      }
     };
 
     const handleRotateEnd = () => {
@@ -109,15 +115,19 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
     if (!parentElement) return;
 
     const parentRect = parentElement.getBoundingClientRect();
-    const centerX = parentRect.left + position.x + width / 2;
-    const centerY = parentRect.top + position.y + height / 2;
+    const widthNum = typeof width === 'number' ? width : parseFloat(width.toString());
+    const heightNum = typeof height === 'number' ? height : parseFloat(height.toString());
+    const centerX = parentRect.left + position.x + widthNum / 2;
+    const centerY = parentRect.top + position.y + heightNum / 2;
 
     const handleRotating = (moveEvent: TouchEvent) => {
       if (moveEvent.touches.length === 0) return;
       const dx = moveEvent.touches[0].clientX - centerX;
       const dy = moveEvent.touches[0].clientY - centerY;
       const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-      updateLayer(id, { rotation: angle });
+      if (updateLayer) {
+        updateLayer(id, { rotation: angle });
+      }
     };
 
     const handleRotateEnd = () => {
@@ -141,6 +151,9 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   }, [handleRotateStartTouch]);
 
   const renderShape = () => {
+    const widthNum = typeof width === 'number' ? width : parseFloat(width.toString());
+    const heightNum = typeof height === 'number' ? height : parseFloat(height.toString());
+    
     const commonSvgProps = {
       width: '100%',
       height: '100%',
@@ -153,9 +166,9 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
           <svg {...commonSvgProps}>
             <line
               x1={0}
-              y1={height / 2}
-              x2={width}
-              y2={height / 2}
+              y1={heightNum / 2}
+              x2={widthNum}
+              y2={heightNum / 2}
               stroke={borderColor}
               strokeWidth={borderWidth}
             />
@@ -179,9 +192,9 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
             </defs>
             <line
               x1={0}
-              y1={height / 2}
-              x2={width - 10} // 矢印の先端分短くする
-              y2={height / 2}
+              y1={heightNum / 2}
+              x2={widthNum - 10}
+              y2={heightNum / 2}
               stroke={borderColor}
               strokeWidth={borderWidth}
               markerEnd={`url(#arrowhead-${id})`}
@@ -192,7 +205,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         return (
           <svg {...commonSvgProps}>
             <polygon
-              points={`${width / 2},0 0,${height} ${width},${height}`}
+              points={`${widthNum / 2},0 0,${heightNum} ${widthNum},${heightNum}`}
               fill={backgroundColor}
               stroke={borderColor}
               strokeWidth={borderWidth}
@@ -203,7 +216,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         return (
           <svg {...commonSvgProps}>
             <polygon
-              points={`${width * 0.5},0 ${width * 0.618},${height * 0.382} ${width},${height * 0.382} ${width * 0.691},${height * 0.618} ${width * 0.809},${height} ${width * 0.5},${height * 0.764} ${width * 0.191},${height} ${width * 0.309},${height * 0.618} 0,${height * 0.382} ${width * 0.382},${height * 0.382}`}
+              points={`${widthNum * 0.5},0 ${widthNum * 0.618},${heightNum * 0.382} ${widthNum},${heightNum * 0.382} ${widthNum * 0.691},${heightNum * 0.618} ${widthNum * 0.809},${heightNum} ${widthNum * 0.5},${heightNum * 0.764} ${widthNum * 0.191},${heightNum} ${widthNum * 0.309},${heightNum * 0.618} 0,${heightNum * 0.382} ${widthNum * 0.382},${heightNum * 0.382}`}
               fill={backgroundColor}
               stroke={borderColor}
               strokeWidth={borderWidth}
@@ -214,7 +227,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         return (
           <svg {...commonSvgProps}>
             <path
-              d={`M${width * 0.5},${height * 0.9} C${width * 0.5},${height * 0.9} ${width * 0.1},${height * 0.5} ${width * 0.1},${height * 0.3} C${width * 0.1},${height * 0.15} ${width * 0.25},${height * 0.1} ${width * 0.4},${height * 0.1} C${width * 0.5},${height * 0.1} ${width * 0.5},${height * 0.2} ${width * 0.5},${height * 0.2} C${width * 0.5},${height * 0.2} ${width * 0.5},${height * 0.1} ${width * 0.6},${height * 0.1} C${width * 0.75},${height * 0.1} ${width * 0.9},${height * 0.15} ${width * 0.9},${height * 0.3} C${width * 0.9},${height * 0.5} ${width * 0.5},${height * 0.9} ${width * 0.5},${height * 0.9} Z`}
+              d={`M${widthNum * 0.5},${heightNum * 0.9} C${widthNum * 0.5},${heightNum * 0.9} ${widthNum * 0.1},${heightNum * 0.5} ${widthNum * 0.1},${heightNum * 0.3} C${widthNum * 0.1},${heightNum * 0.15} ${widthNum * 0.25},${heightNum * 0.1} ${widthNum * 0.4},${heightNum * 0.1} C${widthNum * 0.5},${heightNum * 0.1} ${widthNum * 0.5},${heightNum * 0.2} ${widthNum * 0.5},${heightNum * 0.2} C${widthNum * 0.5},${heightNum * 0.2} ${widthNum * 0.5},${heightNum * 0.1} ${widthNum * 0.6},${heightNum * 0.1} C${widthNum * 0.75},${heightNum * 0.1} ${widthNum * 0.9},${heightNum * 0.15} ${widthNum * 0.9},${heightNum * 0.3} C${widthNum * 0.9},${heightNum * 0.5} ${widthNum * 0.5},${heightNum * 0.9} ${widthNum * 0.5},${heightNum * 0.9} Z`}
               fill={backgroundColor}
               stroke={borderColor}
               strokeWidth={borderWidth}
@@ -225,7 +238,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         return (
           <svg {...commonSvgProps}>
             <polygon
-              points={`${width / 2},0 ${width},${height / 2} ${width / 2},${height} 0,${height / 2}`}
+              points={`${widthNum / 2},0 ${widthNum},${heightNum / 2} ${widthNum / 2},${heightNum} 0,${heightNum / 2}`}
               fill={backgroundColor}
               stroke={borderColor}
               strokeWidth={borderWidth}
@@ -236,7 +249,7 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         return (
           <svg {...commonSvgProps}>
             <polygon
-              points={`${width * 0.5},0 ${width * 0.9},${height * 0.3} ${width * 0.7},${height * 0.9} ${width * 0.3},${height * 0.9} ${width * 0.1},${height * 0.3}`}
+              points={`${widthNum * 0.5},0 ${widthNum * 0.9},${heightNum * 0.3} ${widthNum * 0.7},${heightNum * 0.9} ${widthNum * 0.3},${heightNum * 0.9} ${widthNum * 0.1},${heightNum * 0.3}`}
               fill={backgroundColor}
               stroke={borderColor}
               strokeWidth={borderWidth}
@@ -285,19 +298,19 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
         enableResizing={enableResizing}
         disableDragging={disableDragging || isRotating}
         className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
-        style={{ zIndex: zIndex }}
+        style={{ zIndex }}
       >
         <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
           {renderShape()}
         </div>
       </Rnd>
-      {isSelected && (
+      {isSelected && !isLocked && (
         <div
           ref={rotateHandleRef}
           onMouseDown={handleRotateStartMouse}
-          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-10"
+          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50"
           style={{
-            left: position.x + width / 2,
+            left: typeof width === 'number' ? position.x + width / 2 : position.x + parseFloat(width.toString()) / 2,
             top: position.y - 30,
             transform: 'translateX(-50%)',
           }}
@@ -309,4 +322,6 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
   );
 };
 
-export default ThumbnailShape;
+export default React.memo(ThumbnailShape);
+/* eslint-enable @typescript-eslint/no-explicit-any */
+

@@ -26,9 +26,9 @@ import { cn } from '@/lib/utils';
 
 import { useTemplate, ShapeType } from './contexts/TemplateContext';
 import TemplateSelector from './components/TemplateSelector';
-import ThumbnailText from './components/ThumbnailText';
-import ThumbnailImage from './components/ThumbnailImage';
-import ThumbnailShape from './components/ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { ExportSettingsPanel, ExportSettings } from './components/ExportSettingsPanel';
 import { EnhancedPreview } from '../asset-creator/components/EnhancedPreview';
@@ -1070,6 +1070,7 @@ export default function ThumbnailGeneratorPage() {
                         onRotateStart={() => {}}
                         onRotate={() => {}}
                         onRotateStop={() => {}}
+                        updateLayer={updateLayer}
                       />
                     );
                   } else if (layer.type === 'text') {
@@ -1083,6 +1084,7 @@ export default function ThumbnailGeneratorPage() {
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         enableResizing={isResizable} disableDragging={!isDraggable}
+                        updateLayer={updateLayer}
                       />
                     );
                   } else if (layer.type === 'shape') {
@@ -1096,6 +1098,7 @@ export default function ThumbnailGeneratorPage() {
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                        updateLayer={updateLayer}
                       />
                     );
                   }

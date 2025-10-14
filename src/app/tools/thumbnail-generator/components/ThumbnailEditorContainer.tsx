@@ -21,8 +21,8 @@ import {
 
 import { useTemplate, type ShapeType, type Layer } from '../contexts/TemplateContext';
 import TemplateSelector from './TemplateSelector';
-import ThumbnailText from './ThumbnailText';
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailShape from './ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 import { LayerPanel } from './LayerPanel';
 import ThumbnailPreview from './ThumbnailPreview';

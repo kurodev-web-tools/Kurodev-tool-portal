@@ -25,9 +25,9 @@ import { cn } from '@/lib/utils';
 
 import { useTemplate, ShapeType, TemplateProvider } from './contexts/TemplateContext';
 import TemplateSelector from './components/TemplateSelector';
-import ThumbnailText from './components/ThumbnailText';
-import ThumbnailImage from './components/ThumbnailImage';
-import ThumbnailShape from './components/ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { EnhancedPropertyPanel } from './components/EnhancedPropertyPanel';
 import { Toolbar } from './components/Toolbar';
@@ -1091,6 +1091,7 @@ function AssetCreatorPage() {
                     onRotateStop={() => {}}
                     isBackground={layer.isBackground}
                     zIndex={layer.zIndex}
+                    updateLayer={updateLayer}
                   />
                 );
               } else if (layer.type === 'text') {
@@ -1117,6 +1118,7 @@ function AssetCreatorPage() {
                     enableResizing={isResizable} 
                     disableDragging={!isDraggable}
                     zIndex={layer.zIndex}
+                    updateLayer={updateLayer}
                   />
                 );
               } else if (layer.type === 'shape' && layer.shapeType) {
@@ -1130,6 +1132,7 @@ function AssetCreatorPage() {
                     onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                     lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
                     zIndex={layer.zIndex}
+                    updateLayer={updateLayer}
                   />
                 );
               }

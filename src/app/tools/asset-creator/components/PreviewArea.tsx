@@ -11,9 +11,9 @@ import { Minimize2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toolbar } from './Toolbar';
 import { EnhancedPreview } from './EnhancedPreview';
-import ThumbnailText from './ThumbnailText';
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailShape from './ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { EnhancedPropertyPanel } from './EnhancedPropertyPanel';
 import { ToolsPanel } from './ToolsPanel';
@@ -210,6 +210,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                         onRotateStop={() => {}}
                         isBackground={layer.isBackground}
                         zIndex={layer.zIndex}
+                        updateLayer={updateLayer}
                       />
                     );
                   } else if (layer.type === 'text') {
@@ -236,6 +237,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                         enableResizing={isResizable}
                         disableDragging={!isDraggable}
                         zIndex={layer.zIndex}
+                        updateLayer={updateLayer}
                       />
                     );
                   } else if (layer.type === 'shape' && layer.shapeType) {
@@ -260,6 +262,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                         enableResizing={isResizable}
                         disableDragging={!isDraggable}
                         zIndex={layer.zIndex}
+                        updateLayer={updateLayer}
                       />
                     );
                   }

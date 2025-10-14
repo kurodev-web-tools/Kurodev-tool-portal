@@ -9,9 +9,9 @@ import { logger } from '@/lib/logger';
 import { ResizableDelta, Position } from 'react-rnd';
 
 import { useTemplate } from '../contexts/TemplateContext';
-import ThumbnailText from './ThumbnailText';
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailShape from './ThumbnailShape';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 
 interface ThumbnailPreviewProps {
   isShiftKeyDown: boolean;
@@ -95,12 +95,14 @@ export default function ThumbnailPreview({ isShiftKeyDown }: ThumbnailPreviewPro
                 onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                 onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                 lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                onSelect={() => setSelectedLayerId(layer.id)} // 追加
-                isLocked={layer.locked} // 追加
-                isDraggable={isDraggable} // 追加
-                onRotateStart={() => {}} // 追加
-                onRotate={() => {}} // 追加
-                onRotateStop={() => {}} // 追加
+                onSelect={() => setSelectedLayerId(layer.id)}
+                isLocked={layer.locked}
+                isDraggable={isDraggable}
+                onRotateStart={() => {}}
+                onRotate={() => {}}
+                onRotateStop={() => {}}
+                zIndex={layer.zIndex}
+                updateLayer={updateLayer}
               />
             );
           } else if (layer.type === 'text') {
@@ -111,6 +113,8 @@ export default function ThumbnailPreview({ isShiftKeyDown }: ThumbnailPreviewPro
                 rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                 onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                 enableResizing={isResizable} disableDragging={!isDraggable}
+                zIndex={layer.zIndex}
+                updateLayer={updateLayer}
               />
             );
           } else if (layer.type === 'shape' && layer.shapeType) {
@@ -123,6 +127,8 @@ export default function ThumbnailPreview({ isShiftKeyDown }: ThumbnailPreviewPro
                 onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                 onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                 lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                zIndex={layer.zIndex}
+                updateLayer={updateLayer}
               />
             );
           }

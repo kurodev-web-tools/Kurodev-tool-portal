@@ -3,10 +3,10 @@
 import React from 'react';
 import { ResizableDelta, Position, DraggableData } from 'react-rnd';
 import { cn } from '@/lib/utils';
-import { Layer } from '../types/layers';
-import ThumbnailImage from './ThumbnailImage';
-import ThumbnailText from './ThumbnailText';
-import ThumbnailShape from './ThumbnailShape';
+import { Layer } from '@/types/layers';
+import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
+import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
+import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 
 interface ThumbnailCanvasProps {
   selectedTemplateId: string;
@@ -60,12 +60,13 @@ export function ThumbnailCanvas({
               onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
               onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
               lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-              onSelect={() => onSelectLayer(layer.id)} // 追加
-              isLocked={layer.locked} // 追加
-              isDraggable={isDraggable} // 追加
-              onRotateStart={() => {}} // 追加
-              onRotate={() => {}} // 追加
-              onRotateStop={() => {}} // 追加
+              onSelect={() => onSelectLayer(layer.id)}
+              isLocked={layer.locked}
+              isDraggable={isDraggable}
+              onRotateStart={() => {}}
+              onRotate={() => {}}
+              onRotateStop={() => {}}
+              updateLayer={updateLayer}
             />
           );
         } else if (layer.type === 'text') {
@@ -76,6 +77,7 @@ export function ThumbnailCanvas({
               rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
               onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
               enableResizing={isResizable} disableDragging={!isDraggable}
+              updateLayer={updateLayer}
             />
           );
         } else if (layer.type === 'shape' && layer.shapeType) {
@@ -87,7 +89,8 @@ export function ThumbnailCanvas({
               rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
               onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
               onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+              lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+              updateLayer={updateLayer}
             />
           );
         }
