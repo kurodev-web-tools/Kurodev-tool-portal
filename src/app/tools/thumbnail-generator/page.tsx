@@ -164,18 +164,33 @@ export default function ThumbnailGeneratorPage() {
 
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
-    editorState.updateLayer(id, { x: d.x, y: d.y });
+    // 履歴を先に保存（更新前の状態）
     editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
+    // その後でレイヤーを更新
+    editorState.updateLayer(id, { x: d.x, y: d.y });
   }, [editorState.updateLayer, editorState.addToHistory, editorState.layers, editorState.selectedLayerId]);
 
   const handleLayerResize = React.useCallback((id: string, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
+    // 履歴を先に保存（更新前の状態）
+    editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
+    // その後でレイヤーを更新
     editorState.updateLayer(id, {
       width: ref.offsetWidth,
       height: ref.offsetHeight,
       x: position.x,
       y: position.y,
     });
+  }, [editorState.updateLayer, editorState.addToHistory, editorState.layers, editorState.selectedLayerId]);
+
+  const handleLayerResizeStop = React.useCallback((id: string, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
+    // リサイズ完了時に履歴を保存
     editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
+    editorState.updateLayer(id, {
+      width: ref.offsetWidth,
+      height: ref.offsetHeight,
+      x: position.x,
+      y: position.y,
+    });
   }, [editorState.updateLayer, editorState.addToHistory, editorState.layers, editorState.selectedLayerId]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,6 +222,8 @@ export default function ThumbnailGeneratorPage() {
         height: isDesktop ? 300 : 150,
         src,
       } as any);
+      // レイヤー追加後に履歴を保存
+      editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
     }
     e.target.value = '';
   };
@@ -244,6 +261,8 @@ export default function ThumbnailGeneratorPage() {
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
     } as any);
+    // レイヤー追加後に履歴を保存
+    editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
   };
 
   const handleAddText = () => {
@@ -261,6 +280,8 @@ export default function ThumbnailGeneratorPage() {
       fontSize: isDesktop ? '2rem' : '1rem',
       // フォント設定はeditorState.addLayer関数内でcurrentFontSettingsから自動適用される
     } as any);
+    // レイヤー追加後に履歴を保存
+    editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
   };
 
   if (!editorState.selectedTemplate) {

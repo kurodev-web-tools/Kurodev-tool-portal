@@ -34,6 +34,7 @@ interface TemplateContextType {
   setAspectRatio: (ratio: string) => void;
   customAspectRatio: { width: number; height: number };
   setCustomAspectRatio: (aspect: { width: number; height: number }) => void;
+  restoreState: (layers: Layer[], selectedLayerId: string | null) => void;
 }
 
 const TemplateContext = createContext<TemplateContextType | null>(null);
@@ -55,6 +56,12 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [currentText, setCurrentText] = useState<string>(DEFAULT_TEMPLATE.initialText);
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [customAspectRatio, setCustomAspectRatio] = useState({ width: 16, height: 9 });
+
+  // 履歴復元機能
+  const restoreState = useCallback((restoreLayers: Layer[], restoreSelectedLayerId: string | null) => {
+    setLayers([...restoreLayers]);
+    setSelectedLayerId(restoreSelectedLayerId);
+  }, []);
 
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -224,6 +231,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     setAspectRatio,
     customAspectRatio,
     setCustomAspectRatio,
+    restoreState,
   }), [
     selectedTemplate,
     currentText,
@@ -238,6 +246,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
     moveLayerDown,
     aspectRatio,
     customAspectRatio,
+    restoreState,
   ]);
 
   return (

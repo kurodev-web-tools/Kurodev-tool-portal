@@ -48,6 +48,7 @@ interface TemplateContextType {
   setAspectRatio: (ratio: string) => void;
   customAspectRatio: { width: number; height: number };
   setCustomAspectRatio: (aspect: { width: number; height: number }) => void;
+  restoreState: (layers: Layer[], selectedLayerId: string | null) => void;
   // 新しいテンプレート機能
   currentColorPalette: ColorPalette;
   setCurrentColorPalette: (palette: ColorPalette) => void;
@@ -90,6 +91,7 @@ const TemplateContext = createContext<TemplateContextType>({
   setAspectRatio: () => {},
   customAspectRatio: { width: 16, height: 9 },
   setCustomAspectRatio: () => {},
+  restoreState: () => {},
   // 新しいテンプレート機能
   currentColorPalette: templates[0].colorPalette,
   setCurrentColorPalette: () => {},
@@ -117,6 +119,12 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [customAspectRatio, setCustomAspectRatio] = useState({ width: 16, height: 9 });
+  
+  // 履歴復元機能
+  const restoreState = (restoreLayers: Layer[], restoreSelectedLayerId: string | null) => {
+    setLayers([...restoreLayers]);
+    setSelectedLayerId(restoreSelectedLayerId);
+  };
   
   // 新しいテンプレート機能の状態
   const [currentColorPalette, setCurrentColorPalette] = useState<ColorPalette>(templates[0].colorPalette);
@@ -534,6 +542,7 @@ export const TemplateProvider: React.FC<{ children: ReactNode }> = ({ children }
         setAspectRatio,
         customAspectRatio,
         setCustomAspectRatio,
+        restoreState,
         // 新しいテンプレート機能
         currentColorPalette,
         setCurrentColorPalette,

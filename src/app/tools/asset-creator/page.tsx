@@ -84,6 +84,7 @@ function AssetCreatorPage() {
     moveLayerDown,
     aspectRatio,
     customAspectRatio,
+    restoreState,
   } = useTemplate();
 
   const selectedLayer = layers.find(layer => layer.id === selectedLayerId);
@@ -138,7 +139,7 @@ function AssetCreatorPage() {
     resetHistoryFlag,
     saveToLocalStorage,
     loadFromLocalStorage,
-  } = useCanvasOperations(layers, selectedLayerId);
+  } = useCanvasOperations(layers, selectedLayerId, restoreState);
 
   // キー入力のイベントハンドラー
   React.useEffect(() => {

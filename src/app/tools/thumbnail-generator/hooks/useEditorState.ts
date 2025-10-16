@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useTemplate, ShapeType } from '../contexts/TemplateContext';
 import { Layer } from '@/types/layers';
-import { useCanvasOperations } from '../../asset-creator/hooks/useCanvasOperations';
+
+interface HistoryState {
+  layers: Layer[];
+  selectedLayerId: string | null;
+}
 
 export interface EditorState {
   // テンプレート関連
@@ -52,16 +56,83 @@ export const useEditorState = (): EditorState => {
   // テンプレートコンテキストから状態を取得
   const templateContext = useTemplate();
   
-  // キャンバス操作フックから状態を取得
-  const {
-    zoom,
-    setZoom,
-    addToHistory,
-    canUndo,
-    canRedo,
-    undo,
-    redo,
-  } = useCanvasOperations(templateContext.layers, templateContext.selectedLayerId);
+  // ズーム機能
+  const [zoom, setZoom] = useState(1);
+  
+  // 履歴管理
+  const [history, setHistory] = useState<HistoryState[]>([{
+    layers: templateContext.layers,
+    selectedLayerId: templateContext.selectedLayerId
+  }]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const isUpdatingFromHistory = useRef(false);
+  const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 履歴に状態を追加（即座に保存）
+  const addToHistory = useCallback((layers: Layer[], selectedLayerId: string | null) => {
+    if (isUpdatingFromHistory.current) return;
+    
+    // 既存のタイムアウトをクリア
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+    
+    // 即座に履歴を保存
+    const newState: HistoryState = { layers: [...layers], selectedLayerId };
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    
+    // 履歴の最大数を制限（50個まで）
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    } else {
+      setHistoryIndex(historyIndex + 1);
+    }
+    
+    setHistory(newHistory);
+  }, [history, historyIndex]);
+
+  // アンドゥ
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const historyState = history[newIndex];
+      
+      setHistoryIndex(newIndex);
+      isUpdatingFromHistory.current = true;
+      
+      // テンプレートコンテキストの状態を復元
+      templateContext.restoreState(historyState.layers, historyState.selectedLayerId);
+      
+      setTimeout(() => {
+        isUpdatingFromHistory.current = false;
+      }, 100);
+      
+      return historyState;
+    }
+    return null;
+  }, [history, historyIndex, templateContext]);
+
+  // リドゥ
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      const historyState = history[newIndex];
+      
+      setHistoryIndex(newIndex);
+      isUpdatingFromHistory.current = true;
+      
+      // テンプレートコンテキストの状態を復元
+      templateContext.restoreState(historyState.layers, historyState.selectedLayerId);
+      
+      setTimeout(() => {
+        isUpdatingFromHistory.current = false;
+      }, 100);
+      
+      return historyState;
+    }
+    return null;
+  }, [history, historyIndex, templateContext]);
 
   return {
     // テンプレート関連
@@ -96,9 +167,9 @@ export const useEditorState = (): EditorState => {
     
     // 履歴管理
     addToHistory,
-    canUndo,
-    canRedo,
-    handleUndo: undo,
-    handleRedo: redo,
+    canUndo: historyIndex > 0,
+    canRedo: historyIndex < history.length - 1,
+    handleUndo,
+    handleRedo,
   };
 };

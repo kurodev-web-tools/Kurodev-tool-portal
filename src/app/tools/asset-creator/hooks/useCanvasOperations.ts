@@ -8,9 +8,13 @@ interface CanvasState {
   selectedLayerId: string | null;
 }
 
-export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId: string | null) => {
+export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId: string | null, restoreState?: (layers: any[], selectedLayerId: string | null) => void) => {
   // ズーム機能
   const [zoom, setZoom] = useState(1);
+
+  // 現在のレイヤー状態（履歴から復元される）
+  const [currentLayers, setCurrentLayers] = useState(initialLayers);
+  const [currentSelectedLayerId, setCurrentSelectedLayerId] = useState(initialSelectedLayerId);
 
   // アンドゥ・リドゥ機能
   const [history, setHistory] = useState<CanvasState[]>([{
@@ -42,23 +46,47 @@ export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId
   const undo = useCallback(() => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
+      const historyState = history[newIndex];
+      
       setHistoryIndex(newIndex);
       isUpdatingFromHistory.current = true;
-      return history[newIndex];
+      
+      // レイヤー状態を実際に更新
+      setCurrentLayers([...historyState.layers]);
+      setCurrentSelectedLayerId(historyState.selectedLayerId);
+      
+      // restoreStateが提供されている場合はそれも使用
+      if (restoreState) {
+        restoreState(historyState.layers, historyState.selectedLayerId);
+      }
+      
+      return historyState;
     }
     return null;
-  }, [history, historyIndex]);
+  }, [history, historyIndex, restoreState]);
 
   // リドゥ
   const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
+      const historyState = history[newIndex];
+      
       setHistoryIndex(newIndex);
       isUpdatingFromHistory.current = true;
-      return history[newIndex];
+      
+      // レイヤー状態を実際に更新
+      setCurrentLayers([...historyState.layers]);
+      setCurrentSelectedLayerId(historyState.selectedLayerId);
+      
+      // restoreStateが提供されている場合はそれも使用
+      if (restoreState) {
+        restoreState(historyState.layers, historyState.selectedLayerId);
+      }
+      
+      return historyState;
     }
     return null;
-  }, [history, historyIndex]);
+  }, [history, historyIndex, restoreState]);
 
   // 履歴更新フラグをリセット
   const resetHistoryFlag = useCallback(() => {
@@ -98,6 +126,10 @@ export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId
     // ズーム
     zoom,
     setZoom,
+    
+    // 現在のレイヤー状態
+    currentLayers,
+    currentSelectedLayerId,
     
     // アンドゥ・リドゥ
     undo,
