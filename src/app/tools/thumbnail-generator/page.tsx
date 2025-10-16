@@ -41,6 +41,7 @@ import { logger } from '@/lib/logger';
 import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 import { useUIState } from './hooks/useUIState';
 import { useExportHandlers } from './hooks/useExportHandlers';
+import { useEditorState } from './hooks/useEditorState';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -52,6 +53,9 @@ export default function ThumbnailGeneratorPage() {
   // エクスポート機能管理
   const exportHandlers = useExportHandlers();
   
+  // エディター状態管理
+  const editorState = useEditorState();
+  
   // サイドバー状態管理（既存のまま）
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -60,27 +64,7 @@ export default function ThumbnailGeneratorPage() {
 
   const { handleAsyncError } = useErrorHandler();
 
-  // テンプレートと要素の状態をコンテキストから取得
-  const {
-    selectedTemplate,
-    setSelectedTemplate,
-    currentText,
-    setCurrentText,
-    layers,
-    addLayer,
-    removeLayer,
-    updateLayer,
-    selectedLayerId,
-    setSelectedLayerId,
-    reorderLayers,
-    duplicateLayer,
-    moveLayerUp,
-    moveLayerDown,
-    aspectRatio,
-    customAspectRatio,
-  } = useTemplate();
-
-  const selectedLayer = layers.find(layer => layer.id === selectedLayerId);
+  const selectedLayer = editorState.layers.find(layer => layer.id === editorState.selectedLayerId);
 
   // シャドウの有効/無効状態を同期
   React.useEffect(() => {
@@ -120,19 +104,6 @@ export default function ThumbnailGeneratorPage() {
     }
   }, [isDesktop, uiState.isPreviewDedicatedMode, isSidebarOpen]);
 
-  // キャンバス操作機能
-  const {
-    zoom,
-    setZoom,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    addToHistory,
-    resetHistoryFlag,
-    saveToLocalStorage,
-    loadFromLocalStorage,
-  } = useCanvasOperations(layers, selectedLayerId);
 
   // キー入力のイベントハンドラー
   React.useEffect(() => {
@@ -193,19 +164,19 @@ export default function ThumbnailGeneratorPage() {
 
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
-    updateLayer(id, { x: d.x, y: d.y });
-    addToHistory(layers, selectedLayerId);
-  }, [updateLayer, addToHistory, layers, selectedLayerId]);
+    editorState.updateLayer(id, { x: d.x, y: d.y });
+    editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
+  }, [editorState.updateLayer, editorState.addToHistory, editorState.layers, editorState.selectedLayerId]);
 
   const handleLayerResize = React.useCallback((id: string, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
-    updateLayer(id, {
+    editorState.updateLayer(id, {
       width: ref.offsetWidth,
       height: ref.offsetHeight,
       x: position.x,
       y: position.y,
     });
-    addToHistory(layers, selectedLayerId);
-  }, [updateLayer, addToHistory, layers, selectedLayerId]);
+    editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
+  }, [editorState.updateLayer, editorState.addToHistory, editorState.layers, editorState.selectedLayerId]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -225,7 +196,7 @@ export default function ThumbnailGeneratorPage() {
         continue;
       }
       const src = URL.createObjectURL(file);
-      addLayer({
+      editorState.addLayer({
         type: 'image',
         name: file.name,
         visible: true,
@@ -241,8 +212,8 @@ export default function ThumbnailGeneratorPage() {
   };
 
   const handleAddShape = (shapeType: ShapeType) => {
-    const offset = layers.filter(l => l.type === 'shape').length * (isDesktop ? 20 : 5);
-    const shapeCount = layers.filter(l => l.type === 'shape' && 'shapeType' in l && l.shapeType === shapeType).length + 1;
+    const offset = editorState.layers.filter(l => l.type === 'shape').length * (isDesktop ? 20 : 5);
+    const shapeCount = editorState.layers.filter(l => l.type === 'shape' && 'shapeType' in l && l.shapeType === shapeType).length + 1;
     let name = '';
     const initialX = isDesktop ? 550 : 10;
     const initialY = isDesktop ? 250 : 10;
@@ -259,7 +230,7 @@ export default function ThumbnailGeneratorPage() {
       case 'arrow': name = `矢印 ${shapeCount}`; break;
     }
 
-    addLayer({
+    editorState.addLayer({
       type: 'shape',
       shapeType,
       name,
@@ -276,23 +247,23 @@ export default function ThumbnailGeneratorPage() {
   };
 
   const handleAddText = () => {
-    addLayer({
+    editorState.addLayer({
       type: 'text',
-      name: `テキスト ${layers.filter(l => l.type === 'text').length + 1}`,
+      name: `テキスト ${editorState.layers.filter(l => l.type === 'text').length + 1}`,
       visible: true,
       locked: false,
       x: isDesktop ? 550 : 50,
       y: isDesktop ? 250 : 50,
       width: isDesktop ? 300 : 150,
       height: isDesktop ? 100 : 50,
-      text: currentText,
+      text: editorState.currentText,
       color: '#000000',
       fontSize: isDesktop ? '2rem' : '1rem',
-      // フォント設定はaddLayer関数内でcurrentFontSettingsから自動適用される
+      // フォント設定はeditorState.addLayer関数内でcurrentFontSettingsから自動適用される
     } as any);
   };
 
-  if (!selectedTemplate) {
+  if (!editorState.selectedTemplate) {
     return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
   }
 
@@ -306,7 +277,7 @@ export default function ThumbnailGeneratorPage() {
             <Label className="text-sm font-medium">レイヤー名</Label>
             <Input
               value={selectedLayer?.name || ''}
-              onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { name: e.target.value })}
+              onChange={(e) => selectedLayer && editorState.updateLayer(selectedLayer.id, { name: e.target.value })}
               className="mt-1"
               placeholder="レイヤー名を入力"
               disabled={!selectedLayer}
@@ -318,7 +289,7 @@ export default function ThumbnailGeneratorPage() {
               <Input
                 type="number"
                 value={selectedLayer?.x || 0}
-                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { x: Number(e.target.value) })}
+                onChange={(e) => selectedLayer && editorState.updateLayer(selectedLayer.id, { x: Number(e.target.value) })}
                 className="mt-1"
                 disabled={!selectedLayer}
               />
@@ -328,7 +299,7 @@ export default function ThumbnailGeneratorPage() {
               <Input
                 type="number"
                 value={selectedLayer?.y || 0}
-                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { y: Number(e.target.value) })}
+                onChange={(e) => selectedLayer && editorState.updateLayer(selectedLayer.id, { y: Number(e.target.value) })}
                 className="mt-1"
                 disabled={!selectedLayer}
               />
@@ -340,7 +311,7 @@ export default function ThumbnailGeneratorPage() {
               <Input
                 type="number"
                 value={selectedLayer?.width || 0}
-                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { width: Number(e.target.value) })}
+                onChange={(e) => selectedLayer && editorState.updateLayer(selectedLayer.id, { width: Number(e.target.value) })}
                 className="mt-1"
                 disabled={!selectedLayer}
               />
@@ -350,7 +321,7 @@ export default function ThumbnailGeneratorPage() {
               <Input
                 type="number"
                 value={selectedLayer?.height || 0}
-                onChange={(e) => selectedLayer && updateLayer(selectedLayer.id, { height: Number(e.target.value) })}
+                onChange={(e) => selectedLayer && editorState.updateLayer(selectedLayer.id, { height: Number(e.target.value) })}
                 className="mt-1"
                 disabled={!selectedLayer}
               />
@@ -368,7 +339,7 @@ export default function ThumbnailGeneratorPage() {
               <Label className="text-sm font-medium">テキスト</Label>
               <Textarea
                 value={selectedLayer.text || ''}
-                onChange={(e) => updateLayer(selectedLayer.id, { text: e.target.value })}
+                onChange={(e) => editorState.updateLayer(selectedLayer.id, { text: e.target.value })}
                 className="mt-1 min-h-[80px] resize-none"
                 placeholder="テキストを入力してください"
               />
@@ -378,7 +349,7 @@ export default function ThumbnailGeneratorPage() {
                 <Label className="text-sm font-medium">フォントサイズ</Label>
                 <Slider
                   value={[parseFloat(selectedLayer.fontSize?.replace('rem', '') || '2')]}
-                  onValueChange={([value]) => updateLayer(selectedLayer.id, { fontSize: `${value}rem` })}
+                  onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { fontSize: `${value}rem` })}
                   min={0.5}
                   max={8}
                   step={0.1}
@@ -394,12 +365,12 @@ export default function ThumbnailGeneratorPage() {
                   <input
                     type="color"
                     value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
                     className="w-8 h-8 rounded border border-gray-300"
                   />
                   <Input
                     value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
                     className="flex-1"
                   />
                 </div>
@@ -414,14 +385,14 @@ export default function ThumbnailGeneratorPage() {
                   <Label className="text-xs text-gray-400">フォントファミリー</Label>
                   <FontSelector
                     value={selectedLayer.fontFamily || 'Arial, sans-serif'}
-                    onValueChange={(value) => updateLayer(selectedLayer.id, { fontFamily: value })}
+                    onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { fontFamily: value })}
                   />
                 </div>
                 <div>
                   <Label className="text-xs text-gray-400">フォントウェイト</Label>
                   <Select
                     value={selectedLayer.fontWeight || 'normal'}
-                    onValueChange={(value) => updateLayer(selectedLayer.id, { fontWeight: value })}
+                    onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { fontWeight: value })}
                   >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
@@ -447,7 +418,7 @@ export default function ThumbnailGeneratorPage() {
                   <Label className="text-xs text-gray-400">フォントスタイル</Label>
                   <Select
                     value={selectedLayer.fontStyle || 'normal'}
-                    onValueChange={(value) => updateLayer(selectedLayer.id, { fontStyle: value })}
+                    onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { fontStyle: value })}
                   >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
@@ -463,7 +434,7 @@ export default function ThumbnailGeneratorPage() {
                   <Label className="text-xs text-gray-400">文字装飾</Label>
                   <Select
                     value={selectedLayer.textDecoration || 'none'}
-                    onValueChange={(value) => updateLayer(selectedLayer.id, { textDecoration: value })}
+                    onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { textDecoration: value })}
                   >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
@@ -488,9 +459,9 @@ export default function ThumbnailGeneratorPage() {
                       const newEnabled = !uiState.shadowEnabled;
                       uiState.setShadowEnabled(newEnabled);
                       if (!newEnabled) {
-                        updateLayer(selectedLayer.id, { textShadow: 'none' });
+                        editorState.updateLayer(selectedLayer.id, { textShadow: 'none' });
                       } else {
-                        updateLayer(selectedLayer.id, { textShadow: '2px 2px 4px rgba(0,0,0,0.5)' });
+                        editorState.updateLayer(selectedLayer.id, { textShadow: '2px 2px 4px rgba(0,0,0,0.5)' });
                       }
                     }}
                     className="h-6 px-3 text-xs"
@@ -505,7 +476,7 @@ export default function ThumbnailGeneratorPage() {
                     const current = parseTextShadow(selectedLayer.textShadow);
                     const updated = { ...current, [param]: value };
                     const newShadow = buildTextShadow(updated.x, updated.y, updated.blur, updated.color, updated.opacity);
-                    updateLayer(selectedLayer.id, { textShadow: newShadow });
+                    editorState.updateLayer(selectedLayer.id, { textShadow: newShadow });
                   };
                   
                   return (
@@ -614,7 +585,7 @@ export default function ThumbnailGeneratorPage() {
                   const file = e.target.files?.[0];
                   if (file) {
                     const src = URL.createObjectURL(file);
-                    updateLayer(selectedLayer.id, { src });
+                    editorState.updateLayer(selectedLayer.id, { src });
                   }
                 }}
                 className="mt-1"
@@ -624,7 +595,7 @@ export default function ThumbnailGeneratorPage() {
               <Label className="text-sm font-medium">不透明度</Label>
               <Slider
                 value={[selectedLayer.opacity || 100]}
-                onValueChange={([value]) => updateLayer(selectedLayer.id, { opacity: value })}
+                onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { opacity: value })}
                 min={0}
                 max={100}
                 step={1}
@@ -638,7 +609,7 @@ export default function ThumbnailGeneratorPage() {
               <Label className="text-sm font-medium">回転角度</Label>
               <Slider
                 value={[selectedLayer.rotation || 0]}
-                onValueChange={([value]) => updateLayer(selectedLayer.id, { rotation: value })}
+                onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { rotation: value })}
                 min={-180}
                 max={180}
                 step={1}
@@ -662,7 +633,7 @@ export default function ThumbnailGeneratorPage() {
               <div className="mt-2">
                 <ShapeTypeSelector
                   value={selectedLayer.shapeType || 'rectangle'}
-                  onChange={(shape) => updateLayer(selectedLayer.id, { shapeType: shape })}
+                  onChange={(shape) => editorState.updateLayer(selectedLayer.id, { shapeType: shape })}
                 />
               </div>
             </div>
@@ -673,12 +644,12 @@ export default function ThumbnailGeneratorPage() {
                   <input
                     type="color"
                     value={selectedLayer.backgroundColor || '#000000'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { backgroundColor: e.target.value })}
+                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { backgroundColor: e.target.value })}
                     className="w-8 h-8 rounded border border-gray-300"
                   />
                   <Input
                     value={selectedLayer.backgroundColor || '#000000'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { backgroundColor: e.target.value })}
+                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { backgroundColor: e.target.value })}
                     className="flex-1"
                   />
                 </div>
@@ -689,12 +660,12 @@ export default function ThumbnailGeneratorPage() {
                   <input
                     type="color"
                     value={selectedLayer.borderColor || '#000000'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { borderColor: e.target.value })}
+                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { borderColor: e.target.value })}
                     className="w-8 h-8 rounded border border-gray-300"
                   />
                   <Input
                     value={selectedLayer.borderColor || '#000000'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { borderColor: e.target.value })}
+                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { borderColor: e.target.value })}
                     className="flex-1"
                   />
                 </div>
@@ -704,7 +675,7 @@ export default function ThumbnailGeneratorPage() {
               <Label className="text-sm font-medium">境界線の太さ</Label>
               <Slider
                 value={[selectedLayer.borderWidth || 0]}
-                onValueChange={([value]) => updateLayer(selectedLayer.id, { borderWidth: value })}
+                onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { borderWidth: value })}
                 min={0}
                 max={20}
                 step={1}
@@ -738,7 +709,7 @@ export default function ThumbnailGeneratorPage() {
         <TabsTrigger value="export">エクスポート</TabsTrigger>
       </TabsList>
       <TabsContent value="settings" className="mt-4">
-        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+        <TemplateSelector onSelectTemplate={editorState.setSelectedTemplate} selectedTemplateId={editorState.selectedTemplate?.id || null} />
       </TabsContent>
       <TabsContent value="tools" className="mt-4">
         {renderToolsPanel()}
@@ -746,16 +717,16 @@ export default function ThumbnailGeneratorPage() {
       <TabsContent value="layers" className="mt-4">
         <UnifiedLayerPanel 
           context={{
-            layers: layers as any[],
-            updateLayer: updateLayer as any,
-            removeLayer,
-            selectedLayerId,
-            setSelectedLayerId,
-            reorderLayers,
-            duplicateLayer,
-            addLayer: addLayer as any,
-            moveLayerUp,
-            moveLayerDown,
+            layers: editorState.layers as any[],
+            updateLayer: editorState.updateLayer as any,
+            removeLayer: editorState.removeLayer,
+            selectedLayerId: editorState.selectedLayerId,
+            setSelectedLayerId: editorState.setSelectedLayerId,
+            reorderLayers: editorState.reorderLayers,
+            duplicateLayer: editorState.duplicateLayer,
+            addLayer: editorState.addLayer as any,
+            moveLayerUp: editorState.moveLayerUp,
+            moveLayerDown: editorState.moveLayerDown,
           }}
           onShapeSelect={(shapeType) => handleAddShape(shapeType as ShapeType)}
           showShapeSelector={true}
@@ -785,7 +756,7 @@ export default function ThumbnailGeneratorPage() {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="settings" className="mt-4">
-        <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
+        <TemplateSelector onSelectTemplate={editorState.setSelectedTemplate} selectedTemplateId={editorState.selectedTemplate?.id || null} />
       </TabsContent>
       <TabsContent value="export" className="mt-4">
         <ExportSettingsPanel onExport={exportHandlers.handleAdvancedExport} isExporting={exportHandlers.isExporting} />
@@ -795,43 +766,40 @@ export default function ThumbnailGeneratorPage() {
 
   // ハンドラー関数を追加
   const handleSave = React.useCallback(() => {
-    const success = saveToLocalStorage(layers, selectedLayerId);
-    if (success) {
+    // ローカルストレージに保存（簡易版）
+    try {
+      localStorage.setItem('thumbnail-project', JSON.stringify({
+        layers: editorState.layers,
+        selectedLayerId: editorState.selectedLayerId,
+        timestamp: Date.now()
+      }));
       toast.success('プロジェクトを保存しました');
-    } else {
+    } catch (error) {
       toast.error('保存に失敗しました');
     }
-  }, [saveToLocalStorage, layers, selectedLayerId]);
+  }, [editorState.layers, editorState.selectedLayerId]);
 
   const handleUndo = React.useCallback(() => {
-    const historyState = undo();
-    if (historyState) {
-      // ここでレイヤー状態を復元する処理が必要
-      resetHistoryFlag();
-    }
-  }, [undo, resetHistoryFlag]);
+    editorState.handleUndo();
+  }, [editorState.handleUndo]);
 
   const handleRedo = React.useCallback(() => {
-    const historyState = redo();
-    if (historyState) {
-      // ここでレイヤー状態を復元する処理が必要
-      resetHistoryFlag();
-    }
-  }, [redo, resetHistoryFlag]);
+    editorState.handleRedo();
+  }, [editorState.handleRedo]);
 
   const renderPreview = () => (
     <>
       {/* ツールバー - デスクトップのみ表示 */}
       {isDesktop && (
         <Toolbar
-          zoom={zoom}
-          setZoom={setZoom}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
+          zoom={editorState.zoom}
+          setZoom={editorState.setZoom}
+          onUndo={editorState.handleUndo}
+          onRedo={editorState.handleRedo}
           onSave={handleSave}
           onDownload={exportHandlers.handleDownloadThumbnail}
-          canUndo={canUndo}
-          canRedo={canRedo}
+          canUndo={editorState.canUndo}
+          canRedo={editorState.canRedo}
           isPreviewDedicatedMode={uiState.isPreviewDedicatedMode}
           onTogglePreviewMode={() => uiState.setIsPreviewDedicatedMode(!uiState.isPreviewDedicatedMode)}
           showGrid={uiState.showGrid}
@@ -868,19 +836,19 @@ export default function ThumbnailGeneratorPage() {
             <div
               id="thumbnail-preview"
               style={{ 
-                aspectRatio: aspectRatio === 'custom' 
-                  ? `${customAspectRatio.width}/${customAspectRatio.height}` 
-                  : (aspectRatio || '16:9').replace(':', '/'),
+                aspectRatio: editorState.aspectRatio === 'custom' 
+                  ? `${editorState.customAspectRatio.width}/${editorState.customAspectRatio.height}` 
+                  : (editorState.aspectRatio || '16:9').replace(':', '/'),
                 maxWidth: '100%',
-                transform: `scale(${zoom})`,
+                transform: `scale(${editorState.zoom})`,
                 transformOrigin: 'center center',
                 transition: 'transform 0.2s ease-in-out'
               }}
               className="bg-card relative border rounded-md shadow-lg w-full"
             >
               <div id="download-target" className="w-full h-full relative overflow-hidden">
-                {layers.map((layer) => {
-                  const isSelected = layer.id === selectedLayerId;
+                {editorState.layers.map((layer) => {
+                  const isSelected = layer.id === editorState.selectedLayerId;
                   const isDraggable = isSelected && !layer.locked;
                   const isResizable = isSelected && !layer.locked;
 
@@ -896,13 +864,13 @@ export default function ThumbnailGeneratorPage() {
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         lockAspectRatio={uiState.isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                        onSelect={() => setSelectedLayerId(layer.id)}
+                        onSelect={() => editorState.setSelectedLayerId(layer.id)}
                         isDraggable={isDraggable}
                         isLocked={layer.locked}
                         onRotateStart={() => {}}
                         onRotate={() => {}}
                         onRotateStop={() => {}}
-                        updateLayer={updateLayer}
+                        updateLayer={editorState.updateLayer}
                       />
                     );
                   } else if (layer.type === 'text') {
@@ -916,7 +884,7 @@ export default function ThumbnailGeneratorPage() {
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         enableResizing={isResizable} disableDragging={!isDraggable}
-                        updateLayer={updateLayer}
+                        updateLayer={editorState.updateLayer}
                       />
                     );
                   } else if (layer.type === 'shape') {
@@ -930,7 +898,7 @@ export default function ThumbnailGeneratorPage() {
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         lockAspectRatio={uiState.isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                        updateLayer={updateLayer}
+                        updateLayer={editorState.updateLayer}
                       />
                     );
                   }
@@ -962,9 +930,9 @@ export default function ThumbnailGeneratorPage() {
                   style={{
                     width: '90%',
                     height: '90%',
-                    aspectRatio: aspectRatio === 'custom' 
-                      ? `${customAspectRatio.width}/${customAspectRatio.height}`
-                      : (aspectRatio || '16:9'),
+                    aspectRatio: editorState.aspectRatio === 'custom' 
+                      ? `${editorState.customAspectRatio.width}/${editorState.customAspectRatio.height}`
+                      : (editorState.aspectRatio || '16:9'),
                   }}
                   aria-hidden="true"
                 />
@@ -1030,7 +998,7 @@ export default function ThumbnailGeneratorPage() {
               ツール設定
             </TabsTrigger>
             <TabsTrigger 
-              value="layers"
+              value="editorState.layers"
               className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               レイヤー管理
@@ -1059,21 +1027,21 @@ export default function ThumbnailGeneratorPage() {
         </div>
       )}
       
-      {uiState.selectedTab === "layers" && (
+      {uiState.selectedTab === "editorState.layers" && (
         <div className="space-y-3 border-t pt-3">
           <h4 className="text-sm font-medium">レイヤー管理</h4>
           <UnifiedLayerPanel 
             context={{
-              layers: layers as any[],
-              updateLayer: updateLayer as any,
-              removeLayer,
-              selectedLayerId,
-              setSelectedLayerId,
-              reorderLayers,
-              duplicateLayer,
-              addLayer: addLayer as any,
-              moveLayerUp,
-              moveLayerDown,
+              layers: editorState.layers as any[],
+              updateLayer: editorState.updateLayer as any,
+              removeLayer: editorState.removeLayer,
+              selectedLayerId: editorState.selectedLayerId,
+              setSelectedLayerId: editorState.setSelectedLayerId,
+              reorderLayers: editorState.reorderLayers,
+              duplicateLayer: editorState.duplicateLayer,
+              addLayer: editorState.addLayer as any,
+              moveLayerUp: editorState.moveLayerUp,
+              moveLayerDown: editorState.moveLayerDown,
             }}
             onShapeSelect={(shapeType) => handleAddShape(shapeType as ShapeType)}
             showShapeSelector={true}
@@ -1103,7 +1071,7 @@ export default function ThumbnailGeneratorPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { x: selectedLayer.x - 10 })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { x: selectedLayer.x - 10 })}
                       className="h-7 w-7 p-0"
                     >
                       ←
@@ -1114,14 +1082,14 @@ export default function ThumbnailGeneratorPage() {
                         type="number"
                         inputMode="numeric"
                         value={Math.round(selectedLayer.x)}
-                        onChange={(e) => updateLayer(selectedLayer.id, { x: Number(e.target.value) })}
+                        onChange={(e) => editorState.updateLayer(selectedLayer.id, { x: Number(e.target.value) })}
                         className="h-7 text-xs"
                       />
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { x: selectedLayer.x + 10 })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { x: selectedLayer.x + 10 })}
                       className="h-7 w-7 p-0"
                     >
                       →
@@ -1133,7 +1101,7 @@ export default function ThumbnailGeneratorPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { y: selectedLayer.y - 10 })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { y: selectedLayer.y - 10 })}
                       className="h-7 w-7 p-0"
                     >
                       ↑
@@ -1144,14 +1112,14 @@ export default function ThumbnailGeneratorPage() {
                         type="number"
                         inputMode="numeric"
                         value={Math.round(selectedLayer.y)}
-                        onChange={(e) => updateLayer(selectedLayer.id, { y: Number(e.target.value) })}
+                        onChange={(e) => editorState.updateLayer(selectedLayer.id, { y: Number(e.target.value) })}
                         className="h-7 text-xs"
                       />
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { y: selectedLayer.y + 10 })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { y: selectedLayer.y + 10 })}
                       className="h-7 w-7 p-0"
                     >
                       ↓
@@ -1169,7 +1137,7 @@ export default function ThumbnailGeneratorPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { width: Math.max(10, selectedLayer.width - 20) })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { width: Math.max(10, selectedLayer.width - 20) })}
                       className="h-7 w-7 p-0"
                     >
                       −
@@ -1180,14 +1148,14 @@ export default function ThumbnailGeneratorPage() {
                         type="number"
                         inputMode="numeric"
                         value={Math.round(selectedLayer.width)}
-                        onChange={(e) => updateLayer(selectedLayer.id, { width: Math.max(10, Number(e.target.value)) })}
+                        onChange={(e) => editorState.updateLayer(selectedLayer.id, { width: Math.max(10, Number(e.target.value)) })}
                         className="h-7 text-xs"
                       />
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { width: selectedLayer.width + 20 })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { width: selectedLayer.width + 20 })}
                       className="h-7 w-7 p-0"
                     >
                       +
@@ -1199,7 +1167,7 @@ export default function ThumbnailGeneratorPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { height: Math.max(10, selectedLayer.height - 20) })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { height: Math.max(10, selectedLayer.height - 20) })}
                       className="h-7 w-7 p-0"
                     >
                       −
@@ -1210,14 +1178,14 @@ export default function ThumbnailGeneratorPage() {
                         type="number"
                         inputMode="numeric"
                         value={Math.round(selectedLayer.height)}
-                        onChange={(e) => updateLayer(selectedLayer.id, { height: Math.max(10, Number(e.target.value)) })}
+                        onChange={(e) => editorState.updateLayer(selectedLayer.id, { height: Math.max(10, Number(e.target.value)) })}
                         className="h-7 text-xs"
                       />
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLayer(selectedLayer.id, { height: selectedLayer.height + 20 })}
+                      onClick={() => editorState.updateLayer(selectedLayer.id, { height: selectedLayer.height + 20 })}
                       className="h-7 w-7 p-0"
                     >
                       +
@@ -1233,7 +1201,7 @@ export default function ThumbnailGeneratorPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) - 15 })}
+                    onClick={() => editorState.updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) - 15 })}
                     className="h-7 w-7 p-0"
                     title="反時計回り 15°"
                   >
@@ -1242,7 +1210,7 @@ export default function ThumbnailGeneratorPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) - 5 })}
+                    onClick={() => editorState.updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) - 5 })}
                     className="h-7 w-7 p-0"
                     title="反時計回り 5°"
                   >
@@ -1253,7 +1221,7 @@ export default function ThumbnailGeneratorPage() {
                       type="number"
                       inputMode="numeric"
                       value={Math.round(selectedLayer.rotation || 0)}
-                      onChange={(e) => updateLayer(selectedLayer.id, { rotation: Number(e.target.value) })}
+                      onChange={(e) => editorState.updateLayer(selectedLayer.id, { rotation: Number(e.target.value) })}
                       className="h-7 text-xs text-center"
                       placeholder="角度"
                     />
@@ -1261,7 +1229,7 @@ export default function ThumbnailGeneratorPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) + 5 })}
+                    onClick={() => editorState.updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) + 5 })}
                     className="h-7 w-7 p-0"
                     title="時計回り 5°"
                   >
@@ -1270,7 +1238,7 @@ export default function ThumbnailGeneratorPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) + 15 })}
+                    onClick={() => editorState.updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation || 0) + 15 })}
                     className="h-7 w-7 p-0"
                     title="時計回り 15°"
                   >
@@ -1279,7 +1247,7 @@ export default function ThumbnailGeneratorPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => updateLayer(selectedLayer.id, { rotation: 0 })}
+                    onClick={() => editorState.updateLayer(selectedLayer.id, { rotation: 0 })}
                     className="h-7 px-2 text-xs"
                   >
                     0°
@@ -1294,7 +1262,7 @@ export default function ThumbnailGeneratorPage() {
                   <div className="space-y-2">
                     <Textarea
                       value={selectedLayer.text || ''}
-                      onChange={(e) => updateLayer(selectedLayer.id, { text: e.target.value })}
+                      onChange={(e) => editorState.updateLayer(selectedLayer.id, { text: e.target.value })}
                       className="text-xs min-h-[60px] resize-none"
                       placeholder="テキストを入力"
                     />
@@ -1305,12 +1273,12 @@ export default function ThumbnailGeneratorPage() {
                         <input
                           type="color"
                           value={selectedLayer.color || '#000000'}
-                          onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                          onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
                           className="w-8 h-7 rounded border"
                         />
                         <Input
                           value={selectedLayer.color || '#000000'}
-                          onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                          onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
                           className="h-7 text-xs flex-1"
                           placeholder="#000000"
                         />
@@ -1324,7 +1292,7 @@ export default function ThumbnailGeneratorPage() {
                           onClick={() => {
                             const currentSize = parseFloat(selectedLayer.fontSize || '1rem');
                             const newSize = Math.max(0.5, currentSize - 0.25);
-                            updateLayer(selectedLayer.id, { fontSize: `${newSize}rem` });
+                            editorState.updateLayer(selectedLayer.id, { fontSize: `${newSize}rem` });
                           }}
                           className="h-7 w-7 p-0"
                         >
@@ -1334,7 +1302,7 @@ export default function ThumbnailGeneratorPage() {
                           <Label className="text-xs text-muted-foreground">サイズ</Label>
                           <Input
                             value={selectedLayer.fontSize || '1rem'}
-                            onChange={(e) => updateLayer(selectedLayer.id, { fontSize: e.target.value })}
+                            onChange={(e) => editorState.updateLayer(selectedLayer.id, { fontSize: e.target.value })}
                             className="h-7 text-xs"
                             placeholder="1rem"
                           />
@@ -1345,7 +1313,7 @@ export default function ThumbnailGeneratorPage() {
                           onClick={() => {
                             const currentSize = parseFloat(selectedLayer.fontSize || '1rem');
                             const newSize = currentSize + 0.25;
-                            updateLayer(selectedLayer.id, { fontSize: `${newSize}rem` });
+                            editorState.updateLayer(selectedLayer.id, { fontSize: `${newSize}rem` });
                           }}
                           className="h-7 w-7 p-0"
                         >
@@ -1376,21 +1344,21 @@ export default function ThumbnailGeneratorPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setZoom(Math.max(0.25, zoom - 0.25))}
+                  onClick={() => editorState.setZoom(Math.max(0.25, editorState.zoom - 0.25))}
                   className="h-8 w-8 p-0"
-                  disabled={zoom <= 0.25}
+                  disabled={editorState.zoom <= 0.25}
                 >
                   −
                 </Button>
                 <div className="flex-1 text-center">
-                  <span className="text-xs text-muted-foreground">{Math.round(zoom * 100)}%</span>
+                  <span className="text-xs text-muted-foreground">{Math.round(editorState.zoom * 100)}%</span>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setZoom(Math.min(4, zoom + 0.25))}
+                  onClick={() => editorState.setZoom(Math.min(4, editorState.zoom + 0.25))}
                   className="h-8 w-8 p-0"
-                  disabled={zoom >= 4}
+                  disabled={editorState.zoom >= 4}
                 >
                   +
                 </Button>
@@ -1398,7 +1366,7 @@ export default function ThumbnailGeneratorPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setZoom(1)}
+                onClick={() => editorState.setZoom(1)}
                 className="w-full h-8"
               >
                 リセット (100%)
@@ -1412,14 +1380,14 @@ export default function ThumbnailGeneratorPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">アスペクト比:</span>
                   <span className="font-medium">
-                    {aspectRatio === 'custom' 
-                      ? `${customAspectRatio.width}:${customAspectRatio.height}` 
-                      : aspectRatio || '16:9'}
+                    {editorState.aspectRatio === 'custom' 
+                      ? `${editorState.customAspectRatio.width}:${editorState.customAspectRatio.height}` 
+                      : editorState.aspectRatio || '16:9'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">ズーム率:</span>
-                  <span className="font-medium">{Math.round(zoom * 100)}%</span>
+                  <span className="font-medium">{Math.round(editorState.zoom * 100)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">グリッド:</span>
@@ -1639,7 +1607,7 @@ export default function ThumbnailGeneratorPage() {
             tabs={[
               { id: "settings", label: "テンプレート", icon: <Settings className="h-4 w-4" /> },
               { id: "tools", label: "ツール", icon: <Construction className="h-4 w-4" /> },
-              { id: "layers", label: "レイヤー", icon: <Layers className="h-4 w-4" /> }
+              { id: "editorState.layers", label: "レイヤー", icon: <Layers className="h-4 w-4" /> }
             ]}
           onTabClick={(tabId) => {
             // タブの状態管理が必要な場合はここで実装
