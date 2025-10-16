@@ -39,24 +39,28 @@ import { FontSelector } from '@/components/shared/FontSelector';
 import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
 import { logger } from '@/lib/logger';
 import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
-import { useUIState } from './hooks/useUIState';
-import { useExportHandlers } from './hooks/useExportHandlers';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export default function ThumbnailGeneratorPage() {
-  // UI状態管理（最小限）
-  const uiState = useUIState();
-  
-  // エクスポート機能管理
-  const exportHandlers = useExportHandlers();
-  
-  // サイドバー状態管理（既存のまま）
+  // UI状態管理
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
     desktopDefaultOpen: true,
   });
+  const [selectedTab, setSelectedTab] = React.useState("settings");
+  const [isShiftKeyDown, setIsShiftKeyDown] = React.useState(false);
+  const [isPreviewDedicatedMode, setIsPreviewDedicatedMode] = React.useState(false);
+  
+  // プレビュー設定の状態
+  const [showGrid, setShowGrid] = React.useState(false);
+  const [showAspectGuide, setShowAspectGuide] = React.useState(true);
+  const [showSafeArea, setShowSafeArea] = React.useState(false);
+  const [gridSize, setGridSize] = React.useState(20);
+  
+  // シャドウエディタの状態
+  const [shadowEnabled, setShadowEnabled] = React.useState(false);
 
   const { handleAsyncError } = useErrorHandler();
 
@@ -86,20 +90,20 @@ export default function ThumbnailGeneratorPage() {
   React.useEffect(() => {
     if (selectedLayer && isTextLayer(selectedLayer)) {
       if (selectedLayer.textShadow && selectedLayer.textShadow !== 'none') {
-        uiState.setShadowEnabled(true);
+        setShadowEnabled(true);
       } else {
-        uiState.setShadowEnabled(false);
+        setShadowEnabled(false);
       }
     } else {
-      uiState.setShadowEnabled(false);
+      setShadowEnabled(false);
     }
-  }, [selectedLayer, uiState]);
+  }, [selectedLayer]);
 
   // プレビューエリアのサイズ計算
   const getPreviewSize = React.useCallback(() => {
     if (!isDesktop) {
       // モバイル表示：画面幅を最大限活用
-      if (uiState.isPreviewDedicatedMode) {
+      if (isPreviewDedicatedMode) {
         // フルスクリーン表示時は画面幅の95%を使用
         return { width: '95vw', maxWidth: 'none' };
       }
@@ -108,7 +112,7 @@ export default function ThumbnailGeneratorPage() {
     }
 
     // プレビュー専用モード
-    if (uiState.isPreviewDedicatedMode) {
+    if (isPreviewDedicatedMode) {
       return { width: 'min(2000px, 95vw)', maxWidth: 'none' };
     }
 
@@ -118,7 +122,7 @@ export default function ThumbnailGeneratorPage() {
     } else {
       return { width: 'min(1800px, 90vw)', maxWidth: 'none' };
     }
-  }, [isDesktop, uiState.isPreviewDedicatedMode, isSidebarOpen]);
+  }, [isDesktop, isPreviewDedicatedMode, isSidebarOpen]);
 
   // キャンバス操作機能
   const {
@@ -137,10 +141,10 @@ export default function ThumbnailGeneratorPage() {
   // キー入力のイベントハンドラー
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') uiState.setIsShiftKeyDown(true);
+      if (e.key === 'Shift') setIsShiftKeyDown(true);
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') uiState.setIsShiftKeyDown(false);
+      if (e.key === 'Shift') setIsShiftKeyDown(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -148,7 +152,7 @@ export default function ThumbnailGeneratorPage() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [uiState]);
+  }, []);
 
   // デスクトップ表示時は初期状態でサイドバーを開く
   React.useEffect(() => {
@@ -159,6 +163,33 @@ export default function ThumbnailGeneratorPage() {
     }
   }, [isDesktop]);
 
+  // エクスポート状態管理
+  const [isExporting, setIsExporting] = useState(false);
+
+  // 高度なエクスポート処理
+  const handleAdvancedExport = React.useCallback(async (settings: ExportSettings) => {
+    const thumbnailElement = document.getElementById('thumbnail-preview');
+    if (!thumbnailElement) {
+      toast.error('サムネイルが見つかりません');
+      return;
+    }
+
+    setIsExporting(true);
+    
+    try {
+      await handleAsyncError(async () => {
+        if (settings.batchExport) {
+          // バッチエクスポート
+          await handleBatchExport(thumbnailElement, settings);
+        } else {
+          // 単一エクスポート
+          await handleSingleExport(thumbnailElement, settings);
+        }
+      }, "エクスポートに失敗しました");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [handleAsyncError]);
 
   // 画像の読み込み完了を待つ
   const waitForImagesToLoad = async (element: HTMLElement): Promise<void> => {
@@ -189,6 +220,107 @@ export default function ThumbnailGeneratorPage() {
     
     // より長い待機時間でレンダリングを確実にする
     await new Promise(resolve => setTimeout(resolve, 500));
+  };
+
+  // 単一エクスポート
+  const handleSingleExport = async (element: HTMLElement, settings: ExportSettings) => {
+    // 画像の読み込み完了を待つ
+    await waitForImagesToLoad(element);
+    const qualityPreset = {
+      low: { pixelRatio: 1, quality: 0.6 },
+      medium: { pixelRatio: 1.5, quality: 0.8 },
+      high: { pixelRatio: 2, quality: 0.9 },
+      ultra: { pixelRatio: 3, quality: 1.0 }
+    }[settings.quality];
+
+    // 解像度の計算
+    const resolution = settings.resolution === 'custom' 
+      ? { width: settings.customWidth || 1920, height: settings.customHeight || 1080 }
+      : {
+          hd: { width: 1280, height: 720 },
+          fhd: { width: 1920, height: 1080 },
+          '4k': { width: 3840, height: 2160 }
+        }[settings.resolution];
+
+    // エクスポート設定
+    const exportOptions = {
+      cacheBust: false, // キャッシュバストを無効化して画像の読み込みを確実にする
+      pixelRatio: settings.pixelRatio || qualityPreset.pixelRatio,
+      quality: settings.format === 'png' ? 1.0 : qualityPreset.quality,
+      backgroundColor: settings.backgroundColor || '#ffffff',
+      width: resolution.width,
+      height: resolution.height,
+      style: {
+        transform: 'scale(1)',
+        transformOrigin: 'top left',
+      }
+    };
+
+    let dataUrl: string;
+    let filename: string;
+
+    // 形式に応じてエクスポート
+    if (settings.format === 'png') {
+      dataUrl = await toPng(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.png`;
+    } else if (settings.format === 'jpeg') {
+      const { toJpeg } = await import('html-to-image');
+      dataUrl = await toJpeg(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.jpg`;
+    } else {
+      // WebPはサポートされていないため、PNGを使用
+      dataUrl = await toPng(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.png`;
+    }
+
+    // ダウンロード
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+
+    toast.success(`${filename} をエクスポートしました`);
+  };
+
+  // バッチエクスポート
+  const handleBatchExport = async (element: HTMLElement, settings: ExportSettings) => {
+    const promises = settings.batchSizes.map(async (size) => {
+      const exportOptions = {
+        cacheBust: true,
+        pixelRatio: settings.pixelRatio || 2,
+        quality: settings.format === 'png' ? 1.0 : 0.9,
+        backgroundColor: settings.backgroundColor || '#ffffff',
+        width: size.width,
+        height: size.height
+      };
+
+      let dataUrl: string;
+      let filename: string;
+
+      if (settings.format === 'png') {
+        dataUrl = await toPng(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.png`;
+      } else if (settings.format === 'jpeg') {
+        const { toJpeg } = await import('html-to-image');
+        dataUrl = await toJpeg(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.jpg`;
+      } else {
+        // WebPはサポートされていないため、PNGを使用
+        dataUrl = await toPng(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.png`;
+      }
+
+      // ダウンロード
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+
+      return filename;
+    });
+
+    const filenames = await Promise.all(promises);
+    toast.success(`${filenames.length}個のファイルをエクスポートしました`);
   };
 
   // レイヤーのドラッグ＆リサイズハンドラー
@@ -483,10 +615,10 @@ export default function ThumbnailGeneratorPage() {
                   <Label className="text-xs text-gray-400">文字シャドウ</Label>
                   <Button
                     size="sm"
-                    variant={uiState.shadowEnabled ? "default" : "outline"}
+                    variant={shadowEnabled ? "default" : "outline"}
                     onClick={() => {
-                      const newEnabled = !uiState.shadowEnabled;
-                      uiState.setShadowEnabled(newEnabled);
+                      const newEnabled = !shadowEnabled;
+                      setShadowEnabled(newEnabled);
                       if (!newEnabled) {
                         updateLayer(selectedLayer.id, { textShadow: 'none' });
                       } else {
@@ -495,11 +627,11 @@ export default function ThumbnailGeneratorPage() {
                     }}
                     className="h-6 px-3 text-xs"
                   >
-                    {uiState.shadowEnabled ? 'ON' : 'OFF'}
+                    {shadowEnabled ? 'ON' : 'OFF'}
                   </Button>
                 </div>
                 
-                {uiState.shadowEnabled && (() => {
+                {shadowEnabled && (() => {
                   const shadow = parseTextShadow(selectedLayer.textShadow);
                   const handleShadowChange = (param: 'x' | 'y' | 'blur' | 'color' | 'opacity', value: number | string) => {
                     const current = parseTextShadow(selectedLayer.textShadow);
@@ -730,7 +862,7 @@ export default function ThumbnailGeneratorPage() {
 
   // サイドバーコンテンツ
   const sidebarContent = (
-    <Tabs value={uiState.selectedTab} onValueChange={uiState.setSelectedTab} className="w-full">
+    <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="settings">テンプレート</TabsTrigger>
         <TabsTrigger value="tools">ツール</TabsTrigger>
@@ -762,14 +894,14 @@ export default function ThumbnailGeneratorPage() {
         />
       </TabsContent>
       <TabsContent value="export" className="mt-4">
-        <ExportSettingsPanel onExport={exportHandlers.handleAdvancedExport} isExporting={exportHandlers.isExporting} />
+        <ExportSettingsPanel onExport={handleAdvancedExport} isExporting={isExporting} />
       </TabsContent>
     </Tabs>
   );
 
   // モバイル用のサイドバーコンテンツ（テンプレート・エクスポートのみ）
   const mobileSidebarContent = (
-    <Tabs value={uiState.selectedTab} onValueChange={uiState.setSelectedTab} className="w-full">
+    <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
       <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
         <TabsTrigger 
           value="settings"
@@ -788,7 +920,7 @@ export default function ThumbnailGeneratorPage() {
         <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
       </TabsContent>
       <TabsContent value="export" className="mt-4">
-        <ExportSettingsPanel onExport={exportHandlers.handleAdvancedExport} isExporting={exportHandlers.isExporting} />
+        <ExportSettingsPanel onExport={handleAdvancedExport} isExporting={isExporting} />
       </TabsContent>
     </Tabs>
   );
@@ -819,6 +951,40 @@ export default function ThumbnailGeneratorPage() {
     }
   }, [redo, resetHistoryFlag]);
 
+  const handleDownloadThumbnail = React.useCallback(async (quality: 'normal' | 'high' | 'super' = 'high') => {
+    const element = document.getElementById('thumbnail-preview');
+    if (!element) {
+      toast.error('プレビューエリアが見つかりません');
+      return;
+    }
+
+    // 品質レベルのマッピング
+    const qualityMapping = {
+      'normal': 'medium' as const,
+      'high': 'high' as const,
+      'super': 'ultra' as const,
+    };
+
+    try {
+      const settings: ExportSettings = {
+        format: 'png',
+        quality: qualityMapping[quality],
+        resolution: 'fhd', // デフォルト解像度を設定
+        optimizeForPlatform: 'youtube',
+        pixelRatio: quality === 'super' ? 4 : quality === 'high' ? 2 : 1,
+        backgroundColor: '#ffffff',
+        includeTransparency: false,
+        batchExport: false,
+        batchSizes: []
+      };
+      
+      await handleSingleExport(element, settings);
+    } catch (error) {
+      logger.error('エクスポート失敗', error, 'ThumbnailGenerator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, []);
+
   const renderPreview = () => (
     <>
       {/* ツールバー - デスクトップのみ表示 */}
@@ -829,29 +995,21 @@ export default function ThumbnailGeneratorPage() {
           onUndo={handleUndo}
           onRedo={handleRedo}
           onSave={handleSave}
-          onDownload={exportHandlers.handleDownloadThumbnail}
+          onDownload={handleDownloadThumbnail}
           canUndo={canUndo}
           canRedo={canRedo}
-          isPreviewDedicatedMode={uiState.isPreviewDedicatedMode}
-          onTogglePreviewMode={() => uiState.setIsPreviewDedicatedMode(!uiState.isPreviewDedicatedMode)}
-          showGrid={uiState.showGrid}
-          setShowGrid={uiState.setShowGrid}
-          showAspectGuide={uiState.showAspectGuide}
-          setShowAspectGuide={uiState.setShowAspectGuide}
-          showSafeArea={uiState.showSafeArea}
-          setShowSafeArea={uiState.setShowSafeArea}
-          showCenterLines={uiState.showCenterLines}
-          setShowCenterLines={uiState.setShowCenterLines}
+          isPreviewDedicatedMode={isPreviewDedicatedMode}
+          onTogglePreviewMode={() => setIsPreviewDedicatedMode(!isPreviewDedicatedMode)}
         />
       )}
       
       {/* モバイル表示でのフルスクリーン表示時の戻るボタン */}
-      {!isDesktop && uiState.isPreviewDedicatedMode && (
+      {!isDesktop && isPreviewDedicatedMode && (
         <div className="absolute top-2 left-2 z-20">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => uiState.setIsPreviewDedicatedMode(false)}
+            onClick={() => setIsPreviewDedicatedMode(false)}
             className="bg-background/90 backdrop-blur-sm shadow-lg"
           >
             <Minimize2 className="h-4 w-4 mr-1" />
@@ -863,20 +1021,30 @@ export default function ThumbnailGeneratorPage() {
       {/* プレビューエリア */}
       <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
         <div className="flex items-center justify-center h-full p-4 lg:p-8">
-          <div className="relative w-full h-full">
-            {/* メインコンテンツエリア */}
+          <EnhancedPreview
+            zoom={zoom}
+            onZoomReset={() => setZoom(1)}
+            className="w-full"
+            aspectRatio={aspectRatio}
+            customAspectRatio={customAspectRatio}
+            showGrid={showGrid}
+            setShowGrid={setShowGrid}
+            showAspectGuide={showAspectGuide}
+            setShowAspectGuide={setShowAspectGuide}
+            showSafeArea={showSafeArea}
+            setShowSafeArea={setShowSafeArea}
+            gridSize={gridSize}
+            setGridSize={setGridSize}
+          >
             <div
               id="thumbnail-preview"
               style={{ 
                 aspectRatio: aspectRatio === 'custom' 
                   ? `${customAspectRatio.width}/${customAspectRatio.height}` 
                   : (aspectRatio || '16:9').replace(':', '/'),
-                maxWidth: '100%',
-                transform: `scale(${zoom})`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.2s ease-in-out'
+                ...getPreviewSize()
               }}
-              className="bg-card relative border rounded-md shadow-lg w-full"
+              className="bg-card relative border rounded-md shadow-lg"
             >
               <div id="download-target" className="w-full h-full relative overflow-hidden">
                 {layers.map((layer) => {
@@ -895,7 +1063,7 @@ export default function ThumbnailGeneratorPage() {
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                        lockAspectRatio={uiState.isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                        lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
                         onSelect={() => setSelectedLayerId(layer.id)}
                         isDraggable={isDraggable}
                         isLocked={layer.locked}
@@ -929,7 +1097,7 @@ export default function ThumbnailGeneratorPage() {
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                        lockAspectRatio={uiState.isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                        lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
                         updateLayer={updateLayer}
                       />
                     );
@@ -938,79 +1106,7 @@ export default function ThumbnailGeneratorPage() {
                 })}
               </div>
             </div>
-
-            {/* グリッドオーバーレイ */}
-            {uiState.showGrid && (
-              <div 
-                className="absolute inset-0 pointer-events-none opacity-30"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-                  `,
-                  backgroundSize: `${uiState.gridSize}px ${uiState.gridSize}px`,
-                }}
-                aria-hidden="true"
-              />
-            )}
-
-            {/* アスペクト比ガイド */}
-            {uiState.showAspectGuide && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div 
-                  className="border-2 border-dashed border-blue-400/60 bg-blue-400/5 rounded"
-                  style={{
-                    width: '90%',
-                    height: '90%',
-                    aspectRatio: aspectRatio === 'custom' 
-                      ? `${customAspectRatio.width}/${customAspectRatio.height}`
-                      : (aspectRatio || '16:9'),
-                  }}
-                  aria-hidden="true"
-                />
-              </div>
-            )}
-
-            {/* 中央線 */}
-            {uiState.showCenterLines && (
-              <div className="absolute inset-0 pointer-events-none">
-                {/* 垂直中央線 */}
-                <div 
-                  className="absolute top-0 bottom-0 left-1/2 transform -translate-x-1/2 w-px bg-red-400/60"
-                  style={{ width: '1px' }}
-                  aria-hidden="true"
-                />
-                {/* 水平中央線 */}
-                <div 
-                  className="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-px bg-red-400/60"
-                  style={{ height: '1px' }}
-                  aria-hidden="true"
-                />
-              </div>
-            )}
-
-            {/* セーフエリアガイド */}
-            {uiState.showSafeArea && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                aria-hidden="true"
-              >
-                <div 
-                  style={{
-                    width: '90%',
-                    height: '90%',
-                    border: '2px dashed rgba(34, 197, 94, 0.6)',
-                    borderRadius: '4px',
-                    position: 'relative',
-                  }}
-                >
-                  <div className="absolute -top-6 left-0 text-xs text-green-400 font-medium">
-                    セーフエリア
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          </EnhancedPreview>
         </div>
       </div>
     </>
@@ -1021,7 +1117,7 @@ export default function ThumbnailGeneratorPage() {
       {/* モバイル用クイックアクション */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-muted-foreground">クイックアクセス</h4>
-        <Tabs value={uiState.selectedTab} onValueChange={uiState.setSelectedTab} className="w-full">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
             <TabsTrigger 
               value="tools"
@@ -1052,14 +1148,14 @@ export default function ThumbnailGeneratorPage() {
       </div>
       
       {/* インライン表示エリア */}
-      {uiState.selectedTab === "tools" && (
+      {selectedTab === "tools" && (
         <div className="space-y-3 border-t pt-3">
           <h4 className="text-sm font-medium">ツール設定</h4>
           {renderToolsPanel()}
         </div>
       )}
       
-      {uiState.selectedTab === "layers" && (
+      {selectedTab === "layers" && (
         <div className="space-y-3 border-t pt-3">
           <h4 className="text-sm font-medium">レイヤー管理</h4>
           <UnifiedLayerPanel 
@@ -1081,7 +1177,7 @@ export default function ThumbnailGeneratorPage() {
         </div>
       )}
       
-      {uiState.selectedTab === "edit" && (
+      {selectedTab === "edit" && (
         <div className="space-y-3 border-t pt-3">
           <h4 className="text-sm font-medium">レイヤー編集</h4>
           {selectedLayer ? (
@@ -1365,7 +1461,7 @@ export default function ThumbnailGeneratorPage() {
         </div>
       )}
       
-      {uiState.selectedTab === "preview" && (
+      {selectedTab === "preview" && (
         <div className="space-y-3 border-t pt-3">
           <h4 className="text-sm font-medium">プレビュー設定</h4>
           <div className="space-y-3">
@@ -1437,11 +1533,11 @@ export default function ThumbnailGeneratorPage() {
                   <Label className="text-xs text-muted-foreground">グリッド表示</Label>
                   <Button
                     size="sm"
-                    variant={uiState.showGrid ? "default" : "outline"}
-                    onClick={() => uiState.setShowGrid(!uiState.showGrid)}
+                    variant={showGrid ? "default" : "outline"}
+                    onClick={() => setShowGrid(!showGrid)}
                     className="h-6 px-2 text-xs"
                   >
-                    {uiState.showGrid ? "ON" : "OFF"}
+                    {showGrid ? "ON" : "OFF"}
                   </Button>
                 </div>
                 
@@ -1450,11 +1546,11 @@ export default function ThumbnailGeneratorPage() {
                   <Label className="text-xs text-muted-foreground">アスペクト比ガイド</Label>
                   <Button
                     size="sm"
-                    variant={uiState.showAspectGuide ? "default" : "outline"}
-                    onClick={() => uiState.setShowAspectGuide(!uiState.showAspectGuide)}
+                    variant={showAspectGuide ? "default" : "outline"}
+                    onClick={() => setShowAspectGuide(!showAspectGuide)}
                     className="h-6 px-2 text-xs"
                   >
-                    {uiState.showAspectGuide ? "ON" : "OFF"}
+                    {showAspectGuide ? "ON" : "OFF"}
                   </Button>
                 </div>
                 
@@ -1463,39 +1559,39 @@ export default function ThumbnailGeneratorPage() {
                   <Label className="text-xs text-muted-foreground">セーフエリア</Label>
                   <Button
                     size="sm"
-                    variant={uiState.showSafeArea ? "default" : "outline"}
-                    onClick={() => uiState.setShowSafeArea(!uiState.showSafeArea)}
+                    variant={showSafeArea ? "default" : "outline"}
+                    onClick={() => setShowSafeArea(!showSafeArea)}
                     className="h-6 px-2 text-xs"
                   >
-                    {uiState.showSafeArea ? "ON" : "OFF"}
+                    {showSafeArea ? "ON" : "OFF"}
                   </Button>
                 </div>
                 
                 {/* グリッドサイズ */}
-                {uiState.showGrid && (
+                {showGrid && (
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">グリッドサイズ</Label>
                     <div className="flex gap-1">
                       <Button
                         size="sm"
-                        variant={uiState.gridSize === 10 ? "default" : "outline"}
-                        onClick={() => uiState.setGridSize(10)}
+                        variant={gridSize === 10 ? "default" : "outline"}
+                        onClick={() => setGridSize(10)}
                         className="h-6 px-2 text-xs flex-1"
                       >
                         10px
                       </Button>
                       <Button
                         size="sm"
-                        variant={uiState.gridSize === 20 ? "default" : "outline"}
-                        onClick={() => uiState.setGridSize(20)}
+                        variant={gridSize === 20 ? "default" : "outline"}
+                        onClick={() => setGridSize(20)}
                         className="h-6 px-2 text-xs flex-1"
                       >
                         20px
                       </Button>
                       <Button
                         size="sm"
-                        variant={uiState.gridSize === 40 ? "default" : "outline"}
-                        onClick={() => uiState.setGridSize(40)}
+                        variant={gridSize === 40 ? "default" : "outline"}
+                        onClick={() => setGridSize(40)}
                         className="h-6 px-2 text-xs flex-1"
                       >
                         40px
@@ -1512,11 +1608,11 @@ export default function ThumbnailGeneratorPage() {
               <Label className="text-xs font-medium">📺 表示モード</Label>
               <Button
                 size="sm"
-                variant={uiState.isPreviewDedicatedMode ? "default" : "outline"}
-                onClick={() => uiState.setIsPreviewDedicatedMode(!uiState.isPreviewDedicatedMode)}
+                variant={isPreviewDedicatedMode ? "default" : "outline"}
+                onClick={() => setIsPreviewDedicatedMode(!isPreviewDedicatedMode)}
                 className="w-full h-8"
               >
-                {uiState.isPreviewDedicatedMode ? "通常表示に戻る" : "フルスクリーン表示"}
+                {isPreviewDedicatedMode ? "通常表示に戻る" : "フルスクリーン表示"}
               </Button>
             </div>
 
@@ -1535,7 +1631,7 @@ export default function ThumbnailGeneratorPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => exportHandlers.handleDownloadThumbnail('high')}
+                  onClick={() => handleDownloadThumbnail('high')}
                   className="h-8"
                 >
                   ダウンロード
@@ -1619,7 +1715,7 @@ export default function ThumbnailGeneratorPage() {
             </div>
           </div>
           {/* モバイル用コントロール - プレビュー専用モード時は非表示 */}
-          {!isDesktop && !uiState.isPreviewDedicatedMode && (
+          {!isDesktop && !isPreviewDedicatedMode && (
             <div className="border-t bg-background/95 backdrop-blur-sm">
               <div className="p-2">
                 <p className="text-xs text-muted-foreground mb-2">
@@ -1649,7 +1745,7 @@ export default function ThumbnailGeneratorPage() {
         )}
 
         {/* サイドバー（プレビュー専用モード時は非表示） */}
-        {!uiState.isPreviewDedicatedMode && (
+        {!isPreviewDedicatedMode && (
           <Sidebar
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}

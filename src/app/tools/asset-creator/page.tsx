@@ -58,6 +58,7 @@ function AssetCreatorPage() {
   const [showGrid, setShowGrid] = React.useState(false);
   const [showAspectGuide, setShowAspectGuide] = React.useState(true);
   const [showSafeArea, setShowSafeArea] = React.useState(false);
+  const [showCenterLines, setShowCenterLines] = React.useState(false);
   const [gridSize, setGridSize] = React.useState(20);
   
   // シャドウエディタの状態
@@ -290,7 +291,15 @@ function AssetCreatorPage() {
   const handleBatchExport = React.useCallback(async (element: HTMLElement, settings: AssetExportSettings) => {
     setIsExporting(true);
     try {
-      const promises = settings.batchSizes.map(async (size) => {
+      // 選択されたサイズのみをフィルタリング
+      const selectedSizes = settings.batchSizes.filter(size => size.selected);
+      
+      if (selectedSizes.length === 0) {
+        toast.error('エクスポートするサイズを選択してください');
+        return;
+      }
+
+      const promises = selectedSizes.map(async (size) => {
         const exportOptions = {
           cacheBust: true,
           pixelRatio: settings.pixelRatio || 2,
@@ -1020,6 +1029,14 @@ function AssetCreatorPage() {
           canRedo={canRedo}
           isPreviewDedicatedMode={isPreviewDedicatedMode}
           onTogglePreviewMode={() => setIsPreviewDedicatedMode(!isPreviewDedicatedMode)}
+          showGrid={showGrid}
+          setShowGrid={setShowGrid}
+          showAspectGuide={showAspectGuide}
+          setShowAspectGuide={setShowAspectGuide}
+          showSafeArea={showSafeArea}
+          setShowSafeArea={setShowSafeArea}
+          showCenterLines={showCenterLines}
+          setShowCenterLines={setShowCenterLines}
         />
       )}
       
@@ -1041,30 +1058,20 @@ function AssetCreatorPage() {
       {/* プレビューエリア */}
       <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
         <div className="flex items-center justify-center h-full p-4 lg:p-8">
-          <EnhancedPreview
-            zoom={zoom}
-            onZoomReset={() => setZoom(1)}
-            className="w-full"
-            aspectRatio={aspectRatio}
-            customAspectRatio={customAspectRatio}
-            showGrid={showGrid}
-            setShowGrid={setShowGrid}
-            showAspectGuide={showAspectGuide}
-            setShowAspectGuide={setShowAspectGuide}
-            showSafeArea={showSafeArea}
-            setShowSafeArea={setShowSafeArea}
-            gridSize={gridSize}
-            setGridSize={setGridSize}
-          >
+          <div className="relative w-full h-full">
+            {/* メインコンテンツエリア */}
             <div
               id="thumbnail-preview"
               style={{ 
                 aspectRatio: aspectRatio === 'custom' 
                   ? `${customAspectRatio.width}/${customAspectRatio.height}` 
                   : (aspectRatio || '16:9').replace(':', '/'),
-                ...getPreviewSize()
+                maxWidth: '100%',
+                transform: `scale(${zoom})`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.2s ease-in-out'
               }}
-              className="bg-card relative border rounded-md shadow-lg"
+              className="bg-card relative border rounded-md shadow-lg w-full"
             >
           <div id="download-target" className="w-full h-full relative overflow-hidden">
             {layers.map((layer) => {
@@ -1139,12 +1146,84 @@ function AssetCreatorPage() {
               return null;
             })}
           </div>
+            </div>
+
+            {/* グリッドオーバーレイ */}
+            {showGrid && (
+              <div 
+                className="absolute inset-0 pointer-events-none opacity-30"
+                style={{
+                  backgroundImage: `
+                    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+                  `,
+                  backgroundSize: `${gridSize}px ${gridSize}px`,
+                }}
+                aria-hidden="true"
+              />
+            )}
+
+            {/* アスペクト比ガイド */}
+            {showAspectGuide && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div 
+                  className="border-2 border-dashed border-blue-400/60 bg-blue-400/5 rounded"
+                  style={{
+                    width: '90%',
+                    height: '90%',
+                    aspectRatio: aspectRatio === 'custom' 
+                      ? `${customAspectRatio.width}/${customAspectRatio.height}`
+                      : (aspectRatio || '16:9'),
+                  }}
+                  aria-hidden="true"
+                />
               </div>
-            </EnhancedPreview>
+            )}
+
+            {/* 中央線 */}
+            {showCenterLines && (
+              <div className="absolute inset-0 pointer-events-none">
+                {/* 垂直中央線 */}
+                <div 
+                  className="absolute top-0 bottom-0 left-1/2 transform -translate-x-1/2 w-px bg-red-400/60"
+                  style={{ width: '1px' }}
+                  aria-hidden="true"
+                />
+                {/* 水平中央線 */}
+                <div 
+                  className="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-px bg-red-400/60"
+                  style={{ height: '1px' }}
+                  aria-hidden="true"
+                />
+              </div>
+            )}
+
+            {/* セーフエリアガイド */}
+            {showSafeArea && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                aria-hidden="true"
+              >
+                <div 
+                  style={{
+                    width: '90%',
+                    height: '90%',
+                    border: '2px dashed rgba(34, 197, 94, 0.6)',
+                    borderRadius: '4px',
+                    position: 'relative',
+                  }}
+                >
+                  <div className="absolute -top-6 left-0 text-xs text-green-400 font-medium">
+                    セーフエリア
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </>
-    );
+      </div>
+    </>
+  );
 
   const renderMobileControls = () => (
     <div className="p-2 lg:p-4 space-y-3">

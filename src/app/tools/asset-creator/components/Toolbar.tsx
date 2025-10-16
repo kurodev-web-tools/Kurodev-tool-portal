@@ -20,6 +20,9 @@ import {
   Move,
   Maximize,
   Minimize,
+  Grid3X3,
+  Ruler,
+  Target,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -33,6 +36,15 @@ interface ToolbarProps {
   canRedo?: boolean;
   isPreviewDedicatedMode?: boolean;
   onTogglePreviewMode?: () => void;
+  // グリッド・ガイド設定
+  showGrid?: boolean;
+  setShowGrid?: (show: boolean) => void;
+  showAspectGuide?: boolean;
+  setShowAspectGuide?: (show: boolean) => void;
+  showSafeArea?: boolean;
+  setShowSafeArea?: (show: boolean) => void;
+  showCenterLines?: boolean;
+  setShowCenterLines?: (show: boolean) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -46,6 +58,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   canRedo = false,
   isPreviewDedicatedMode = false,
   onTogglePreviewMode,
+  showGrid = false,
+  setShowGrid,
+  showAspectGuide = false,
+  setShowAspectGuide,
+  showSafeArea = false,
+  setShowSafeArea,
+  showCenterLines = false,
+  setShowCenterLines,
 }) => {
   const handleZoomIn = () => {
     setZoom(Math.min(zoom + 0.1, 3));
@@ -154,6 +174,53 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             ) : (
               <Maximize className="h-4 w-4" aria-hidden="true" />
             )}
+          </Button>
+        )}
+        
+        {/* グリッド・ガイド設定 */}
+        <Separator orientation="vertical" className="h-6" />
+        {setShowGrid && (
+          <Button
+            variant={showGrid ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowGrid(!showGrid)}
+            title="グリッド表示 (G)"
+            aria-label={showGrid ? "グリッドを非表示" : "グリッドを表示"}
+          >
+            <Grid3X3 className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
+        {setShowAspectGuide && (
+          <Button
+            variant={showAspectGuide ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowAspectGuide(!showAspectGuide)}
+            title="アスペクト比ガイド表示"
+            aria-label={showAspectGuide ? "アスペクト比ガイドを非表示" : "アスペクト比ガイドを表示"}
+          >
+            <Ruler className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
+        {setShowSafeArea && (
+          <Button
+            variant={showSafeArea ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowSafeArea(!showSafeArea)}
+            title="セーフエリア表示 (S)"
+            aria-label={showSafeArea ? "セーフエリアを非表示" : "セーフエリアを表示"}
+          >
+            <Target className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
+        {setShowCenterLines && (
+          <Button
+            variant={showCenterLines ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowCenterLines(!showCenterLines)}
+            title="中央線表示 (C)"
+            aria-label={showCenterLines ? "中央線を非表示" : "中央線を表示"}
+          >
+            <Move className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
       </div>

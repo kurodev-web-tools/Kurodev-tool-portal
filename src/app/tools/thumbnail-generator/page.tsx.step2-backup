@@ -40,7 +40,6 @@ import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
 import { logger } from '@/lib/logger';
 import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 import { useUIState } from './hooks/useUIState';
-import { useExportHandlers } from './hooks/useExportHandlers';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -48,9 +47,6 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 export default function ThumbnailGeneratorPage() {
   // UI状態管理（最小限）
   const uiState = useUIState();
-  
-  // エクスポート機能管理
-  const exportHandlers = useExportHandlers();
   
   // サイドバー状態管理（既存のまま）
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
@@ -159,6 +155,33 @@ export default function ThumbnailGeneratorPage() {
     }
   }, [isDesktop]);
 
+  // エクスポート状態管理
+  const [isExporting, setIsExporting] = useState(false);
+
+  // 高度なエクスポート処理
+  const handleAdvancedExport = React.useCallback(async (settings: ExportSettings) => {
+    const thumbnailElement = document.getElementById('thumbnail-preview');
+    if (!thumbnailElement) {
+      toast.error('サムネイルが見つかりません');
+      return;
+    }
+
+    setIsExporting(true);
+    
+    try {
+      await handleAsyncError(async () => {
+        if (settings.batchExport) {
+          // バッチエクスポート
+          await handleBatchExport(thumbnailElement, settings);
+        } else {
+          // 単一エクスポート
+          await handleSingleExport(thumbnailElement, settings);
+        }
+      }, "エクスポートに失敗しました");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [handleAsyncError]);
 
   // 画像の読み込み完了を待つ
   const waitForImagesToLoad = async (element: HTMLElement): Promise<void> => {
@@ -189,6 +212,107 @@ export default function ThumbnailGeneratorPage() {
     
     // より長い待機時間でレンダリングを確実にする
     await new Promise(resolve => setTimeout(resolve, 500));
+  };
+
+  // 単一エクスポート
+  const handleSingleExport = async (element: HTMLElement, settings: ExportSettings) => {
+    // 画像の読み込み完了を待つ
+    await waitForImagesToLoad(element);
+    const qualityPreset = {
+      low: { pixelRatio: 1, quality: 0.6 },
+      medium: { pixelRatio: 1.5, quality: 0.8 },
+      high: { pixelRatio: 2, quality: 0.9 },
+      ultra: { pixelRatio: 3, quality: 1.0 }
+    }[settings.quality];
+
+    // 解像度の計算
+    const resolution = settings.resolution === 'custom' 
+      ? { width: settings.customWidth || 1920, height: settings.customHeight || 1080 }
+      : {
+          hd: { width: 1280, height: 720 },
+          fhd: { width: 1920, height: 1080 },
+          '4k': { width: 3840, height: 2160 }
+        }[settings.resolution];
+
+    // エクスポート設定
+    const exportOptions = {
+      cacheBust: false, // キャッシュバストを無効化して画像の読み込みを確実にする
+      pixelRatio: settings.pixelRatio || qualityPreset.pixelRatio,
+      quality: settings.format === 'png' ? 1.0 : qualityPreset.quality,
+      backgroundColor: settings.backgroundColor || '#ffffff',
+      width: resolution.width,
+      height: resolution.height,
+      style: {
+        transform: 'scale(1)',
+        transformOrigin: 'top left',
+      }
+    };
+
+    let dataUrl: string;
+    let filename: string;
+
+    // 形式に応じてエクスポート
+    if (settings.format === 'png') {
+      dataUrl = await toPng(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.png`;
+    } else if (settings.format === 'jpeg') {
+      const { toJpeg } = await import('html-to-image');
+      dataUrl = await toJpeg(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.jpg`;
+    } else {
+      // WebPはサポートされていないため、PNGを使用
+      dataUrl = await toPng(element, exportOptions);
+      filename = `thumbnail-${settings.optimizeForPlatform}-${resolution.width}x${resolution.height}.png`;
+    }
+
+    // ダウンロード
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+
+    toast.success(`${filename} をエクスポートしました`);
+  };
+
+  // バッチエクスポート
+  const handleBatchExport = async (element: HTMLElement, settings: ExportSettings) => {
+    const promises = settings.batchSizes.map(async (size) => {
+      const exportOptions = {
+        cacheBust: true,
+        pixelRatio: settings.pixelRatio || 2,
+        quality: settings.format === 'png' ? 1.0 : 0.9,
+        backgroundColor: settings.backgroundColor || '#ffffff',
+        width: size.width,
+        height: size.height
+      };
+
+      let dataUrl: string;
+      let filename: string;
+
+      if (settings.format === 'png') {
+        dataUrl = await toPng(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.png`;
+      } else if (settings.format === 'jpeg') {
+        const { toJpeg } = await import('html-to-image');
+        dataUrl = await toJpeg(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.jpg`;
+      } else {
+        // WebPはサポートされていないため、PNGを使用
+        dataUrl = await toPng(element, exportOptions);
+        filename = `thumbnail-${size.platform}-${size.width}x${size.height}.png`;
+      }
+
+      // ダウンロード
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+
+      return filename;
+    });
+
+    const filenames = await Promise.all(promises);
+    toast.success(`${filenames.length}個のファイルをエクスポートしました`);
   };
 
   // レイヤーのドラッグ＆リサイズハンドラー
@@ -762,7 +886,7 @@ export default function ThumbnailGeneratorPage() {
         />
       </TabsContent>
       <TabsContent value="export" className="mt-4">
-        <ExportSettingsPanel onExport={exportHandlers.handleAdvancedExport} isExporting={exportHandlers.isExporting} />
+        <ExportSettingsPanel onExport={handleAdvancedExport} isExporting={isExporting} />
       </TabsContent>
     </Tabs>
   );
@@ -788,7 +912,7 @@ export default function ThumbnailGeneratorPage() {
         <TemplateSelector onSelectTemplate={setSelectedTemplate} selectedTemplateId={selectedTemplate.id} />
       </TabsContent>
       <TabsContent value="export" className="mt-4">
-        <ExportSettingsPanel onExport={exportHandlers.handleAdvancedExport} isExporting={exportHandlers.isExporting} />
+        <ExportSettingsPanel onExport={handleAdvancedExport} isExporting={isExporting} />
       </TabsContent>
     </Tabs>
   );
@@ -819,6 +943,40 @@ export default function ThumbnailGeneratorPage() {
     }
   }, [redo, resetHistoryFlag]);
 
+  const handleDownloadThumbnail = React.useCallback(async (quality: 'normal' | 'high' | 'super' = 'high') => {
+    const element = document.getElementById('thumbnail-preview');
+    if (!element) {
+      toast.error('プレビューエリアが見つかりません');
+      return;
+    }
+
+    // 品質レベルのマッピング
+    const qualityMapping = {
+      'normal': 'medium' as const,
+      'high': 'high' as const,
+      'super': 'ultra' as const,
+    };
+
+    try {
+      const settings: ExportSettings = {
+        format: 'png',
+        quality: qualityMapping[quality],
+        resolution: 'fhd', // デフォルト解像度を設定
+        optimizeForPlatform: 'youtube',
+        pixelRatio: quality === 'super' ? 4 : quality === 'high' ? 2 : 1,
+        backgroundColor: '#ffffff',
+        includeTransparency: false,
+        batchExport: false,
+        batchSizes: []
+      };
+      
+      await handleSingleExport(element, settings);
+    } catch (error) {
+      logger.error('エクスポート失敗', error, 'ThumbnailGenerator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, []);
+
   const renderPreview = () => (
     <>
       {/* ツールバー - デスクトップのみ表示 */}
@@ -829,19 +987,11 @@ export default function ThumbnailGeneratorPage() {
           onUndo={handleUndo}
           onRedo={handleRedo}
           onSave={handleSave}
-          onDownload={exportHandlers.handleDownloadThumbnail}
+          onDownload={handleDownloadThumbnail}
           canUndo={canUndo}
           canRedo={canRedo}
           isPreviewDedicatedMode={uiState.isPreviewDedicatedMode}
           onTogglePreviewMode={() => uiState.setIsPreviewDedicatedMode(!uiState.isPreviewDedicatedMode)}
-          showGrid={uiState.showGrid}
-          setShowGrid={uiState.setShowGrid}
-          showAspectGuide={uiState.showAspectGuide}
-          setShowAspectGuide={uiState.setShowAspectGuide}
-          showSafeArea={uiState.showSafeArea}
-          setShowSafeArea={uiState.setShowSafeArea}
-          showCenterLines={uiState.showCenterLines}
-          setShowCenterLines={uiState.setShowCenterLines}
         />
       )}
       
@@ -863,20 +1013,30 @@ export default function ThumbnailGeneratorPage() {
       {/* プレビューエリア */}
       <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
         <div className="flex items-center justify-center h-full p-4 lg:p-8">
-          <div className="relative w-full h-full">
-            {/* メインコンテンツエリア */}
+          <EnhancedPreview
+            zoom={zoom}
+            onZoomReset={() => setZoom(1)}
+            className="w-full"
+            aspectRatio={aspectRatio}
+            customAspectRatio={customAspectRatio}
+            showGrid={uiState.showGrid}
+            setShowGrid={uiState.setShowGrid}
+            showAspectGuide={uiState.showAspectGuide}
+            setShowAspectGuide={uiState.setShowAspectGuide}
+            showSafeArea={uiState.showSafeArea}
+            setShowSafeArea={uiState.setShowSafeArea}
+            gridSize={uiState.gridSize}
+            setGridSize={uiState.setGridSize}
+          >
             <div
               id="thumbnail-preview"
               style={{ 
                 aspectRatio: aspectRatio === 'custom' 
                   ? `${customAspectRatio.width}/${customAspectRatio.height}` 
                   : (aspectRatio || '16:9').replace(':', '/'),
-                maxWidth: '100%',
-                transform: `scale(${zoom})`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.2s ease-in-out'
+                ...getPreviewSize()
               }}
-              className="bg-card relative border rounded-md shadow-lg w-full"
+              className="bg-card relative border rounded-md shadow-lg"
             >
               <div id="download-target" className="w-full h-full relative overflow-hidden">
                 {layers.map((layer) => {
@@ -938,79 +1098,7 @@ export default function ThumbnailGeneratorPage() {
                 })}
               </div>
             </div>
-
-            {/* グリッドオーバーレイ */}
-            {uiState.showGrid && (
-              <div 
-                className="absolute inset-0 pointer-events-none opacity-30"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-                  `,
-                  backgroundSize: `${uiState.gridSize}px ${uiState.gridSize}px`,
-                }}
-                aria-hidden="true"
-              />
-            )}
-
-            {/* アスペクト比ガイド */}
-            {uiState.showAspectGuide && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div 
-                  className="border-2 border-dashed border-blue-400/60 bg-blue-400/5 rounded"
-                  style={{
-                    width: '90%',
-                    height: '90%',
-                    aspectRatio: aspectRatio === 'custom' 
-                      ? `${customAspectRatio.width}/${customAspectRatio.height}`
-                      : (aspectRatio || '16:9'),
-                  }}
-                  aria-hidden="true"
-                />
-              </div>
-            )}
-
-            {/* 中央線 */}
-            {uiState.showCenterLines && (
-              <div className="absolute inset-0 pointer-events-none">
-                {/* 垂直中央線 */}
-                <div 
-                  className="absolute top-0 bottom-0 left-1/2 transform -translate-x-1/2 w-px bg-red-400/60"
-                  style={{ width: '1px' }}
-                  aria-hidden="true"
-                />
-                {/* 水平中央線 */}
-                <div 
-                  className="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-px bg-red-400/60"
-                  style={{ height: '1px' }}
-                  aria-hidden="true"
-                />
-              </div>
-            )}
-
-            {/* セーフエリアガイド */}
-            {uiState.showSafeArea && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                aria-hidden="true"
-              >
-                <div 
-                  style={{
-                    width: '90%',
-                    height: '90%',
-                    border: '2px dashed rgba(34, 197, 94, 0.6)',
-                    borderRadius: '4px',
-                    position: 'relative',
-                  }}
-                >
-                  <div className="absolute -top-6 left-0 text-xs text-green-400 font-medium">
-                    セーフエリア
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          </EnhancedPreview>
         </div>
       </div>
     </>
@@ -1535,7 +1623,7 @@ export default function ThumbnailGeneratorPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => exportHandlers.handleDownloadThumbnail('high')}
+                  onClick={() => handleDownloadThumbnail('high')}
                   className="h-8"
                 >
                   ダウンロード

@@ -126,8 +126,8 @@ export const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
 
   return (
     <div className={cn(
-      "relative bg-gray-900 rounded-lg overflow-hidden",
-      isFullscreen && "fixed inset-4 z-50 rounded-xl shadow-2xl",
+      "relative w-full h-full",
+      isFullscreen && "fixed inset-4 z-50 rounded-xl shadow-2xl bg-gray-900",
       className
     )}>
       {/* グリッドオーバーレイ */}
@@ -168,6 +168,11 @@ export const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
       {/* メインコンテンツエリア */}
       <div 
         className="relative w-full h-full flex items-center justify-center"
+        style={{
+          transform: `scale(${zoom})`,
+          transformOrigin: 'center center',
+          transition: 'transform 0.2s ease-in-out'
+        }}
       >
         {children}
       </div>
@@ -323,6 +328,18 @@ export const EnhancedPreview: React.FC<EnhancedPreviewProps> = ({
           </div>
         </div>
       )}
+
+      {/* プレビューコンテンツ */}
+      <div 
+        className="flex items-center justify-center h-full w-full"
+        style={{
+          transform: `scale(${zoom})`,
+          transformOrigin: 'center center',
+          transition: 'transform 0.2s ease-in-out'
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 };

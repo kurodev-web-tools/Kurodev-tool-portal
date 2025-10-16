@@ -48,35 +48,36 @@ export interface AssetExportSettings {
     width: number;
     height: number;
     platform: string;
+    selected: boolean;
   }>;
 }
 
 // イベント用素材プリセット設定
 const assetPresets = {
   web: [
-    { name: 'Web バナー (大)', width: 1200, height: 630, platform: 'web' },
-    { name: 'Web バナー (中)', width: 800, height: 420, platform: 'web' },
-    { name: 'Web バナー (小)', width: 600, height: 315, platform: 'web' },
-    { name: 'ヘッダー画像', width: 1920, height: 400, platform: 'web' },
+    { name: 'Web バナー (大)', width: 1200, height: 630, platform: 'web', selected: true },
+    { name: 'Web バナー (中)', width: 800, height: 420, platform: 'web', selected: true },
+    { name: 'Web バナー (小)', width: 600, height: 315, platform: 'web', selected: false },
+    { name: 'ヘッダー画像', width: 1920, height: 400, platform: 'web', selected: false },
   ],
   social: [
-    { name: 'Twitter ヘッダー', width: 1500, height: 500, platform: 'twitter' },
-    { name: 'Twitter 投稿', width: 1200, height: 675, platform: 'twitter' },
-    { name: 'Instagram 投稿', width: 1080, height: 1080, platform: 'instagram' },
-    { name: 'Instagram ストーリー', width: 1080, height: 1920, platform: 'instagram' },
-    { name: 'Facebook カバー', width: 1200, height: 630, platform: 'facebook' },
+    { name: 'Twitter ヘッダー', width: 1500, height: 500, platform: 'twitter', selected: true },
+    { name: 'Twitter 投稿', width: 1200, height: 675, platform: 'twitter', selected: true },
+    { name: 'Instagram 投稿', width: 1080, height: 1080, platform: 'instagram', selected: true },
+    { name: 'Instagram ストーリー', width: 1080, height: 1920, platform: 'instagram', selected: false },
+    { name: 'Facebook カバー', width: 1200, height: 630, platform: 'facebook', selected: false },
   ],
   print: [
-    { name: 'A4 (300DPI)', width: 2480, height: 3508, platform: 'print' },
-    { name: 'A3 (300DPI)', width: 3508, height: 4961, platform: 'print' },
-    { name: '名刺 (300DPI)', width: 1063, height: 638, platform: 'print' },
-    { name: 'ポスター A2 (300DPI)', width: 4961, height: 7016, platform: 'print' },
-    { name: 'フライヤー A5 (300DPI)', width: 1748, height: 2480, platform: 'print' },
+    { name: 'A4 (300DPI)', width: 2480, height: 3508, platform: 'print', selected: true },
+    { name: 'A3 (300DPI)', width: 3508, height: 4961, platform: 'print', selected: false },
+    { name: '名刺 (300DPI)', width: 1063, height: 638, platform: 'print', selected: false },
+    { name: 'ポスター A2 (300DPI)', width: 4961, height: 7016, platform: 'print', selected: false },
+    { name: 'フライヤー A5 (300DPI)', width: 1748, height: 2480, platform: 'print', selected: true },
   ],
   presentation: [
-    { name: 'スライド 16:9', width: 1920, height: 1080, platform: 'presentation' },
-    { name: 'スライド 4:3', width: 1024, height: 768, platform: 'presentation' },
-    { name: 'プレゼン用高解像度', width: 3840, height: 2160, platform: 'presentation' },
+    { name: 'スライド 16:9', width: 1920, height: 1080, platform: 'presentation', selected: true },
+    { name: 'スライド 4:3', width: 1024, height: 768, platform: 'presentation', selected: false },
+    { name: 'プレゼン用高解像度', width: 3840, height: 2160, platform: 'presentation', selected: false },
   ]
 };
 
@@ -126,7 +127,7 @@ export const AssetExportSettingsPanel: React.FC<AssetExportSettingsPanelProps> =
     const presets = assetPresets[category];
     updateSettings({
       batchExport: true,
-      batchSizes: presets,
+      batchSizes: presets.map(preset => ({ ...preset, selected: preset.selected })),
       optimizeForPlatform: category === 'web' ? 'web' : category === 'print' ? 'print' : 'social',
       quality: category === 'print' ? 'print' : 'high',
       format: category === 'print' ? 'png' : 'png',
@@ -370,25 +371,57 @@ export const AssetExportSettingsPanel: React.FC<AssetExportSettingsPanelProps> =
       {settings.batchExport && settings.batchSizes.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <FileImage className="h-4 w-4" />
-              バッチエクスポート
+            <CardTitle className="text-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileImage className="h-4 w-4" />
+                バッチエクスポート
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const allSelected = settings.batchSizes.every(size => size.selected);
+                    const newSizes = settings.batchSizes.map(size => ({ ...size, selected: !allSelected }));
+                    updateSettings({ batchSizes: newSizes });
+                  }}
+                  className="h-7 px-2 text-xs"
+                >
+                  {settings.batchSizes.every(size => size.selected) ? '全解除' : '全選択'}
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                以下のサイズで一括エクスポートします:
+                エクスポートするサイズを選択してください:
               </p>
               <div className="grid gap-1">
                 {settings.batchSizes.map((size, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
-                    <span>{size.name}</span>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={size.selected}
+                        onCheckedChange={(checked) => {
+                          const newSizes = [...settings.batchSizes];
+                          newSizes[index] = { ...size, selected: checked as boolean };
+                          updateSettings({ batchSizes: newSizes });
+                        }}
+                        id={`batch-size-${index}`}
+                      />
+                      <label htmlFor={`batch-size-${index}`} className="cursor-pointer">
+                        {size.name}
+                      </label>
+                    </div>
                     <Badge variant="secondary">
                       {size.width}×{size.height}
                     </Badge>
                   </div>
                 ))}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                選択済み: {settings.batchSizes.filter(size => size.selected).length}/{settings.batchSizes.length}サイズ
               </div>
             </div>
           </CardContent>
