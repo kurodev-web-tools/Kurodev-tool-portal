@@ -24,7 +24,7 @@ interface ToolbarSectionProps {
   handleToolbarUndo: () => void;
   handleToolbarRedo: () => void;
   handleSave: () => void;
-  handleDownloadThumbnail: () => void;
+  handleDownloadThumbnail: (qualityLevel: 'normal' | 'high' | 'super') => Promise<void>;
 }
 
 export const ToolbarSection: React.FC<ToolbarSectionProps> = ({

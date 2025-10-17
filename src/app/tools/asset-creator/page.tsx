@@ -4,44 +4,30 @@ import React from 'react';
 import { toPng } from 'html-to-image';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Settings, Layers, Construction, Minimize2 } from "lucide-react";
-import { useSidebar } from '@/hooks/use-sidebar';
-import { useErrorHandler } from '@/hooks/use-error-handler';
-import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { ResizableDelta, Position } from 'react-rnd';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from '@/components/ui/textarea';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { cn } from '@/lib/utils';
-
+import { useSidebar } from '@/hooks/use-sidebar';
+import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useTemplate, ShapeType, TemplateProvider } from './contexts/TemplateContext';
-import TemplateSelector from './components/TemplateSelector';
-import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
-import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
-import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
-import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
-import { EnhancedPropertyPanel } from './components/EnhancedPropertyPanel';
 import { ToolbarSection } from './components/ToolbarSection';
 import { SidebarSection } from './components/SidebarSection';
 import { PreviewSection } from './components/PreviewSection';
-import { EnhancedPreview, usePreviewKeyboardShortcuts } from './components/EnhancedPreview';
 import { useCanvasOperations } from './hooks/useCanvasOperations';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { AssetExportSettingsPanel, AssetExportSettings } from './components/AssetExportSettingsPanel';
 import { logger } from '@/lib/logger';
-import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
+import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 import { FontSelector } from '@/components/shared/FontSelector';
 import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
-import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];

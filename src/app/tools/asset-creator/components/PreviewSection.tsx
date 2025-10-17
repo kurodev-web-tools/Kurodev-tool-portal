@@ -61,7 +61,7 @@ interface PreviewSectionProps {
   handleToolbarUndo: () => void;
   handleToolbarRedo: () => void;
   handleSave: () => void;
-  handleDownloadThumbnail: () => void;
+  handleDownloadThumbnail: (qualityLevel: 'normal' | 'high' | 'super') => Promise<void>;
   canUndo: boolean;
   canRedo: boolean;
   handleAddShape: (shapeType: ShapeType) => void;
