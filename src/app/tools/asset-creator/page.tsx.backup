@@ -925,6 +925,199 @@ function AssetCreatorPage() {
     </div>
   );
 
+  const renderPreview = () => (
+    <>
+      <ToolbarSection
+        isDesktop={isDesktop}
+        isPreviewDedicatedMode={isPreviewDedicatedMode}
+        setIsPreviewDedicatedMode={setIsPreviewDedicatedMode}
+        zoom={zoom}
+        setZoom={setZoom}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showGrid={showGrid}
+        setShowGrid={setShowGrid}
+        showAspectGuide={showAspectGuide}
+        setShowAspectGuide={setShowAspectGuide}
+        showSafeArea={showSafeArea}
+        setShowSafeArea={setShowSafeArea}
+        showCenterLines={showCenterLines}
+        setShowCenterLines={setShowCenterLines}
+        handleToolbarUndo={handleToolbarUndo}
+        handleToolbarRedo={handleToolbarRedo}
+        handleSave={handleSave}
+        handleDownloadThumbnail={handleDownloadThumbnail}
+      />
+      
+      {/* プレビューエリア */}
+      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
+        <div className="flex items-center justify-center h-full p-4 lg:p-8">
+          <div className="relative w-full h-full">
+            {/* メインコンテンツエリア */}
+            <div
+              id="thumbnail-preview"
+              style={{ 
+                aspectRatio: aspectRatio === 'custom' 
+                  ? `${customAspectRatio.width}/${customAspectRatio.height}` 
+                  : (aspectRatio || '16:9').replace(':', '/'),
+                maxWidth: '100%',
+                transform: `scale(${zoom})`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.2s ease-in-out'
+              }}
+              className="bg-card relative border rounded-md shadow-lg w-full"
+            >
+          <div id="download-target" className="w-full h-full relative overflow-hidden">
+            {layers.map((layer) => {
+              const isSelected = layer.id === selectedLayerId;
+              const isDraggable = isSelected && !layer.locked;
+              const isResizable = isSelected && !layer.locked;
+
+              if (!layer.visible) return null;
+
+              if (layer.type === 'image') {
+                return (
+                  <ThumbnailImage
+                    key={layer.id} id={layer.id} isSelected={isSelected} src={layer.src || ''} alt={layer.name}
+                    x={layer.x} y={layer.y} width={layer.width} height={layer.height} rotation={layer.rotation}
+                    onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                    onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                    onSelect={() => setSelectedLayerId(layer.id)}
+                    isLocked={layer.locked}
+                    isDraggable={isDraggable}
+                    onRotateStart={() => {}} 
+                    onRotate={() => {}} 
+                    onRotateStop={() => {}}
+                    isBackground={layer.isBackground}
+                    zIndex={layer.zIndex}
+                    updateLayer={updateLayer}
+                  />
+                );
+              } else if (layer.type === 'text') {
+                return (
+                  <ThumbnailText
+                    key={layer.id} 
+                    id={layer.id} 
+                    isSelected={isSelected} 
+                    text={layer.text || ''} 
+                    color={layer.color || '#000000'}
+                    fontSize={layer.fontSize || '1rem'} 
+                    fontFamily={layer.fontFamily}
+                    fontWeight={layer.fontWeight}
+                    fontStyle={layer.fontStyle}
+                    textDecoration={layer.textDecoration}
+                    textShadow={layer.textShadow}
+                    x={layer.x} 
+                    y={layer.y} 
+                    width={layer.width} 
+                    height={layer.height}
+                    rotation={layer.rotation} 
+                    onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                    onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    enableResizing={isResizable} 
+                    disableDragging={!isDraggable}
+                    zIndex={layer.zIndex}
+                    updateLayer={updateLayer}
+                  />
+                );
+              } else if (layer.type === 'shape' && layer.shapeType) {
+                return (
+                  <ThumbnailShape
+                    key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType}
+                    backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
+                    borderWidth={layer.borderWidth || 0} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
+                    rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                    onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
+                    lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                    zIndex={layer.zIndex}
+                    updateLayer={updateLayer}
+                  />
+                );
+              }
+              return null;
+            })}
+          </div>
+            </div>
+
+            {/* グリッドオーバーレイ */}
+            {showGrid && (
+              <div 
+                className="absolute inset-0 pointer-events-none opacity-30"
+                style={{
+                  backgroundImage: `
+                    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+                  `,
+                  backgroundSize: `${gridSize}px ${gridSize}px`,
+                }}
+                aria-hidden="true"
+              />
+            )}
+
+            {/* アスペクト比ガイド */}
+            {showAspectGuide && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div 
+                  className="border-2 border-dashed border-blue-400/60 bg-blue-400/5 rounded"
+                  style={{
+                    width: '90%',
+                    height: '90%',
+                    aspectRatio: aspectRatio === 'custom' 
+                      ? `${customAspectRatio.width}/${customAspectRatio.height}`
+                      : (aspectRatio || '16:9'),
+                  }}
+                  aria-hidden="true"
+                />
+              </div>
+            )}
+
+            {/* 中央線 */}
+            {showCenterLines && (
+              <div className="absolute inset-0 pointer-events-none">
+                {/* 垂直中央線 */}
+                <div 
+                  className="absolute top-0 bottom-0 left-1/2 transform -translate-x-1/2 w-px bg-red-400/60"
+                  style={{ width: '1px' }}
+                  aria-hidden="true"
+                />
+                {/* 水平中央線 */}
+                <div 
+                  className="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-px bg-red-400/60"
+                  style={{ height: '1px' }}
+                  aria-hidden="true"
+                />
+              </div>
+            )}
+
+            {/* セーフエリアガイド */}
+            {showSafeArea && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                aria-hidden="true"
+              >
+                <div 
+                  style={{
+                    width: '90%',
+                    height: '90%',
+                    border: '2px dashed rgba(34, 197, 94, 0.6)',
+                    borderRadius: '4px',
+                    position: 'relative',
+                  }}
+                >
+                  <div className="absolute -top-6 left-0 text-xs text-green-400 font-medium">
+                    セーフエリア
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
 
   const renderMobileControls = () => (
     <div className="p-2 lg:p-4 space-y-3">
@@ -1556,7 +1749,7 @@ function AssetCreatorPage() {
       <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
         <main className="flex-1 overflow-y-auto">
           <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
-            <div className={`${isDesktop ? '' : 'min-h-[60vh]'}`}>
+            <div className={`${isDesktop ? '' : 'max-h-[85vh] overflow-hidden'}`}>
               <PreviewSection
                 isDesktop={isDesktop}
                 isPreviewDedicatedMode={isPreviewDedicatedMode}
@@ -1609,7 +1802,7 @@ function AssetCreatorPage() {
                   💡 ヒント: 「ツール設定」でレイヤーの詳細編集、「レイヤー管理」でレイヤーの並び替えができます。テンプレートやエクスポートはサイドバーからアクセスできます。
                 </p>
               </div>
-              {/* モバイル用コントロールはPreviewSectionコンポーネント内で処理 */}
+              {renderMobileControls()}
             </div>
           )}
         </main>

@@ -922,11 +922,10 @@ function AssetCreatorPage() {
           <p className="text-xs text-muted-foreground mt-1">レイヤーパネルからレイヤーを選択すると、ここで詳細設定ができます</p>
         </div>
       )}
-    </div>
-  );
+  // renderPreview関数はPreviewSectionコンポーネントに移動
 
-
-  const renderMobileControls = () => (
+  // renderMobileControls関数はPreviewSectionコンポーネントに移動
+  /*
     <div className="p-2 lg:p-4 space-y-3">
       {/* モバイル用クイックアクション */}
       <div className="space-y-2">
@@ -1537,11 +1536,7 @@ function AssetCreatorPage() {
           accept="image/*"
           onChange={handleImageUpload}
           className="hidden"
-          multiple
-        />
-      </div>
-    </div>
-  );
+  */
 
   return (
     <div className="relative flex flex-col lg:h-screen">
@@ -1556,7 +1551,7 @@ function AssetCreatorPage() {
       <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
         <main className="flex-1 overflow-y-auto">
           <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
-            <div className={`${isDesktop ? '' : 'min-h-[60vh]'}`}>
+            <div className={`${isDesktop ? '' : 'max-h-[85vh] overflow-hidden'}`}>
               <PreviewSection
                 isDesktop={isDesktop}
                 isPreviewDedicatedMode={isPreviewDedicatedMode}
@@ -1579,12 +1574,6 @@ function AssetCreatorPage() {
                 selectedLayerId={selectedLayerId}
                 setSelectedLayerId={setSelectedLayerId}
                 updateLayer={updateLayer}
-                removeLayer={removeLayer}
-                duplicateLayer={duplicateLayer}
-                moveLayerUp={moveLayerUp}
-                moveLayerDown={moveLayerDown}
-                reorderLayers={reorderLayers}
-                addLayer={addLayer}
                 aspectRatio={aspectRatio}
                 customAspectRatio={customAspectRatio}
                 isShiftKeyDown={isShiftKeyDown}
@@ -1596,7 +1585,6 @@ function AssetCreatorPage() {
                 handleDownloadThumbnail={handleDownloadThumbnail}
                 canUndo={canUndo}
                 canRedo={canRedo}
-                handleAddShape={handleAddShape}
                 renderToolsPanel={renderToolsPanel}
               />
             </div>
