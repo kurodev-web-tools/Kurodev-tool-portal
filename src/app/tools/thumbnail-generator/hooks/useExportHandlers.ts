@@ -28,17 +28,21 @@ export const useExportHandlers = (): ExportHandlers => {
   // 高度なエクスポート機能
   const handleAdvancedExport = async (settings: ExportSettings) => {
     try {
+      console.log('handleAdvancedExport called with settings:', settings);
       setIsExporting(true);
       
       const element = document.getElementById('thumbnail-preview') as HTMLElement;
+      console.log('Found element:', element);
       if (!element) {
         toast.error('プレビュー要素が見つかりません');
         return;
       }
 
       if (settings.batchExport) {
+        console.log('Executing batch export');
         await handleBatchExport(element, settings);
       } else {
+        console.log('Executing single export');
         await handleSingleExport(element, settings);
       }
     } catch (error) {
@@ -116,9 +120,12 @@ export const useExportHandlers = (): ExportHandlers => {
   // バッチエクスポート
   const handleBatchExport = async (element: HTMLElement, settings: ExportSettings) => {
     try {
+      console.log('handleBatchExport called with settings:', settings);
       // バッチサイズが設定されている場合は、それを使用
       if (settings.batchSizes && settings.batchSizes.length > 0) {
-        const promises = settings.batchSizes.map(async (size) => {
+        console.log('Processing batch sizes:', settings.batchSizes);
+        const promises = settings.batchSizes.map(async (size, index) => {
+          console.log(`Processing batch ${index + 1}/${settings.batchSizes.length}:`, size);
           // 品質プリセットのマッピング
           const qualityPreset = {
             low: { pixelRatio: 1, quality: 0.6 },
@@ -146,19 +153,23 @@ export const useExportHandlers = (): ExportHandlers => {
 
           // 形式に応じてエクスポート
           if (settings.format === 'png') {
+            console.log(`Exporting PNG for ${size.name}`);
             dataUrl = await toPng(element, exportOptions);
             filename = `thumbnail_${size.name}.png`;
           } else if (settings.format === 'jpeg') {
+            console.log(`Exporting JPEG for ${size.name}`);
             const { toJpeg } = await import('html-to-image');
             dataUrl = await toJpeg(element, exportOptions);
             filename = `thumbnail_${size.name}.jpg`;
           } else {
             // WebPはサポートされていないため、PNGを使用
+            console.log(`Exporting PNG (WebP fallback) for ${size.name}`);
             dataUrl = await toPng(element, exportOptions);
             filename = `thumbnail_${size.name}.png`;
           }
 
           // ダウンロード
+          console.log(`Creating download link for ${filename}`);
           const link = document.createElement('a');
           link.download = filename;
           link.href = dataUrl;
@@ -167,7 +178,9 @@ export const useExportHandlers = (): ExportHandlers => {
           return filename;
         });
 
+        console.log('Waiting for all batch exports to complete...');
         const filenames = await Promise.all(promises);
+        console.log('All batch exports completed:', filenames);
         toast.success(`${filenames.length}件のエクスポートが完了しました`);
       } else {
         // バッチサイズが設定されていない場合は、品質と形式の組み合わせでエクスポート
@@ -232,20 +245,25 @@ export const useExportHandlers = (): ExportHandlers => {
           }
         }
 
+        console.log('Fallback batch export completed');
         toast.success(`${formats.length * qualities.length}件のエクスポートが完了しました`);
       }
     } catch (error) {
       console.error('バッチエクスポートエラー:', error);
       throw error;
+    } finally {
+      console.log('Batch export completed, resetting isExporting state');
     }
   };
 
   // サムネイルダウンロード（既存機能）
   const handleDownloadThumbnail = async (quality: 'normal' | 'high' | 'super' = 'high') => {
     try {
+      console.log('handleDownloadThumbnail called with quality:', quality);
       setIsExporting(true);
       
       const element = document.getElementById('thumbnail-preview') as HTMLElement;
+      console.log('Found element for download:', element);
       if (!element) {
         toast.error('プレビュー要素が見つかりません');
         return;
@@ -257,12 +275,14 @@ export const useExportHandlers = (): ExportHandlers => {
         super: 2.0
       };
 
+      console.log('Starting PNG export with quality:', qualityMap[quality]);
       const dataUrl = await toPng(element, {
         quality: qualityMap[quality],
         pixelRatio: qualityMap[quality],
         backgroundColor: '#ffffff',
       });
 
+      console.log('PNG export completed, creating download link');
       const link = document.createElement('a');
       link.download = `thumbnail_${quality}.png`;
       link.href = dataUrl;
