@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
+import { ResizableDelta, Position } from 'react-rnd';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
   AccordionContent,
@@ -21,6 +23,7 @@ import { useTemplate, ShapeType, TemplateProvider } from './contexts/TemplateCon
 import { ToolbarSection } from './components/ToolbarSection';
 import { SidebarSection } from './components/SidebarSection';
 import { PreviewSection } from './components/PreviewSection';
+import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { useCanvasOperations } from './hooks/useCanvasOperations';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { AssetExportSettingsPanel, AssetExportSettings } from './components/AssetExportSettingsPanel';
@@ -28,6 +31,7 @@ import { logger } from '@/lib/logger';
 import { isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
 import { FontSelector } from '@/components/shared/FontSelector';
 import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
+import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];

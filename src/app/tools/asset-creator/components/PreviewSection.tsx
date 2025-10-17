@@ -46,7 +46,7 @@ interface PreviewSectionProps {
   moveLayerUp: (id: string) => void;
   moveLayerDown: (id: string) => void;
   reorderLayers: (startIndex: number, endIndex: number) => void;
-  addLayer: (layer: Layer) => void;
+  addLayer: (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => void;
   
   // アスペクト比
   aspectRatio: string;
