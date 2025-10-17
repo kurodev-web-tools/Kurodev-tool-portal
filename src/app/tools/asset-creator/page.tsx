@@ -33,6 +33,7 @@ import { EnhancedPropertyPanel } from './components/EnhancedPropertyPanel';
 import { Toolbar } from './components/Toolbar';
 import { EnhancedPreview, usePreviewKeyboardShortcuts } from './components/EnhancedPreview';
 import { useCanvasOperations } from './hooks/useCanvasOperations';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { AssetExportSettingsPanel, AssetExportSettings } from './components/AssetExportSettingsPanel';
 import { logger } from '@/lib/logger';
 import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
@@ -50,7 +51,6 @@ function AssetCreatorPage() {
     desktopDefaultOpen: true,
   });
   const [selectedTab, setSelectedTab] = React.useState("settings");
-  const [isShiftKeyDown, setIsShiftKeyDown] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
   const [isPreviewDedicatedMode, setIsPreviewDedicatedMode] = React.useState(false);
   
@@ -128,73 +128,56 @@ function AssetCreatorPage() {
   }, [isDesktop, isPreviewDedicatedMode, isSidebarOpen]);
 
   // キャンバス操作機能
+  const canvasOperations = useCanvasOperations(layers, selectedLayerId, restoreState);
   const {
     zoom,
     setZoom,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
     addToHistory,
-    resetHistoryFlag,
     saveToLocalStorage,
     loadFromLocalStorage,
-  } = useCanvasOperations(layers, selectedLayerId, restoreState);
+  } = canvasOperations;
 
-  // キー入力のイベントハンドラー
+  // キーボードショートカット
+  const { isShiftKeyDown, canUndo, canRedo } = useKeyboardShortcuts({ canvasOperations });
+
+  // レイヤーの変更を監視して履歴を保存
+  const prevLayersRef = React.useRef(layers);
   React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') setIsShiftKeyDown(true);
-      
-      // キーボードショートカット
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'z':
-            e.preventDefault();
-            if (e.shiftKey) {
-              const redoState = redo();
-              if (redoState) {
-                // TODO: レイヤー状態を復元
-                resetHistoryFlag();
-              }
-            } else {
-              const undoState = undo();
-              if (undoState) {
-                // TODO: レイヤー状態を復元
-                resetHistoryFlag();
-              }
-            }
-            break;
-          case 'y':
-            e.preventDefault();
-            const redoState = redo();
-            if (redoState) {
-              // TODO: レイヤー状態を復元
-              resetHistoryFlag();
-            }
-            break;
-          case 's':
-            e.preventDefault();
-            const saved = saveToLocalStorage(layers, selectedLayerId);
-            if (saved) {
-              toast.success('プロジェクトを保存しました');
-            } else {
-              toast.error('保存に失敗しました');
-            }
-            break;
-        }
-      }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') setIsShiftKeyDown(false);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [undo, redo, resetHistoryFlag, saveToLocalStorage, layers, selectedLayerId]);
+    const currentLayers = layers;
+    const prevLayers = prevLayersRef.current;
+
+    console.log('=== LAYERS EFFECT TRIGGERED ===');
+    console.log('Layers effect triggered:', {
+      prev: prevLayers.length,
+      current: currentLayers.length,
+      selectedLayerId: selectedLayerId,
+      canUndo,
+      canRedo,
+      prevLayers: prevLayers.map(l => ({ id: l.id, type: l.type })),
+      currentLayers: currentLayers.map(l => ({ id: l.id, type: l.type }))
+    });
+
+    // レイヤーの数が変わった場合（追加・削除）は履歴を保存
+    if (currentLayers.length !== prevLayers.length) {
+      console.log('*** LAYERS COUNT CHANGED ***');
+      console.log('Layers count changed, saving to history:', {
+        prev: prevLayers.length,
+        current: currentLayers.length,
+        selectedLayerId: selectedLayerId
+      });
+
+      // 少し遅延させてから履歴を保存（レイヤー状態の更新を待つ）
+      setTimeout(() => {
+        console.log('*** EXECUTING DELAYED HISTORY SAVE ***');
+        addToHistory(currentLayers, selectedLayerId);
+      }, 100);
+    } else {
+      console.log('Layers count unchanged, skipping history save');
+    }
+
+    prevLayersRef.current = currentLayers;
+    console.log('=== END LAYERS EFFECT ===');
+  }, [layers, selectedLayerId, addToHistory, canUndo, canRedo]);
 
   // デスクトップ表示時は初期状態でサイドバーを開く
   React.useEffect(() => {
@@ -374,9 +357,8 @@ function AssetCreatorPage() {
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
     updateLayer(id, { x: d.x, y: d.y });
-    // 履歴に追加
-    setTimeout(() => addToHistory(layers, selectedLayerId), 0);
-  }, [updateLayer, addToHistory, layers, selectedLayerId]);
+    // 履歴はuseEffectで管理
+  }, [updateLayer]);
 
   const handleLayerResize = React.useCallback((id: string, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
     updateLayer(id, {
@@ -385,9 +367,8 @@ function AssetCreatorPage() {
       x: position.x,
       y: position.y,
     });
-    // 履歴に追加
-    setTimeout(() => addToHistory(layers, selectedLayerId), 0);
-  }, [updateLayer, addToHistory, layers, selectedLayerId]);
+    // 履歴はuseEffectで管理
+  }, [updateLayer]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -455,8 +436,7 @@ function AssetCreatorPage() {
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
     } as any);
-    // 履歴に追加
-    setTimeout(() => addToHistory(layers, selectedLayerId), 0);
+    // 履歴はuseEffectで管理
   };
 
   const handleAddText = () => {
@@ -473,8 +453,7 @@ function AssetCreatorPage() {
       color: '#000000',
       fontSize: isDesktop ? '2rem' : '1rem',
     } as any);
-    // 履歴に追加
-    setTimeout(() => addToHistory(layers, selectedLayerId), 0);
+    // 履歴はuseEffectで管理
   };
 
   // 保存機能
@@ -487,24 +466,26 @@ function AssetCreatorPage() {
     }
   }, [saveToLocalStorage, layers, selectedLayerId]);
 
-  // アンドゥ・リドゥハンドラー
-  const handleUndo = React.useCallback(() => {
-    const undoState = undo();
-    if (undoState) {
-      // TODO: レイヤー状態を復元する処理を実装
-      resetHistoryFlag();
-      toast.success('操作を元に戻しました');
+  // ツールバー用のUndo/Redoハンドラー（toastメッセージ付き）
+  const handleToolbarUndo = React.useCallback(() => {
+    console.log('Toolbar undo button clicked');
+    const result = canvasOperations.undo();
+    if (result) {
+      toast.success('元に戻しました');
+    } else {
+      console.log('Undo failed - no history to undo');
     }
-  }, [undo, resetHistoryFlag]);
+  }, [canvasOperations.undo]);
 
-  const handleRedo = React.useCallback(() => {
-    const redoState = redo();
-    if (redoState) {
-      // TODO: レイヤー状態を復元する処理を実装
-      resetHistoryFlag();
-      toast.success('操作をやり直しました');
+  const handleToolbarRedo = React.useCallback(() => {
+    console.log('Toolbar redo button clicked');
+    const result = canvasOperations.redo();
+    if (result) {
+      toast.success('やり直しました');
+    } else {
+      console.log('Redo failed - no history to redo');
     }
-  }, [redo, resetHistoryFlag]);
+  }, [canvasOperations.redo]);
 
   if (!selectedTemplate) {
     return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
@@ -1022,8 +1003,8 @@ function AssetCreatorPage() {
         <Toolbar
           zoom={zoom}
           setZoom={setZoom}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
+          onUndo={handleToolbarUndo}
+          onRedo={handleToolbarRedo}
           onSave={handleSave}
           onDownload={handleDownloadThumbnail}
           canUndo={canUndo}

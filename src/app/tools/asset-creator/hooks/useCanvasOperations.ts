@@ -21,72 +21,170 @@ export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId
     layers: initialLayers,
     selectedLayerId: initialSelectedLayerId
   }]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  const historyIndexRef = useRef(0); // 最初の履歴のインデックス
+  const [canUndo, setCanUndo] = useState(false); // 初期状態ではUndoできない
+  const [canRedo, setCanRedo] = useState(false);
   const isUpdatingFromHistory = useRef(false);
 
   // 履歴に状態を追加
   const addToHistory = useCallback((layers: any[], selectedLayerId: string | null) => {
     if (isUpdatingFromHistory.current) return;
     
+    console.log('Adding to history:', { layers: layers.length, selectedLayerId });
+    
     const newState: CanvasState = { layers: [...layers], selectedLayerId };
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newState);
     
-    // 履歴の最大数を制限（50個まで）
-    if (newHistory.length > 50) {
-      newHistory.shift();
-    } else {
-      setHistoryIndex(historyIndex + 1);
-    }
-    
-    setHistory(newHistory);
-  }, [history, historyIndex]);
+    setHistory(prevHistory => {
+      const newHistory = prevHistory.slice(0, historyIndexRef.current + 1);
+      newHistory.push(newState);
+      
+      // 履歴の最大数を制限（50個まで）
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        // インデックスを調整（先頭を削除したため、1つ減らす）
+        historyIndexRef.current = Math.max(0, historyIndexRef.current - 1);
+      } else {
+        historyIndexRef.current += 1;
+      }
+      
+      // canUndoとcanRedoの状態を更新
+      setCanUndo(historyIndexRef.current > 0);
+      setCanRedo(false);
+      
+      console.log('History updated:', {
+        totalHistory: newHistory.length,
+        currentIndex: historyIndexRef.current,
+        canUndo: historyIndexRef.current > 0,
+        canRedo: false
+      });
+      
+      return newHistory;
+    });
+  }, []);
 
   // アンドゥ
   const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      const historyState = history[newIndex];
+    console.log('undo called:', {
+      currentIndex: historyIndexRef.current,
+      historyLength: history.length,
+      canUndo
+    });
+    
+    // インデックスが範囲外の場合は調整
+    if (historyIndexRef.current >= history.length) {
+      console.log('Index out of bounds, adjusting to:', history.length - 1);
+      historyIndexRef.current = history.length - 1;
+    }
+    
+    // インデックスが範囲内にあることを確認
+    if (historyIndexRef.current > 0 && historyIndexRef.current < history.length) {
+      const newIndex = historyIndexRef.current - 1;
       
-      setHistoryIndex(newIndex);
-      isUpdatingFromHistory.current = true;
-      
-      // レイヤー状態を実際に更新
-      setCurrentLayers([...historyState.layers]);
-      setCurrentSelectedLayerId(historyState.selectedLayerId);
-      
-      // restoreStateが提供されている場合はそれも使用
-      if (restoreState) {
-        restoreState(historyState.layers, historyState.selectedLayerId);
+      // newIndexが範囲内にあることを確認
+      if (newIndex >= 0 && newIndex < history.length) {
+        const historyState = history[newIndex];
+        
+        if (!historyState) {
+          console.error('History state not found at index:', newIndex, {
+            history: history,
+            newIndex,
+            currentIndex: historyIndexRef.current
+          });
+          return null;
+        }
+        
+        historyIndexRef.current = newIndex;
+        isUpdatingFromHistory.current = true;
+        
+        // canUndoとcanRedoの状態を更新
+        setCanUndo(newIndex > 0);
+        setCanRedo(newIndex < history.length - 1);
+        
+        console.log('Undoing to index:', newIndex, 'layers:', historyState.layers.length);
+        
+        // レイヤー状態を実際に更新
+        setCurrentLayers([...historyState.layers]);
+        setCurrentSelectedLayerId(historyState.selectedLayerId);
+        
+        // restoreStateが提供されている場合はそれも使用
+        if (restoreState) {
+          restoreState(historyState.layers, historyState.selectedLayerId);
+        }
+        
+        setTimeout(() => {
+          isUpdatingFromHistory.current = false;
+        }, 100);
+        
+        return historyState;
+      } else {
+        console.error('Invalid newIndex:', newIndex, 'history length:', history.length);
+        return null;
       }
-      
-      return historyState;
     }
     return null;
-  }, [history, historyIndex, restoreState]);
+  }, [history, restoreState, canUndo]);
 
   // リドゥ
   const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      const historyState = history[newIndex];
+    console.log('redo called:', {
+      currentIndex: historyIndexRef.current,
+      historyLength: history.length,
+      canRedo
+    });
+    
+    // インデックスが範囲外の場合は調整
+    if (historyIndexRef.current >= history.length) {
+      console.log('Index out of bounds, adjusting to:', history.length - 1);
+      historyIndexRef.current = history.length - 1;
+    }
+    
+    // インデックスが範囲内にあることを確認
+    if (historyIndexRef.current >= 0 && historyIndexRef.current < history.length - 1) {
+      const newIndex = historyIndexRef.current + 1;
       
-      setHistoryIndex(newIndex);
-      isUpdatingFromHistory.current = true;
-      
-      // レイヤー状態を実際に更新
-      setCurrentLayers([...historyState.layers]);
-      setCurrentSelectedLayerId(historyState.selectedLayerId);
-      
-      // restoreStateが提供されている場合はそれも使用
-      if (restoreState) {
-        restoreState(historyState.layers, historyState.selectedLayerId);
+      // newIndexが範囲内にあることを確認
+      if (newIndex >= 0 && newIndex < history.length) {
+        const historyState = history[newIndex];
+        
+        if (!historyState) {
+          console.error('History state not found at index:', newIndex, {
+            history: history,
+            newIndex,
+            currentIndex: historyIndexRef.current
+          });
+          return null;
+        }
+        
+        historyIndexRef.current = newIndex;
+        isUpdatingFromHistory.current = true;
+        
+        // canUndoとcanRedoの状態を更新
+        setCanUndo(true);
+        setCanRedo(newIndex < history.length - 1);
+        
+        console.log('Redoing to index:', newIndex, 'layers:', historyState.layers.length);
+        
+        // レイヤー状態を実際に更新
+        setCurrentLayers([...historyState.layers]);
+        setCurrentSelectedLayerId(historyState.selectedLayerId);
+        
+        // restoreStateが提供されている場合はそれも使用
+        if (restoreState) {
+          restoreState(historyState.layers, historyState.selectedLayerId);
+        }
+        
+        setTimeout(() => {
+          isUpdatingFromHistory.current = false;
+        }, 100);
+        
+        return historyState;
+      } else {
+        console.error('Invalid newIndex:', newIndex, 'history length:', history.length);
+        return null;
       }
-      
-      return historyState;
     }
     return null;
-  }, [history, historyIndex, restoreState]);
+  }, [history, restoreState, canRedo]);
 
   // 履歴更新フラグをリセット
   const resetHistoryFlag = useCallback(() => {
@@ -134,8 +232,8 @@ export const useCanvasOperations = (initialLayers: any[], initialSelectedLayerId
     // アンドゥ・リドゥ
     undo,
     redo,
-    canUndo: historyIndex > 0,
-    canRedo: historyIndex < history.length - 1,
+    canUndo,
+    canRedo,
     addToHistory,
     resetHistoryFlag,
     

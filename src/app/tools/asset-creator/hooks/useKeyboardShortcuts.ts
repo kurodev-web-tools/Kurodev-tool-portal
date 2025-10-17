@@ -1,163 +1,201 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
+import { useTemplate } from '../contexts/TemplateContext';
+import { toast } from 'sonner';
 
-interface KeyboardShortcutsProps {
-  onUndo?: () => void;
-  onRedo?: () => void;
-  onSave?: () => void;
-  onDelete?: () => void;
-  onDuplicate?: () => void;
-  onSelectAll?: () => void;
-  onZoomIn?: () => void;
-  onZoomOut?: () => void;
-  onZoomReset?: () => void;
-  onToggleVisibility?: () => void;
-  onToggleLock?: () => void;
-  canUndo?: boolean;
-  canRedo?: boolean;
-  isEnabled?: boolean;
+interface UseKeyboardShortcutsParams {
+  canvasOperations: {
+    undo: () => any;
+    redo: () => any;
+    canUndo: boolean;
+    canRedo: boolean;
+    saveToLocalStorage: (layers: any[], selectedLayerId: string | null) => boolean;
+  };
 }
 
-export const useKeyboardShortcuts = ({
-  onUndo,
-  onRedo,
-  onSave,
-  onDelete,
-  onDuplicate,
-  onSelectAll,
-  onZoomIn,
-  onZoomOut,
-  onZoomReset,
-  onToggleVisibility,
-  onToggleLock,
-  canUndo = false,
-  canRedo = false,
-  isEnabled = true,
-}: KeyboardShortcutsProps) => {
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!isEnabled) return;
+/**
+ * キーボードショートカットを管理するフック
+ * 既存の機能を保持しながら、キーボードイベントを管理
+ */
+export const useKeyboardShortcuts = ({ canvasOperations }: UseKeyboardShortcutsParams) => {
+  console.log('useKeyboardShortcuts hook called');
+  
+  const templateContext = useTemplate();
+  
+  console.log('Canvas operations state:', {
+    canUndo: canvasOperations.canUndo,
+    canRedo: canvasOperations.canRedo,
+    selectedLayerId: templateContext.selectedLayerId
+  });
 
-    // フォーカスが入力フィールドにある場合はショートカットを無効化
-    const target = event.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
-      return;
-    }
+  // Shiftキーの状態を管理
+  const [isShiftKeyDown, setIsShiftKeyDown] = useState(false);
 
-    const { ctrlKey, metaKey, shiftKey, key } = event;
-    const isModifierPressed = ctrlKey || metaKey;
+  const {
+    selectedLayerId,
+    setSelectedLayerId,
+    removeLayer,
+    duplicateLayer,
+  } = templateContext;
 
-    // 基本操作
-    if (isModifierPressed && key === 'z' && !shiftKey && canUndo) {
-      event.preventDefault();
-      onUndo?.();
-      return;
-    }
-
-    if (isModifierPressed && ((key === 'y') || (key === 'z' && shiftKey)) && canRedo) {
-      event.preventDefault();
-      onRedo?.();
-      return;
-    }
-
-    if (isModifierPressed && key === 's') {
-      event.preventDefault();
-      onSave?.();
-      return;
-    }
-
-    // レイヤー操作
-    if (key === 'Delete' || key === 'Backspace') {
-      event.preventDefault();
-      onDelete?.();
-      return;
-    }
-
-    if (isModifierPressed && key === 'd') {
-      event.preventDefault();
-      onDuplicate?.();
-      return;
-    }
-
-    if (isModifierPressed && key === 'a') {
-      event.preventDefault();
-      onSelectAll?.();
-      return;
-    }
-
-    // ビュー操作
-    if (isModifierPressed && key === '=') {
-      event.preventDefault();
-      onZoomIn?.();
-      return;
-    }
-
-    if (isModifierPressed && key === '-') {
-      event.preventDefault();
-      onZoomOut?.();
-      return;
-    }
-
-    if (isModifierPressed && key === '0') {
-      event.preventDefault();
-      onZoomReset?.();
-      return;
-    }
-
-    // 表示・ロック切り替え
-    if (key === 'v' && !isModifierPressed) {
-      event.preventDefault();
-      onToggleVisibility?.();
-      return;
-    }
-
-    if (key === 'l' && !isModifierPressed) {
-      event.preventDefault();
-      onToggleLock?.();
-      return;
-    }
-  }, [
-    isEnabled,
-    onUndo,
-    onRedo,
-    onSave,
-    onDelete,
-    onDuplicate,
-    onSelectAll,
-    onZoomIn,
-    onZoomOut,
-    onZoomReset,
-    onToggleVisibility,
-    onToggleLock,
+  const {
+    undo,
+    redo,
     canUndo,
     canRedo,
+  } = canvasOperations;
+
+  console.log('Keyboard shortcuts state:', {
+    canUndo,
+    canRedo,
+    selectedLayerId,
+    canvasOperationsCanUndo: canvasOperations.canUndo,
+    canvasOperationsCanRedo: canvasOperations.canRedo
+  });
+
+  // キーボードイベントハンドラー
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Shiftキーの状態を追跡
+    if (e.key === 'Shift') {
+      setIsShiftKeyDown(true);
+      return;
+    }
+
+    // 最新のcanUndoとcanRedoを取得
+    const currentCanUndo = canvasOperations.canUndo;
+    const currentCanRedo = canvasOperations.canRedo;
+
+    // Ctrl/Cmd + キーの組み合わせ
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 'z':
+          e.preventDefault();
+          console.log('Ctrl+Z pressed', {
+            canUndo: currentCanUndo,
+            canRedo: currentCanRedo,
+            shiftKey: e.shiftKey
+          });
+          if (e.shiftKey) {
+            // Ctrl+Shift+Z: やり直し
+            if (currentCanRedo) {
+              console.log('Executing redo');
+              const result = redo();
+              if (result) {
+                toast.success('やり直しました');
+              }
+            } else {
+              console.log('Cannot redo');
+            }
+          } else {
+            // Ctrl+Z: 元に戻す
+            if (currentCanUndo) {
+              console.log('Executing undo');
+              const result = undo();
+              if (result) {
+                toast.success('元に戻しました');
+              }
+            } else {
+              console.log('Cannot undo');
+            }
+          }
+          break;
+        case 'y':
+          e.preventDefault();
+          console.log('Ctrl+Y pressed', { canRedo: currentCanRedo });
+          // Ctrl+Y: やり直し
+          if (currentCanRedo) {
+            console.log('Executing redo');
+            const result = redo();
+            if (result) {
+              toast.success('やり直しました');
+            }
+          } else {
+            console.log('Cannot redo');
+          }
+          break;
+        case 'd':
+          e.preventDefault();
+          // Ctrl+D: レイヤーを複製
+          if (selectedLayerId) {
+            duplicateLayer(selectedLayerId);
+            toast.success('レイヤーを複製しました');
+          }
+          break;
+        case 'Delete':
+        case 'Backspace':
+          e.preventDefault();
+          // Ctrl+Delete/Backspace: レイヤーを削除
+          if (selectedLayerId) {
+            removeLayer(selectedLayerId);
+            toast.success('レイヤーを削除しました');
+          }
+          break;
+        case 's':
+          e.preventDefault();
+          // Ctrl+S: 保存
+          const saved = canvasOperations.saveToLocalStorage(templateContext.layers, templateContext.selectedLayerId);
+          if (saved) {
+            toast.success('プロジェクトを保存しました');
+          } else {
+            toast.error('保存に失敗しました');
+          }
+          break;
+      }
+    }
+
+    // 単独キー
+    switch (e.key) {
+      case 'Delete':
+      case 'Backspace':
+        // Delete/Backspace: レイヤーを削除
+        if (selectedLayerId && !e.ctrlKey && !e.metaKey) {
+          removeLayer(selectedLayerId);
+          toast.success('レイヤーを削除しました');
+        }
+        break;
+      case 'Escape':
+        // Escape: 選択を解除
+        if (selectedLayerId) {
+          setSelectedLayerId(null);
+        }
+        break;
+    }
+  }, [
+    canvasOperations,
+    templateContext,
+    selectedLayerId,
+    setSelectedLayerId,
+    removeLayer,
+    duplicateLayer,
+    undo,
+    redo,
+    setIsShiftKeyDown,
   ]);
 
-  useEffect(() => {
-    if (isEnabled) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-      };
+  // キーアップイベントハンドラー
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    // Shiftキーの状態を追跡
+    if (e.key === 'Shift') {
+      setIsShiftKeyDown(false);
     }
-  }, [handleKeyDown, isEnabled]);
+  }, [setIsShiftKeyDown]);
 
-  // ショートカット一覧を返す（ヘルプ表示用）
-  const shortcuts = [
-    { key: 'Ctrl+Z', description: '元に戻す', enabled: canUndo },
-    { key: 'Ctrl+Y / Ctrl+Shift+Z', description: 'やり直し', enabled: canRedo },
-    { key: 'Ctrl+S', description: '保存', enabled: true },
-    { key: 'Delete / Backspace', description: 'レイヤー削除', enabled: true },
-    { key: 'Ctrl+D', description: 'レイヤー複製', enabled: true },
-    { key: 'Ctrl+A', description: '全選択', enabled: true },
-    { key: 'Ctrl++', description: 'ズームイン', enabled: true },
-    { key: 'Ctrl+-', description: 'ズームアウト', enabled: true },
-    { key: 'Ctrl+0', description: 'ズームリセット', enabled: true },
-    { key: 'V', description: '表示/非表示切り替え', enabled: true },
-    { key: 'L', description: 'ロック/アンロック切り替え', enabled: true },
-  ];
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
-  return { shortcuts };
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleKeyDown, handleKeyUp]);
+
+  return {
+    isShiftKeyDown,
+    canUndo,
+    canRedo,
+  };
 };
 
 
