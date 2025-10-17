@@ -1050,6 +1050,81 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
     </>
   );
 
+  // モバイル用クイックアクセス
+  const renderMobileControls = () => (
+    <div className="p-2 lg:p-4 space-y-3">
+      {/* モバイル用クイックアクション */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-muted-foreground">クイックアクセス</h4>
+        <Tabs value={uiState.selectedTab} onValueChange={uiState.setSelectedTab} className="w-full">
+          <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
+            <TabsTrigger 
+              value="tools"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              ツール設定
+            </TabsTrigger>
+            <TabsTrigger 
+              value="layers"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              レイヤー管理
+            </TabsTrigger>
+            <TabsTrigger 
+              value="edit"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              レイヤー編集
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="tools" className="mt-4 max-h-[30vh] overflow-y-auto">
+            {renderToolsPanel()}
+          </TabsContent>
+          
+          <TabsContent value="layers" className="mt-4 max-h-[30vh] overflow-y-auto">
+            <UnifiedLayerPanel 
+              context={{
+                layers: editorState.layers,
+                updateLayer: editorState.updateLayer,
+                removeLayer: editorState.removeLayer,
+                selectedLayerId: editorState.selectedLayerId,
+                setSelectedLayerId: editorState.setSelectedLayerId,
+                reorderLayers: editorState.reorderLayers,
+                duplicateLayer: editorState.duplicateLayer,
+                addLayer: editorState.addLayer,
+                moveLayerUp: editorState.moveLayerUp,
+                moveLayerDown: editorState.moveLayerDown,
+              }}
+              onShapeSelect={(shapeType) => editorState.handleAddShape(shapeType as ShapeType)}
+              showShapeSelector={true}
+            />
+          </TabsContent>
+          
+          <TabsContent value="edit" className="mt-4 max-h-[30vh] overflow-y-auto">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">レイヤー編集</h4>
+              <div className="space-y-2">
+                <Button size="sm" variant="outline" className="w-full" onClick={() => editorState.duplicateLayer(editorState.selectedLayerId!)}>
+                  複製
+                </Button>
+                <Button size="sm" variant="outline" className="w-full" onClick={() => editorState.removeLayer(editorState.selectedLayerId!)}>
+                  削除
+                </Button>
+                <Button size="sm" variant="outline" className="w-full" onClick={() => editorState.moveLayerUp(editorState.selectedLayerId!)}>
+                  最前面
+                </Button>
+                <Button size="sm" variant="outline" className="w-full" onClick={() => editorState.moveLayerDown(editorState.selectedLayerId!)}>
+                  最背面
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative flex flex-col lg:h-screen">
       {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
@@ -1061,12 +1136,23 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
       )}
 
       <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
-        <main className="flex-1 overflow-y-auto">
-          <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
-            <div className={`${isDesktop ? '' : 'max-h-[85vh] overflow-hidden'}`}>
+        <main className={`${isDesktop ? 'flex-1 overflow-y-auto' : 'flex-1 flex flex-col'}`}>
+          <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16 flex-1 flex flex-col'}`}>
+            <div className={`${isDesktop ? '' : 'flex-1 flex flex-col'}`}>
               {renderPreview()}
             </div>
           </div>
+          {/* モバイル用コントロール - プレビュー専用モード時は非表示 */}
+          {!isDesktop && !uiState.isPreviewDedicatedMode && (
+            <div className="border-t bg-background/95 backdrop-blur-sm max-h-[40vh] overflow-y-auto flex-shrink-0">
+              <div className="p-2">
+                <p className="text-xs text-muted-foreground mb-2">
+                  💡 ヒント: 「ツール設定」でレイヤーの詳細編集、「レイヤー管理」でレイヤーの並び替えができます。テンプレートやエクスポートはサイドバーからアクセスできます。
+                </p>
+              </div>
+              {renderMobileControls()}
+            </div>
+          )}
         </main>
 
         {/* サイドバーが閉じている場合の開くボタン */}

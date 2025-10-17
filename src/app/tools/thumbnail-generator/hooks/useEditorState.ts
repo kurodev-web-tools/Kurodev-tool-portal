@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTemplate, ShapeType } from '../contexts/TemplateContext';
 import { Layer } from '@/types/layers';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface HistoryState {
   layers: Layer[];
@@ -20,7 +21,7 @@ export interface EditorState {
   
   // レイヤー管理
   layers: Layer[];
-  addLayer: (layer: Omit<Layer, 'id'>) => void;
+  addLayer: (layer: Omit<Layer, 'id' | 'rotation' | 'zIndex'>) => void;
   removeLayer: (id: string) => void;
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   selectedLayerId: string | null;
@@ -29,6 +30,7 @@ export interface EditorState {
   duplicateLayer: (id: string) => void;
   moveLayerUp: (id: string) => void;
   moveLayerDown: (id: string) => void;
+  handleAddShape: (shapeType: ShapeType) => void;
   
   // アスペクト比
   aspectRatio: string;
@@ -58,6 +60,9 @@ export const useEditorState = (): EditorState => {
   
   // ズーム機能
   const [zoom, setZoom] = useState(1);
+  
+  // レスポンシブ対応
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
   
   // 履歴管理
   const [history, setHistory] = useState<HistoryState[]>([{
@@ -267,6 +272,40 @@ export const useEditorState = (): EditorState => {
     duplicateLayer: templateContext.duplicateLayer,
     moveLayerUp: templateContext.moveLayerUp,
     moveLayerDown: templateContext.moveLayerDown,
+    handleAddShape: useCallback((shapeType: ShapeType) => {
+      const offset = templateContext.layers.filter(l => l.type === 'shape').length * (isDesktop ? 20 : 5);
+      const shapeCount = templateContext.layers.filter(l => l.type === 'shape' && 'shapeType' in l && l.shapeType === shapeType).length + 1;
+      let name = '';
+      const initialX = isDesktop ? 550 : 10;
+      const initialY = isDesktop ? 250 : 10;
+      const initialWidth = isDesktop ? 300 : 50;
+      const initialHeight = isDesktop ? 300 : 50;
+      const initialBorderWidth = isDesktop ? 2 : 1;
+      const lineArrowWidth = isDesktop ? 300 : 100;
+      const lineArrowHeight = isDesktop ? 5 : 3;
+
+      switch (shapeType) {
+        case 'rectangle': name = `四角 ${shapeCount}`; break;
+        case 'circle': name = `円 ${shapeCount}`; break;
+        case 'line': name = `線 ${shapeCount}`; break;
+        case 'arrow': name = `矢印 ${shapeCount}`; break;
+      }
+
+      templateContext.addLayer({
+        type: 'shape',
+        shapeType,
+        name,
+        visible: true,
+        locked: false,
+        x: initialX + offset,
+        y: initialY + offset,
+        width: (shapeType === 'line' || shapeType === 'arrow') ? lineArrowWidth : initialWidth,
+        height: (shapeType === 'line' || shapeType === 'arrow') ? lineArrowHeight : initialHeight,
+        backgroundColor: '#cccccc',
+        borderColor: '#000000',
+        borderWidth: initialBorderWidth,
+      } as any);
+    }, [templateContext.addLayer, templateContext.layers, isDesktop]),
     
     // アスペクト比
     aspectRatio: templateContext.aspectRatio,
