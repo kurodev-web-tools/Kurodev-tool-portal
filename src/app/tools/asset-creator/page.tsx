@@ -20,6 +20,7 @@ import {
 import { useSidebar } from '@/hooks/use-sidebar';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useTemplate, ShapeType, TemplateProvider } from './contexts/TemplateContext';
+import { EditorProvider } from '@/contexts/EditorContext';
 import { ToolbarSection } from './components/ToolbarSection';
 import { SidebarSection } from './components/SidebarSection';
 import { PreviewSection } from './components/PreviewSection';
@@ -1637,8 +1638,10 @@ function AssetCreatorPage() {
 // TemplateProviderでラップしたコンポーネント
 export default function AssetCreatorPageWithProvider() {
   return (
-    <TemplateProvider>
-      <AssetCreatorPage />
-    </TemplateProvider>
+    <EditorProvider>
+      <TemplateProvider>
+        <AssetCreatorPage />
+      </TemplateProvider>
+    </EditorProvider>
   );
 }

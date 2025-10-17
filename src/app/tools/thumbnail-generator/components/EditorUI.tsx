@@ -27,7 +27,6 @@ import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
 import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { ExportSettingsPanel, ExportSettings } from './ExportSettingsPanel';
-import { EnhancedPreview } from '../../asset-creator/components/EnhancedPreview';
 import { Toolbar } from '../../asset-creator/components/Toolbar';
 import { useCanvasOperations } from '../../asset-creator/hooks/useCanvasOperations';
 import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
