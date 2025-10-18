@@ -92,6 +92,17 @@ export const reorderLayers = (
   sourceIndex: number,
   destinationIndex: number
 ): Layer[] => {
+  // 境界チェック
+  if (sourceIndex < 0 || destinationIndex < 0 || 
+      sourceIndex >= layers.length || destinationIndex >= layers.length) {
+    return layers;
+  }
+  
+  // 同じインデックスの場合は変更なし
+  if (sourceIndex === destinationIndex) {
+    return layers;
+  }
+  
   const result = Array.from(layers);
   const [removed] = result.splice(sourceIndex, 1);
   result.splice(destinationIndex, 0, removed);

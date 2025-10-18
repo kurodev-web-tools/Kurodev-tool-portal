@@ -113,7 +113,7 @@ export const useSelectedLayer = (
 
   // 選択されたレイヤーが編集可能かどうかをメモ化
   const canEditSelectedLayer = useMemo(
-    () => selectedLayer && !selectedLayer.locked,
+    () => Boolean(selectedLayer && !selectedLayer.locked),
     [selectedLayer]
   );
 
