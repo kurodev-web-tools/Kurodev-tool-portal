@@ -9,6 +9,8 @@ import ThumbnailText from '@/components/shared/thumbnail/ThumbnailText';
 import ThumbnailImage from '@/components/shared/thumbnail/ThumbnailImage';
 import ThumbnailShape from '@/components/shared/thumbnail/ThumbnailShape';
 import { ToolbarSection } from './ToolbarSection';
+import { MobileControls } from '@/components/shared/MobileControls';
+import { MobileDisplaySettings } from '@/components/shared/MobileDisplaySettings';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { ShapeType, Layer } from '../contexts/TemplateContext';
 
@@ -302,8 +304,8 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
       {/* モバイル用クイックアクション */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-muted-foreground">クイックアクセス</h4>
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full max-h-[40vh] flex flex-col">
+          <TabsList className="w-full h-16 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
             <TabsTrigger 
               value="tools"
               className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -320,15 +322,21 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
               value="edit"
               className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              レイヤー編集
+              編集
+            </TabsTrigger>
+            <TabsTrigger 
+              value="display"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              表示設定
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="tools" className="mt-4 max-h-[30vh] overflow-y-auto">
+          <TabsContent value="tools" className="mt-4 flex-1 overflow-y-auto">
             {renderToolsPanel()}
           </TabsContent>
           
-          <TabsContent value="layers" className="mt-4 max-h-[30vh] overflow-y-auto">
+          <TabsContent value="layers" className="mt-4 flex-1 overflow-y-auto">
             <UnifiedLayerPanel 
               context={{
                 layers,
@@ -347,24 +355,51 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
             />
           </TabsContent>
           
-          <TabsContent value="edit" className="mt-4 max-h-[30vh] overflow-y-auto">
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">レイヤー編集</h4>
+          <TabsContent value="edit" className="mt-4 flex-1 overflow-y-auto">
+            <div className="space-y-4">
+              {/* レイヤー操作ボタン */}
               <div className="space-y-2">
-                <Button size="sm" variant="outline" className="w-full" onClick={() => duplicateLayer(selectedLayerId!)}>
-                  複製
-                </Button>
-                <Button size="sm" variant="outline" className="w-full" onClick={() => removeLayer(selectedLayerId!)}>
-                  削除
-                </Button>
-                <Button size="sm" variant="outline" className="w-full" onClick={() => moveLayerUp(selectedLayerId!)}>
-                  最前面
-                </Button>
-                <Button size="sm" variant="outline" className="w-full" onClick={() => moveLayerDown(selectedLayerId!)}>
-                  最背面
-                </Button>
+                <h4 className="text-sm font-medium">レイヤー操作</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button size="sm" variant="outline" onClick={() => duplicateLayer(selectedLayerId!)}>
+                    複製
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => removeLayer(selectedLayerId!)}>
+                    削除
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => moveLayerUp(selectedLayerId!)}>
+                    最前面
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => moveLayerDown(selectedLayerId!)}>
+                    最背面
+                  </Button>
+                </div>
               </div>
+
+              {/* モバイル操作コントロール */}
+              <MobileControls
+                selectedLayer={layers.find(layer => layer.id === selectedLayerId) || null}
+                onUpdateLayer={updateLayer}
+                className="mt-4"
+              />
             </div>
+          </TabsContent>
+
+          <TabsContent value="display" className="mt-4 flex-1 overflow-y-auto">
+            <MobileDisplaySettings
+              zoom={zoom}
+              onZoomChange={setZoom}
+              showGrid={showGrid}
+              onShowGridChange={setShowGrid}
+              showGuides={showCenterLines}
+              onShowGuidesChange={setShowCenterLines}
+              showSafeArea={showSafeArea}
+              onShowSafeAreaChange={setShowSafeArea}
+              showAspectGuide={showAspectGuide}
+              onShowAspectGuideChange={setShowAspectGuide}
+              gridSize={gridSize}
+              onGridSizeChange={setGridSize}
+            />
           </TabsContent>
         </Tabs>
       </div>
