@@ -184,7 +184,7 @@ export function WeekView({
             {/* 新規追加ボタン */}
             <div className="mt-2">
               <button
-                className="w-full text-center py-1.5 text-xs text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded-md hover:bg-blue-500/10 transition-colors"
+                className="w-full text-center py-1.5 text-xs text-[#20B2AA] hover:text-[#20B2AA] border border-[#20B2AA]/30 rounded-md hover:bg-[#20B2AA]/10 transition-colors"
                 onClick={() => {
                   setSelectedDate(day);
                   setIsModalOpen(true);

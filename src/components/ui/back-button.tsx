@@ -49,7 +49,7 @@ export function BackButton({
         variant={variant}
         size={size}
         onClick={handleBack}
-        className="flex items-center space-x-2 text-gray-300 hover:text-blue-400 hover:bg-blue-500/10"
+        className="flex items-center space-x-2 text-gray-300 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10"
       >
         <ArrowLeft className="h-4 w-4" />
         <span>{canGoBack ? '戻る' : fallbackLabel}</span>
@@ -60,7 +60,7 @@ export function BackButton({
           variant="ghost"
           size={size}
           onClick={handleHome}
-          className="flex items-center space-x-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10"
+          className="flex items-center space-x-2 text-gray-400 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10"
         >
           <Home className="h-4 w-4" />
           <span>ホーム</span>
@@ -97,7 +97,7 @@ export function SimpleBackButton({
       size={size}
       onClick={handleBack}
       className={cn(
-        "p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10",
+        "p-2 text-gray-400 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10",
         className
       )}
       title={canGoBack ? '戻る' : 'ホームに戻る'}

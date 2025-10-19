@@ -10,6 +10,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PageNavigationProps {
   className?: string;
@@ -56,7 +57,7 @@ export function PageNavigation({
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
-      setIsVisible(scrollTop > 300);
+      setIsVisible(scrollTop > 200);
 
       // アクティブセクションを判定
       const sections = navigationItems.map(item => ({
@@ -97,29 +98,35 @@ export function PageNavigation({
   }
 
   return (
-    <>
+    <TooltipProvider>
       {/* デスクトップナビゲーション */}
       <div className={cn(
-        "hidden lg:flex fixed right-6 top-24 z-40",
+        "hidden lg:flex fixed right-8 top-32 z-40",
         "flex-col space-y-2",
         className
       )}>
         {showQuickNav && (
-          <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg p-1 shadow-xl min-w-[120px]">
+          <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-sm p-1 shadow-xl min-w-[60px] warm-cyber-glow">
             {navigationItems.map((item) => (
-                     <Button
-                       key={item.id}
-                       variant="ghost"
-                       size="sm"
-                       onClick={() => scrollToSection(item.href)}
-                       className={cn(
-                         "w-full justify-start text-xs text-gray-200 hover:text-blue-300 hover:bg-blue-500/20 h-10 px-2 touch-manipulation border border-gray-600 hover:border-blue-400",
-                         activeSection === item.id && "text-blue-300 bg-blue-500/20 border-blue-400"
-                       )}
-                     >
-                <item.icon className="h-3 w-3 mr-1" />
-                <span className="truncate">{item.label}</span>
-              </Button>
+              <Tooltip key={item.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => scrollToSection(item.href)}
+                    className={cn(
+                      "w-full justify-center text-xs text-gray-200 hover:text-[#20B2AA] hover:bg-[#20B2AA]/20 h-10 px-1 touch-manipulation border border-gray-600 hover:border-[#20B2AA] cyber-hover",
+                      activeSection === item.id && "text-[#20B2AA] bg-[#20B2AA]/20 border-[#20B2AA] warm-cyber-glow"
+                    )}
+                  >
+                    <item.icon className="h-3 w-3" />
+                    <span className="sr-only">{item.label}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="bg-gray-800 border-gray-600 text-gray-200">
+                  <p>{item.label}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         )}
@@ -127,43 +134,70 @@ export function PageNavigation({
       </div>
 
       {/* モバイルナビゲーション */}
-      <div className="lg:hidden fixed bottom-6 right-6 z-40">
-        <div className="flex flex-col space-y-2">
-          {/* メニューボタン */}
+      <div className="block lg:hidden">
+        {/* フローティングボタン（開くボタンのみ） */}
+        {!isMobileMenuOpen && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-12 h-12 p-0 bg-gray-900/95 backdrop-blur-sm border border-gray-600 text-gray-200 hover:text-blue-300 hover:bg-blue-500/20 hover:border-blue-400 rounded-full shadow-xl touch-manipulation"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="w-12 h-12 p-0 bg-gray-900/95 backdrop-blur-sm border border-gray-600 text-gray-200 hover:text-[#20B2AA] hover:bg-[#20B2AA]/20 hover:border-[#20B2AA] rounded-full shadow-xl touch-manipulation cyber-hover"
+            style={{ 
+              position: 'fixed', 
+              bottom: '20px',
+              right: '16px', 
+              zIndex: 40 
+            }}
           >
-            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <Menu className="h-5 w-5" />
           </Button>
+        )}
 
-          {/* モバイルメニュー */}
-          {isMobileMenuOpen && (
-            <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg p-3 shadow-xl min-w-[200px]">
-              <div className="space-y-2">
-                {navigationItems.map((item) => (
-                  <Button
-                    key={item.id}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => scrollToSection(item.href)}
-                    className={cn(
-                      "w-full justify-start text-sm text-gray-200 hover:text-blue-300 hover:bg-blue-500/20 h-10 px-3 touch-manipulation border border-gray-600 hover:border-blue-400",
-                      activeSection === item.id && "text-blue-300 bg-blue-500/20 border-blue-400"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4 mr-2" />
-                    {item.label}
-                  </Button>
-                ))}
-                
-              </div>
+        {/* モバイルメニュー */}
+        {isMobileMenuOpen && (
+          <div 
+            className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-sm p-3 shadow-xl w-[calc(100vw-32px)] max-w-[200px] min-w-[160px] warm-cyber-glow"
+            style={{ 
+              position: 'fixed', 
+              bottom: '20px', 
+              right: '16px', 
+              zIndex: 39 
+            }}
+          >
+            {/* メニューヘッダー */}
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-700">
+              <span className="text-sm font-medium text-gray-300">メニュー</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-8 h-8 p-0 text-gray-400 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10 rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          )}
-        </div>
+            
+            {/* ナビゲーション項目 */}
+            <div className="space-y-2">
+              {navigationItems.map((item) => (
+                <Button
+                  key={item.id}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => scrollToSection(item.href)}
+                  className={cn(
+                    "w-full justify-start text-sm text-gray-200 hover:text-[#20B2AA] hover:bg-[#20B2AA]/20 h-10 px-3 touch-manipulation border border-gray-600 hover:border-[#20B2AA] cyber-hover",
+                    activeSection === item.id && "text-[#20B2AA] bg-[#20B2AA]/20 border-[#20B2AA] warm-cyber-glow"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 mr-2" />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </>
+    </TooltipProvider>
   );
 }

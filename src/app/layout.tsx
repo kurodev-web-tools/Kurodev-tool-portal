@@ -9,6 +9,8 @@ import { ErrorBoundary } from "@/components/error-boundary"; // ErrorBoundary �
 import { StructuredData } from "@/components/seo/structured-data";
 import { DebugPanelProvider } from "@/components/dev/debug-panel-provider";
 import { getAllFontVariables } from "@/config/fonts";
+import { CustomThemeProvider } from "@/contexts/ThemeContext";
+import { FavoritesInitializer } from "@/components/favorites-initializer";
 
 export const metadata: Metadata = {
   title: {
@@ -122,17 +124,20 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <ErrorBoundary> {/* ErrorBoundary でラップ */}
-              <DebugPanelProvider>
-                <Header />
-                <main className="flex-grow">
-                  {children}
-                </main>
-                <Footer />
-              </DebugPanelProvider>
-            </ErrorBoundary>
-          </AuthProvider>
+          <CustomThemeProvider>
+            <AuthProvider>
+              <ErrorBoundary> {/* ErrorBoundary でラップ */}
+                <DebugPanelProvider>
+                  <FavoritesInitializer />
+                  <Header />
+                  <main className="flex-grow">
+                    {children}
+                  </main>
+                  <Footer />
+                </DebugPanelProvider>
+              </ErrorBoundary>
+            </AuthProvider>
+          </CustomThemeProvider>
         </ThemeProvider>
         <Toaster />
       </body>

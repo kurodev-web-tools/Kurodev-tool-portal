@@ -24,8 +24,9 @@ import { QuickAccessItem } from "@/hooks/use-quick-access";
 
 interface QuickAccessProps {
   recentTools: QuickAccessItem[];
-  favoriteTools: QuickAccessItem[];
   popularTools: QuickAccessItem[];
+  suiteFavoriteTools: QuickAccessItem[];
+  unifiedFavoriteTools: QuickAccessItem[];
   onItemClick: (item: QuickAccessItem) => void;
   onToggleFavorite: (item: QuickAccessItem) => void;
   isFavorite: (toolId: string) => boolean;
@@ -55,19 +56,19 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case 'released':
       return (
-        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+        <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-xs">
           公開済み
         </Badge>
       );
     case 'beta':
       return (
-        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+        <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs">
           ベータ版
         </Badge>
       );
     case 'development':
       return (
-        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+        <Badge className="bg-red-500/20 text-red-400 border border-red-500/30 text-xs">
           開発中
         </Badge>
       );
@@ -86,6 +87,7 @@ const QuickAccessSection = ({
   onClear,
   showFavoriteToggle = false,
   emptyMessage,
+  showSuiteInfo = false,
   className 
 }: {
   title: string;
@@ -97,27 +99,53 @@ const QuickAccessSection = ({
   onClear: () => void;
   showFavoriteToggle?: boolean;
   emptyMessage: string;
+  showSuiteInfo?: boolean;
   className?: string;
 }) => {
   return (
     <Card className={cn("bg-gray-900/30 border-gray-800 shadow-lg", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-sm bg-[#20B2AA] flex items-center justify-center warm-cyber-glow">
             <Icon className="h-3 w-3 text-white" />
           </div>
           <CardTitle className="text-lg font-semibold text-gray-200">{title}</CardTitle>
         </div>
-        {items.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClear}
-            className="text-gray-400 hover:text-red-400 hover:bg-red-500/10 h-10 w-10 p-0 touch-manipulation"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        )}
+        <div className="flex items-center space-x-2">
+          {/* ナビゲーションボタン（最近使用・人気ツールのみ） */}
+          {(title === "最近使用" || title === "人気ツール") && items.length > 0 && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-300 hover:text-[#20B2AA] hover:bg-[#20B2AA]/20 touch-manipulation border border-gray-600 hover:border-[#20B2AA]"
+                aria-label="前のツールに移動"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-300 hover:text-[#20B2AA] hover:bg-[#20B2AA]/20 touch-manipulation border border-gray-600 hover:border-[#20B2AA]"
+                aria-label="次のツールに移動"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          {/* クリアボタン */}
+          {items.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              className="text-gray-400 hover:text-red-400 hover:bg-red-500/10 h-8 w-8 p-0 touch-manipulation border border-gray-600 hover:border-red-400"
+              aria-label={`${title}をクリア`}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pt-0">
         {items.length > 0 ? (
@@ -129,19 +157,25 @@ const QuickAccessSection = ({
                 onClick={() => onItemClick(item)}
               >
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.color || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white group-hover:scale-110 transition-transform`}>
+                  <div className={`w-8 h-8 rounded-sm bg-[#20B2AA] flex items-center justify-center text-white group-hover:scale-110 transition-transform warm-cyber-glow`}>
                     {getIcon(item.iconName)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors truncate">
+                      <h3 className="text-sm font-medium text-white group-hover:text-[#20B2AA] transition-colors truncate">
                         {item.title}
                       </h3>
                       {getStatusBadge(item.status)}
                     </div>
-                    <p className="text-xs text-gray-400 truncate">
+                    <p className="text-xs text-gray-400 truncate mb-1">
                       {item.description}
                     </p>
+                        {showSuiteInfo && 'suiteName' in item && item.suiteName && (
+                          <div className="text-xs text-[#20B2AA] flex items-center space-x-1">
+                            <span>{'isSuite' in item && item.isSuite ? '🎯' : '📦'}</span>
+                            <span>{item.suiteName}</span>
+                          </div>
+                        )}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2 ml-2">
@@ -166,7 +200,7 @@ const QuickAccessSection = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-10 w-10 p-0 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 touch-manipulation"
+                    className="h-10 w-10 p-0 text-gray-400 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10 touch-manipulation"
                   >
                     <ExternalLink className="h-3 w-3" />
                   </Button>
@@ -175,11 +209,25 @@ const QuickAccessSection = ({
             ))}
           </div>
         ) : (
-          <div className="text-center py-6">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-800/50 flex items-center justify-center">
-              <Icon className="h-6 w-6 text-gray-500" />
+          <div className="space-y-2">
+            {/* 空状態でも同じレイアウト構造を使用 */}
+            <div className="group flex items-center p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-all duration-200">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-sm bg-[#20B2AA]/20 flex items-center justify-center">
+                  <Icon className="h-4 w-4 text-[#20B2AA]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-gray-300 mb-1">
+                    {emptyMessage}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {title === "お気に入り" ? "気に入ったツールをハートマークで追加しましょう" : 
+                     title === "最近使用" ? "ツールを使用するとここに表示されます" : 
+                     "人気のツールが表示されます"}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">{emptyMessage}</p>
           </div>
         )}
       </CardContent>
@@ -189,8 +237,9 @@ const QuickAccessSection = ({
 
 export const QuickAccess = React.memo(function QuickAccess({
   recentTools,
-  favoriteTools,
   popularTools,
+  suiteFavoriteTools,
+  unifiedFavoriteTools,
   onItemClick,
   onToggleFavorite,
   isFavorite,
@@ -201,11 +250,11 @@ export const QuickAccess = React.memo(function QuickAccess({
   return (
     <div className={cn("space-y-6", className)}>
       <div className="text-center">
-        <h2 className="text-2xl md:text-3xl font-semibold mb-2 leading-tight tracking-wide bg-gradient-to-r from-gray-300 to-gray-400 bg-clip-text text-transparent">
-          クイックアクセス
+        <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 leading-tight tracking-wider text-white md:text-[#F8F8F8]">
+          おすすめツール
         </h2>
-        <p className="text-sm text-gray-400">
-          よく使うツールに素早くアクセス
+        <p className="text-sm text-[#A0A0A0]">
+          最近使用・お気に入り・人気ツール
         </p>
       </div>
 
@@ -223,18 +272,19 @@ export const QuickAccess = React.memo(function QuickAccess({
           emptyMessage="最近使用したツールはありません"
         />
 
-        {/* お気に入りツール */}
-        <QuickAccessSection
-          title="お気に入り"
-          icon={Heart}
-          items={favoriteTools}
-          onItemClick={onItemClick}
-          onToggleFavorite={onToggleFavorite}
-          isFavorite={isFavorite}
-          onClear={onClearFavorites}
-          showFavoriteToggle={true}
-          emptyMessage="お気に入りに追加されたツールはありません"
-        />
+            {/* お気に入りツール（スイート + 個別ツール統合） */}
+            <QuickAccessSection
+              title="お気に入り"
+              icon={Heart}
+              items={unifiedFavoriteTools}
+              onItemClick={onItemClick}
+              onToggleFavorite={onToggleFavorite}
+              isFavorite={isFavorite}
+              onClear={onClearFavorites}
+              showFavoriteToggle={true}
+              emptyMessage="お気に入りに追加されたツールはありません"
+              showSuiteInfo={true}
+            />
 
         {/* 人気ツール */}
         <QuickAccessSection
@@ -249,6 +299,21 @@ export const QuickAccess = React.memo(function QuickAccess({
           emptyMessage="人気ツールがありません"
         />
       </div>
+      
+          {/* 「すべて表示」リンク */}
+          {unifiedFavoriteTools.length > 0 && (
+            <div className="text-center mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/tools'}
+                className="text-[#20B2AA] border-[#20B2AA] hover:bg-[#20B2AA] hover:text-white px-6"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                すべてのお気に入りを表示
+              </Button>
+            </div>
+          )}
     </div>
   );
 });

@@ -11,7 +11,15 @@ import {
   Trash2, 
   ExternalLink,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Calendar,
+  Brain,
+  Image,
+  Sparkles,
+  TrendingUp,
+  Users,
+  BarChart3,
+  Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuickAccessItem } from "@/hooks/use-quick-access";
@@ -102,11 +110,11 @@ export function SwipeableQuickAccess({
   const getStatusBadge = (status: QuickAccessItem['status']) => {
     switch (status) {
       case 'released':
-        return <Badge className="bg-green-200 text-green-900 border-green-300 dark:bg-green-800 dark:text-green-100 dark:border-green-600 text-xs status-released">公開済み</Badge>;
+        return <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-sm font-medium">公開済み</Badge>;
       case 'beta':
-        return <Badge className="bg-yellow-200 text-yellow-900 border-yellow-300 dark:bg-yellow-800 dark:text-yellow-100 dark:border-yellow-600 text-xs status-beta">ベータ版</Badge>;
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-sm font-medium">ベータ版</Badge>;
       case 'development':
-        return <Badge className="bg-red-200 text-red-900 border-red-300 dark:bg-red-800 dark:text-red-100 dark:border-red-600 text-xs status-development">開発中</Badge>;
+        return <Badge className="bg-red-500/20 text-red-400 border border-red-500/30 text-sm font-medium">開発中</Badge>;
       default:
         return null;
     }
@@ -114,13 +122,14 @@ export function SwipeableQuickAccess({
 
   const getIcon = (iconName?: string) => {
     switch (iconName) {
-      case 'calendar': return <Clock className="h-4 w-4" />;
-      case 'brain': return <Heart className="h-4 w-4" />;
-      case 'image': return <Star className="h-4 w-4" />;
-      case 'sparkles': return <Clock className="h-4 w-4" />;
-      case 'trending-up': return <Heart className="h-4 w-4" />;
-      case 'users': return <Star className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
+      case 'calendar': return <Calendar className="h-4 w-4" />;
+      case 'brain': return <Brain className="h-4 w-4" />;
+      case 'image': return <Image className="h-4 w-4" />;
+      case 'sparkles': return <Sparkles className="h-4 w-4" />;
+      case 'trending-up': return <TrendingUp className="h-4 w-4" />;
+      case 'users': return <Users className="h-4 w-4" />;
+      case 'bar-chart': return <BarChart3 className="h-4 w-4" />;
+      default: return <Wrench className="h-4 w-4" />;
     }
   };
 
@@ -129,14 +138,33 @@ export function SwipeableQuickAccess({
       <Card className={cn("bg-gray-900/30 border-gray-800 shadow-lg", className)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#20B2AA] to-[#1a9b94] flex items-center justify-center">
               <Icon className="h-3 w-3 text-white" />
             </div>
             <CardTitle className="text-lg font-semibold text-gray-100">{title}</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <p className="text-sm text-gray-400 text-center py-4">{emptyMessage}</p>
+          <div className="space-y-2">
+            {/* 空状態でも同じレイアウト構造を使用 */}
+            <div key="empty-state" className="group flex items-center p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-all duration-200">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-sm bg-[#20B2AA]/20 flex items-center justify-center">
+                  <Icon className="h-4 w-4 text-[#20B2AA]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-gray-300 mb-1">
+                    {emptyMessage}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {title === "お気に入り" ? "気に入ったツールをハートマークで追加しましょう" : 
+                     title === "最近使用" ? "ツールを使用するとここに表示されます" : 
+                     "人気のツールが表示されます"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -146,7 +174,7 @@ export function SwipeableQuickAccess({
     <Card className={cn("bg-gray-900/30 border-gray-800 shadow-lg", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#20B2AA] to-[#1a9b94] flex items-center justify-center">
             <Icon className="h-3 w-3 text-white" />
           </div>
           <CardTitle className="text-lg font-semibold text-gray-100">{title}</CardTitle>
@@ -157,7 +185,7 @@ export function SwipeableQuickAccess({
             variant="ghost"
             size="sm"
             onClick={goToPrevious}
-            className="h-8 w-8 p-0 text-gray-300 hover:text-blue-300 hover:bg-blue-500/20 touch-manipulation border border-gray-600 hover:border-blue-400"
+            className="h-8 w-8 p-0 text-gray-300 hover:text-[#20B2AA] hover:bg-[#20B2AA]/20 touch-manipulation border border-gray-600 hover:border-[#20B2AA]"
             aria-label="前のツールに移動"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -166,18 +194,19 @@ export function SwipeableQuickAccess({
             variant="ghost"
             size="sm"
             onClick={goToNext}
-            className="h-8 w-8 p-0 text-gray-300 hover:text-blue-300 hover:bg-blue-500/20 touch-manipulation border border-gray-600 hover:border-blue-400"
+            className="h-8 w-8 p-0 text-gray-300 hover:text-[#20B2AA] hover:bg-[#20B2AA]/20 touch-manipulation border border-gray-600 hover:border-[#20B2AA]"
             aria-label="次のツールに移動"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
-          {items.length > 0 && (
+          {/* クリアボタン（お気に入り以外） */}
+          {items.length > 0 && title !== "お気に入り" && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onClear}
               className="text-gray-300 hover:text-red-300 hover:bg-red-500/20 h-8 w-8 p-0 touch-manipulation border border-gray-600 hover:border-red-400"
-              aria-label="最近使用をクリア"
+              aria-label={`${title}をクリア`}
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -206,7 +235,7 @@ export function SwipeableQuickAccess({
           >
             {items.map((item, index) => (
               <div
-                key={item.id}
+                key={item.id || `item-${index}`}
                 className="w-full flex-shrink-0 px-1"
                 role="tabpanel"
                 aria-hidden={index !== currentIndex}
@@ -216,18 +245,23 @@ export function SwipeableQuickAccess({
                   onClick={() => onItemClick(item)}
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.color || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white group-hover:scale-110 transition-transform`}>
+                    <div className="w-8 h-8 rounded-lg bg-[#20B2AA] flex items-center justify-center text-white group-hover:scale-110 transition-transform warm-cyber-glow">
                       {getIcon(item.iconName)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors truncate">
+                        <h3 className="text-sm font-medium text-white group-hover:text-[#20B2AA] transition-colors truncate">
                           {item.title}
                         </h3>
                         {getStatusBadge(item.status)}
                       </div>
                       <p className="text-xs text-gray-300 truncate">
                         {item.description}
+                        {title === "人気ツール" && (item as any).usageCount !== undefined && (
+                          <span className="ml-2 text-[#20B2AA] font-medium">
+                            ({(item as any).usageCount}回使用)
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -238,22 +272,25 @@ export function SwipeableQuickAccess({
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onToggleFavorite(item);
+                          if (item.id) {
+                            onToggleFavorite(item);
+                          }
                         }}
                         className={cn(
                           "h-8 w-8 p-0 transition-colors touch-manipulation",
-                          isFavorite(item.id)
+                          item.id && isFavorite(item.id)
                             ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
                             : "text-gray-400 hover:text-red-400 hover:bg-red-500/10"
                         )}
+                        aria-label={item.id && isFavorite(item.id) ? 'お気に入りから削除' : 'お気に入りに追加'}
                       >
-                        <Heart className={cn("h-3 w-3", isFavorite(item.id) && "fill-current")} />
+                        <Heart className={cn("h-3 w-3", item.id && isFavorite(item.id) && "fill-current")} />
                       </Button>
                     )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 touch-manipulation"
+                      className="h-8 w-8 p-0 text-gray-400 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10 touch-manipulation"
                     >
                       <ExternalLink className="h-3 w-3" />
                     </Button>
@@ -278,7 +315,7 @@ export function SwipeableQuickAccess({
                 className={cn(
                   "w-2 h-2 rounded-full transition-all duration-200 touch-manipulation",
                   index === currentIndex 
-                    ? "bg-blue-300 w-6 border border-blue-200" 
+                    ? "bg-[#20B2AA] w-6 border border-[#20B2AA]/30" 
                     : "bg-gray-500 hover:bg-gray-400 border border-gray-600"
                 )}
                 role="tab"

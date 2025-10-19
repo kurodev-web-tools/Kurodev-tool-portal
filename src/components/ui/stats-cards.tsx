@@ -34,7 +34,7 @@ export const StatsCards = React.memo(function StatsCards({
       title: "総ツール数",
       value: totalTools,
       icon: Wrench,
-      color: "from-blue-500 to-cyan-500",
+      color: "from-[#20B2AA] to-[#1a9b94]",
       description: "利用可能なツールの総数"
     },
     {
@@ -84,7 +84,7 @@ export const StatsCards = React.memo(function StatsCards({
                   stat.title === "利用可能" ? 'bg-green-500/20 text-green-400 border-green-500/30' :
                   stat.title === "ベータ版" ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
                   stat.title === "開発中" ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                  'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                  'bg-[#20B2AA]/20 text-[#20B2AA] border-[#20B2AA]/30'
                 }`}
               >
                 {stat.title === "利用可能" ? "公開済み" : 
@@ -96,7 +96,7 @@ export const StatsCards = React.memo(function StatsCards({
           <CardContent className="pt-0">
             <div className="space-y-1">
               <div className="flex items-baseline space-x-2">
-                <span className="text-2xl font-bold text-white group-hover:text-blue-400 transition-smooth">
+                <span className="text-2xl font-bold text-white group-hover:text-[#20B2AA] transition-smooth">
                   {stat.value}
                 </span>
                 <span className="text-sm text-gray-300">件</span>
@@ -124,7 +124,7 @@ export function ProgressCard({
   title,
   current,
   total,
-  color = "from-blue-500 to-cyan-500",
+  color = "from-[#20B2AA] to-[#1a9b94]",
   className = ""
 }: ProgressCardProps) {
   const percentage = total > 0 ? Math.round((current / total) * 100) : 0;

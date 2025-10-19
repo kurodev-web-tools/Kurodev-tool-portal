@@ -67,7 +67,7 @@ export function SearchBar({
             setIsOpen(e.target.value.length > 0);
           }}
           onFocus={() => setIsOpen(query.length > 0)}
-          className="pl-10 pr-10 w-full bg-gray-900/50 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="pl-10 pr-10 w-full bg-gray-900/50 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#20B2AA] focus:border-transparent"
           aria-label="ツール検索"
           aria-describedby="search-results"
           aria-expanded={isOpen}
@@ -116,7 +116,7 @@ export function SearchBar({
                   }}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.color || 'from-gray-500 to-gray-600'} flex items-center justify-center text-sm group-hover:scale-110 transition-transform`}>
+                    <div className="w-8 h-8 rounded-lg bg-[#20B2AA] flex items-center justify-center text-sm group-hover:scale-110 transition-transform warm-cyber-glow">
                       {item.iconName === 'calendar' && '📅'}
                       {item.iconName === 'brain' && '🧠'}
                       {item.iconName === 'image' && '🖼️'}
@@ -126,14 +126,14 @@ export function SearchBar({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors truncate">
+                        <h3 className="text-sm font-medium text-white group-hover:text-[#20B2AA] transition-colors truncate">
                           {item.title}
                         </h3>
                         <Badge 
-                          className={`text-xs status-${item.status} ${
-                            item.status === 'released' ? 'bg-green-200 text-green-900 border-green-300 dark:bg-green-800 dark:text-green-100 dark:border-green-600' :
-                            item.status === 'beta' ? 'bg-yellow-200 text-yellow-900 border-yellow-300 dark:bg-yellow-800 dark:text-yellow-100 dark:border-yellow-600' :
-                            'bg-red-200 text-red-900 border-red-300 dark:bg-red-800 dark:text-red-100 dark:border-red-600'
+                          className={`text-xs ${
+                            item.status === 'released' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                            item.status === 'beta' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                            'bg-red-500/20 text-red-400 border border-red-500/30'
                           }`}
                         >
                           {item.status === 'released' ? '公開済み' : 

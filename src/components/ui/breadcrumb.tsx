@@ -57,7 +57,7 @@ export function Breadcrumb({ className, customItems }: BreadcrumbProps) {
             <Link
               href={item.href}
               className={cn(
-                "flex items-center space-x-1 hover:text-blue-400 transition-colors",
+                "flex items-center space-x-1 hover:text-[#20B2AA] transition-colors",
                 item.isCurrentPage && "text-gray-300 cursor-default"
               )}
               aria-current={item.isCurrentPage ? 'page' : undefined}
@@ -75,7 +75,7 @@ export function Breadcrumb({ className, customItems }: BreadcrumbProps) {
               ) : (
                 <Link
                   href={item.href}
-                  className="hover:text-blue-400 transition-colors"
+                  className="hover:text-[#20B2AA] transition-colors"
                 >
                   {item.label}
                 </Link>

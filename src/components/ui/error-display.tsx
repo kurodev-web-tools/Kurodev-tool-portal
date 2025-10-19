@@ -152,7 +152,7 @@ export function LoadingEmptyState({ className = "" }: { className?: string }) {
   return (
     <Card className={`bg-gray-900/30 border-gray-800 ${className}`}>
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#20B2AA] mb-4"></div>
         <h3 className="text-lg font-semibold text-gray-200 mb-2">読み込み中...</h3>
         <p className="text-gray-400">データを取得しています</p>
       </CardContent>

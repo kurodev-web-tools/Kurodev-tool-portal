@@ -129,7 +129,7 @@ export function SwipeableStats({ stats, className }: SwipeableStatsProps) {
     <Card className={cn("bg-gray-900/30 border-gray-800 shadow-lg", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#20B2AA] to-[#1a9b94] flex items-center justify-center">
             <currentCard.icon className="h-3 w-3 text-white" />
           </div>
           <CardTitle className="text-lg font-semibold text-gray-200">{currentCard.title}</CardTitle>
@@ -140,7 +140,7 @@ export function SwipeableStats({ stats, className }: SwipeableStatsProps) {
             variant="ghost"
             size="sm"
             onClick={goToPrevious}
-            className="h-8 w-8 p-0 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 touch-manipulation"
+            className="h-8 w-8 p-0 text-gray-400 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10 touch-manipulation"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -148,7 +148,7 @@ export function SwipeableStats({ stats, className }: SwipeableStatsProps) {
             variant="ghost"
             size="sm"
             onClick={goToNext}
-            className="h-8 w-8 p-0 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 touch-manipulation"
+            className="h-8 w-8 p-0 text-gray-400 hover:text-[#20B2AA] hover:bg-[#20B2AA]/10 touch-manipulation"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -175,7 +175,7 @@ export function SwipeableStats({ stats, className }: SwipeableStatsProps) {
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-medium text-gray-300">{item.label}</h3>
                         <div className="flex items-center space-x-1">
-                          <span className="text-2xl font-bold text-blue-400">{item.value}</span>
+                          <span className="text-2xl font-bold text-[#20B2AA]">{item.value}</span>
                           <span className="text-sm text-gray-400">{item.unit}</span>
                         </div>
                       </div>
@@ -190,7 +190,7 @@ export function SwipeableStats({ stats, className }: SwipeableStatsProps) {
                         <div className="mt-3">
                           <div className="w-full bg-gray-700 rounded-full h-2">
                             <div 
-                              className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
+                              className="bg-gradient-to-r from-[#20B2AA] to-[#1a9b94] h-2 rounded-full transition-all duration-500"
                               style={{ width: `${item.value}%` }}
                             />
                           </div>
@@ -213,7 +213,7 @@ export function SwipeableStats({ stats, className }: SwipeableStatsProps) {
               className={cn(
                 "w-2 h-2 rounded-full transition-all duration-200 touch-manipulation",
                 index === currentIndex 
-                  ? "bg-blue-400 w-6" 
+                  ? "bg-[#20B2AA] w-6" 
                   : "bg-gray-600 hover:bg-gray-500"
               )}
             />

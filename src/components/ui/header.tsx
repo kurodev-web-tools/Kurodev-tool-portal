@@ -18,7 +18,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "./button";
 import { Badge } from "@/components/ui/badge";
 import { MdNotifications } from "react-icons/md";
-import { SearchBar } from "./search-bar";
 import { 
   Calendar, 
   Image, 
@@ -32,7 +31,6 @@ import {
 } from 'lucide-react';
 import { logger } from "@/lib/logger";
 import { siteConfig } from "@/config/site";
-import { tools as toolsData } from "@/data/tools";
 
 const PROFILE_SETTINGS_KEY = "vtuber-tools-profile-settings";
 
@@ -252,15 +250,15 @@ export function Header() {
   };
 
   return (
-    <header className="border-b bg-gradient-to-r from-black to-gray-900 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+    <header className="border-b bg-[#2D2D2D] backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* 左側: ロゴと現在のツール表示 */}
         <div className="flex items-center space-x-4">
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+            <div className="w-8 h-8 bg-[#20B2AA] rounded-sm flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 warm-cyber-glow">
               <Wrench className="h-5 w-5 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold text-[#20B2AA] tracking-wider">
               {siteConfig.name}
             </span>
           </Link>
@@ -285,11 +283,11 @@ export function Header() {
         {shouldShowTabs() && ( // タブを表示すべき場合にのみレンダリング
           <nav className="flex items-center space-x-4 lg:space-x-6">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="bg-gray-900/50 backdrop-blur-sm p-1 rounded-lg shadow-lg border border-gray-700/50">
+              <TabsList className="bg-slate-800/50 backdrop-blur-sm p-1 rounded-lg shadow-lg border border-slate-700/50">
                 <TabsTrigger 
                   value="suites" 
                   asChild
-                  className="text-xs md:text-sm font-medium text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:text-blue-400 tracking-normal"
+                  className="text-xs md:text-sm font-medium text-slate-300 data-[state=active]:bg-[#20B2AA] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:text-[#20B2AA] tracking-normal"
                 >
                   <Link href="/" className="flex items-center gap-2 px-4 py-2">
                     <Sparkles className="h-4 w-4" />
@@ -299,7 +297,7 @@ export function Header() {
                 <TabsTrigger 
                   value="tools" 
                   asChild
-                  className="text-xs md:text-sm font-medium text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:text-blue-400 tracking-normal"
+                  className="text-xs md:text-sm font-medium text-slate-300 data-[state=active]:bg-[#20B2AA] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:text-[#20B2AA] tracking-normal"
                 >
                   <Link href="/tools" className="flex items-center gap-2 px-4 py-2">
                     <Wrench className="h-4 w-4" />
@@ -311,28 +309,6 @@ export function Header() {
           </nav>
         )}
 
-        {/* 検索バー（ポータルページのみ） */}
-        {shouldShowTabs() && (
-          <div className="hidden md:block">
-            <SearchBar 
-              items={toolsData.map(tool => ({
-                id: tool.id,
-                title: tool.title,
-                description: tool.description,
-                status: tool.status,
-                href: tool.href,
-                iconName: tool.iconName,
-                color: tool.color
-              }))}
-              onItemClick={(item) => {
-                const fullPath = basePath ? `${basePath}${item.href}` : item.href;
-                router.push(fullPath);
-              }}
-              placeholder="ツールを検索..."
-              className="w-80"
-            />
-          </div>
-        )}
 
         {/* 右側: ツール切替（ツールページの場合）+ 通知とプロフィール */}
         <div className="flex items-center space-x-4">
@@ -340,18 +316,18 @@ export function Header() {
           {isToolPage && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="bg-gray-900 backdrop-blur-sm border-gray-700 hover:bg-gray-800 transition-all shadow-sm text-gray-300">
+                <Button variant="outline" size="sm" className="bg-slate-800 backdrop-blur-sm border-slate-700 hover:bg-slate-700 transition-all shadow-sm text-slate-300">
                   ツール切替
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 bg-gray-900/95 backdrop-blur-md border-gray-700">
+              <DropdownMenuContent align="end" className="w-80 bg-slate-800/95 backdrop-blur-md border-slate-700">
                 {tools.map((tool) => (
                   <DropdownMenuItem key={tool.id} asChild>
                     <Link 
                       href={tool.href}
-                      className="flex items-center space-x-3 p-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="flex items-center space-x-3 p-3 w-full hover:bg-slate-700 transition-colors"
                     >
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-sm">
+                      <div className="w-10 h-10 bg-[#20B2AA] rounded-sm flex items-center justify-center shadow-sm warm-cyber-glow">
                         <tool.icon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">

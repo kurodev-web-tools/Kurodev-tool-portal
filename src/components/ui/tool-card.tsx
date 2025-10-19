@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 import { Badge } from "./badge";
 import { Button } from "./button";
-import { ArrowRight, Star, Users } from "lucide-react";
+import { ArrowRight, Star, Users, Heart } from "lucide-react";
+import { favoritesManager } from "@/lib/favorites-storage";
+import { favoritesEventManager } from "@/lib/favorites-events";
+import { logger } from "@/lib/logger";
 
 type ToolStatus = "released" | "beta" | "development";
 
@@ -45,10 +48,46 @@ export const ToolCard = React.memo(function ToolCard({
   stats,
   onClick,
 }: ToolCardProps) {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  // お気に入り状態の読み込み（新しいシステム使用）
+  useEffect(() => {
+    const loadFavoriteState = () => {
+      const isSuite = id.startsWith('suite-');
+      setIsFavorite(favoritesManager.isFavorite(id, isSuite ? 'suite' : 'tool'));
+    };
+    
+    loadFavoriteState();
+    
+    // イベントリスナーを追加
+    const handleFavoritesChange = () => {
+      loadFavoriteState();
+    };
+    
+    favoritesEventManager.addListener(handleFavoritesChange);
+    return () => favoritesEventManager.removeListener(handleFavoritesChange);
+  }, [id]);
+
+  // お気に入りの切り替え（新しいシステム使用）
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const isSuite = id.startsWith('suite-');
+      const success = isSuite 
+        ? favoritesManager.toggleSuite(id)
+        : favoritesManager.toggleTool(id);
+      
+      if (success) {
+        logger.info(`${isSuite ? 'Suite' : 'Tool'} ${id} favorite toggled`, 'ToolCard');
+      }
+    } catch (error) {
+      logger.error('Failed to toggle favorite', error, 'ToolCard');
+    }
+  };
   const statusMap = {
-    released: { text: "公開中", variant: "default", color: "bg-green-200 text-green-900 border-green-300 dark:bg-green-800 dark:text-green-100 dark:border-green-600" },
-    beta: { text: "ベータ版", variant: "warning", color: "bg-yellow-200 text-yellow-900 border-yellow-300 dark:bg-yellow-800 dark:text-yellow-100 dark:border-yellow-600" },
-    development: { text: "開発中", variant: "destructive", color: "bg-red-200 text-red-900 border-red-300 dark:bg-red-800 dark:text-red-100 dark:border-red-600" },
+    released: { text: "公開済み", variant: "default", color: "bg-green-500/20 text-green-400 border border-green-500/30" },
+    beta: { text: "ベータ版", variant: "warning", color: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" },
+    development: { text: "開発中", variant: "destructive", color: "bg-red-500/20 text-red-400 border border-red-500/30" },
   };
 
   const currentStatus = statusMap[status];
@@ -62,7 +101,17 @@ export const ToolCard = React.memo(function ToolCard({
 
   const CardComponent = (
     <Card 
-      className="h-full flex flex-col group card-interactive hover:shadow-blue-500/20 border-gray-800 shadow-sm bg-gray-900/30 hover:bg-gray-900/40 cursor-pointer"
+      className="h-full flex flex-col group card-interactive border-gray-800 shadow-sm bg-gray-900/30 hover:bg-gray-900/40 cursor-pointer"
+      style={{ 
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        transition: 'all 0.3s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 10px 25px -3px rgba(32, 178, 170, 0.2), 0 4px 6px -2px rgba(32, 178, 170, 0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+      }}
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
@@ -78,14 +127,30 @@ export const ToolCard = React.memo(function ToolCard({
       {/* デスクトップ用レイアウト */}
       <CardHeader className="pb-4 flex-shrink-0 hidden md:block">
         <div className="flex items-start justify-between mb-3">
-          <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center shadow-lg text-2xl hover-scale-sm`}>
+          <div className={`w-12 h-12 rounded-sm bg-[#20B2AA] flex items-center justify-center shadow-lg text-2xl hover-scale-sm warm-cyber-glow`}>
             {iconEmoji}
           </div>
-          <Badge className={`text-xs font-medium ${currentStatus.color} status-${status}`}>
-            {currentStatus.text}
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge className={`text-xs font-medium ${currentStatus.color} status-${status}`}>
+              {currentStatus.text}
+            </Badge>
+            {/* お気に入りボタン */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleFavorite}
+              className={`transition-colors ${
+                isFavorite
+                  ? 'text-red-500 hover:text-red-400 hover:bg-red-500/10'
+                  : 'text-gray-400 hover:text-red-500 hover:bg-red-500/10'
+              }`}
+              aria-label={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+            >
+              <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+            </Button>
+          </div>
         </div>
-        <CardTitle className="text-lg md:text-xl font-bold group-hover:text-blue-600 transition-smooth leading-tight tracking-wide">
+        <CardTitle className="text-lg md:text-xl font-bold group-hover:text-[#20B2AA] transition-smooth leading-tight tracking-wide">
           {title}
         </CardTitle>
         <CardDescription className="text-xs md:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -97,18 +162,34 @@ export const ToolCard = React.memo(function ToolCard({
       <CardHeader className="pb-2 flex-shrink-0 md:hidden">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center shadow-lg text-xl hover-scale-sm`}>
+            <div className={`w-10 h-10 rounded-sm bg-[#20B2AA] flex items-center justify-center shadow-lg text-xl hover-scale-sm warm-cyber-glow`}>
               {iconEmoji}
             </div>
             <div>
-              <CardTitle className="text-sm md:text-base font-bold group-hover:text-blue-600 transition-smooth leading-tight tracking-wide">
+              <CardTitle className="text-sm md:text-base font-bold group-hover:text-[#20B2AA] transition-smooth leading-tight tracking-wide">
                 {title}
               </CardTitle>
             </div>
           </div>
-          <Badge className={`text-xs font-medium ${currentStatus.color} status-${status}`}>
-            {currentStatus.text}
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge className={`text-xs font-medium ${currentStatus.color} status-${status}`}>
+              {currentStatus.text}
+            </Badge>
+            {/* お気に入りボタン */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleFavorite}
+              className={`transition-colors ${
+                isFavorite
+                  ? 'text-red-500 hover:text-red-400 hover:bg-red-500/10'
+                  : 'text-gray-400 hover:text-red-500 hover:bg-red-500/10'
+              }`}
+              aria-label={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+            >
+              <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+            </Button>
+          </div>
         </div>
         <CardDescription 
           id={`${id}-description`}
@@ -156,7 +237,7 @@ export const ToolCard = React.memo(function ToolCard({
             {/* デスクトップ用ボタン */}
             <Button 
               variant="ghost" 
-              className="w-full hidden md:flex group-hover:bg-blue-50 group-hover:text-blue-600 dark:group-hover:bg-blue-900/20 dark:group-hover:text-blue-400 transition-colors"
+              className="w-full hidden md:flex group-hover:bg-[#20B2AA]/10 group-hover:text-[#20B2AA] dark:group-hover:bg-[#20B2AA]/20 dark:group-hover:text-[#20B2AA] transition-colors"
               asChild
             >
               <Link href={href} className="flex items-center justify-center gap-2">
@@ -168,7 +249,7 @@ export const ToolCard = React.memo(function ToolCard({
             {/* モバイル用ボタン（コンパクト） */}
             <Button 
               variant="ghost" 
-              className="w-full md:hidden group-hover:bg-blue-50 group-hover:text-blue-600 dark:group-hover:bg-blue-900/20 dark:group-hover:text-blue-400 transition-colors text-xs md:text-sm py-2 tracking-normal"
+              className="w-full md:hidden group-hover:bg-[#20B2AA]/10 group-hover:text-[#20B2AA] dark:group-hover:bg-[#20B2AA]/20 dark:group-hover:text-[#20B2AA] transition-colors text-xs md:text-sm py-2 tracking-normal"
               asChild
             >
               <Link href={href} className="flex items-center justify-center gap-1">

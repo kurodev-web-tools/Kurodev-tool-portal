@@ -13,7 +13,8 @@ import {
   Image,
   Sparkles,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Heart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,17 +35,19 @@ export interface ToolItem {
 interface EnhancedToolCardProps {
   item: ToolItem;
   onItemClick: (item: ToolItem) => void;
+  onToggleFavorite?: (item: ToolItem) => void;
+  isFavorite?: boolean;
   className?: string;
 }
 
 const getStatusBadge = (status: ToolItem['status']) => {
   switch (status) {
     case 'released':
-      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">公開済み</Badge>;
+      return <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-xs">公開済み</Badge>;
     case 'beta':
-      return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">ベータ版</Badge>;
+      return <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs">ベータ版</Badge>;
     case 'development':
-      return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">開発中</Badge>;
+      return <Badge className="bg-red-500/20 text-red-400 border border-red-500/30 text-xs">開発中</Badge>;
     default:
       return null;
   }
@@ -100,13 +103,19 @@ const renderStars = (rating: number) => {
   return stars;
 };
 
-export const EnhancedToolCard = React.memo(function EnhancedToolCard({ item, onItemClick, className }: EnhancedToolCardProps) {
+export const EnhancedToolCard = React.memo(function EnhancedToolCard({ 
+  item, 
+  onItemClick, 
+  onToggleFavorite, 
+  isFavorite = false, 
+  className 
+}: EnhancedToolCardProps) {
   const Icon = React.useMemo(() => getToolIcon(item.iconName), [item.iconName]);
 
   return (
     <Card 
       className={cn(
-        "group relative bg-gray-900/30 border-gray-800 shadow-lg hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] cursor-pointer",
+        "group relative bg-gray-900/30 border-gray-800 shadow-lg hover:shadow-[#20B2AA]/20 transition-all duration-300 hover:scale-[1.02] cursor-pointer",
         className
       )}
       onClick={() => onItemClick(item)}
@@ -114,14 +123,11 @@ export const EnhancedToolCard = React.memo(function EnhancedToolCard({ item, onI
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className={cn(
-              "w-10 h-10 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow",
-              `bg-gradient-to-r ${item.color}`
-            )}>
+            <div className="w-10 h-10 rounded-lg bg-[#20B2AA] flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow warm-cyber-glow">
               <Icon className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg md:text-xl font-semibold text-gray-200 group-hover:text-blue-600 transition-colors leading-tight tracking-wide truncate">
+              <CardTitle className="text-lg md:text-xl font-semibold text-gray-200 group-hover:text-[#20B2AA] transition-colors leading-tight tracking-wide truncate">
                 {item.title}
               </CardTitle>
               <div className="flex items-center space-x-2 mt-1">
@@ -132,17 +138,40 @@ export const EnhancedToolCard = React.memo(function EnhancedToolCard({ item, onI
               </div>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="opacity-0 group-hover:opacity-100 transition-opacity h-10 w-10 p-0 touch-manipulation"
-            onClick={(e) => {
-              e.stopPropagation();
-              onItemClick(item);
-            }}
-          >
-            <ExternalLink className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            {/* お気に入りボタン */}
+            {onToggleFavorite && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 touch-manipulation ${
+                  isFavorite 
+                    ? 'text-red-500 hover:text-red-400 hover:bg-red-500/10' 
+                    : 'text-gray-400 hover:text-red-500 hover:bg-red-500/10'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite(item);
+                }}
+                aria-label={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+              >
+                <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+              </Button>
+            )}
+            {/* ツールを開くボタン */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 touch-manipulation"
+              onClick={(e) => {
+                e.stopPropagation();
+                onItemClick(item);
+              }}
+              aria-label="ツールを開く"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
 

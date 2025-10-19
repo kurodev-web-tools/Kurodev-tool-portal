@@ -2,6 +2,36 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { favoritesManager } from '@/lib/favorites-storage';
+import { favoritesEventManager } from '@/lib/favorites-events';
+
+// スイートデータ（page.tsxと統一）
+const suites = [
+  {
+    id: 'suite-1',
+    title: '企画準備',
+    description: 'コンテンツの企画から準備までをサポートするツール群。スケジュール管理、台本作成、素材準備などを効率化します。',
+    status: 'released' as const,
+    href: '/tools/schedule-calendar',
+    iconName: 'sparkles',
+  },
+  {
+    id: 'suite-2', 
+    title: '動画公開',
+    description: 'コンテンツの公開とオーディエンスへのリーチを最大化するツール群。タイトル生成、サムネイル作成、SEO最適化などを自動化します。',
+    status: 'development' as const,
+    href: '/tools/title-generator',
+    iconName: 'trending-up',
+  },
+  {
+    id: 'suite-3',
+    title: '配信強化',
+    description: 'オーディエンスとのインタラクションを強化するツール群。コメント分析、感情分析、リアルタイム支援などで配信・ライブをサポートします。',
+    status: 'development' as const,
+    href: '/tools',
+    iconName: 'users',
+  },
+];
 
 export interface QuickAccessItem {
   id: string;
@@ -13,6 +43,9 @@ export interface QuickAccessItem {
   color?: string;
   lastUsed?: number;
   isFavorite?: boolean;
+  isSuite?: boolean;
+  suiteId?: string;
+  suiteName?: string;
 }
 
 interface QuickAccessState {
@@ -67,6 +100,50 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
     },
   ];
 
+  // 統合されたお気に入りツールの状態管理
+  const [unifiedFavorites, setUnifiedFavorites] = useState<QuickAccessItem[]>([]);
+
+  // 統合されたお気に入りツールを更新
+  const updateUnifiedFavorites = useCallback(() => {
+    try {
+      const favorites = favoritesManager.getFavorites();
+      
+      // スイートのお気に入りを取得
+      const suiteTools = favorites.suites.map(suiteId => {
+        const suite = suites.find(s => s.id === suiteId);
+        return suite ? {
+          ...suite,
+          isSuite: true,
+          suiteId: suite.id,
+          suiteName: suite.title,
+        } : null;
+      }).filter(Boolean) as QuickAccessItem[];
+      
+      // 個別ツールのお気に入りを取得
+      const individualTools = favorites.tools.map(toolId => {
+        const tool = allTools.find(t => t.id === toolId);
+        return tool ? {
+          ...tool,
+          isSuite: false,
+        } : null;
+      }).filter(Boolean) as QuickAccessItem[];
+      
+      // 統合して最大8個に制限
+      const unified = [...suiteTools, ...individualTools].slice(0, 8);
+      setUnifiedFavorites(unified);
+      
+      logger.debug(`Updated unified favorites: ${unified.length} items`, 'useQuickAccess');
+    } catch (error) {
+      logger.error('Failed to get unified favorite tools', error, 'useQuickAccess');
+      setUnifiedFavorites([]);
+    }
+  }, [allTools]);
+
+  // 統合されたお気に入りツールを取得（状態から返す）
+  const unifiedFavoriteTools = useCallback(() => {
+    return unifiedFavorites;
+  }, [unifiedFavorites]);
+
   // localStorageからデータを読み込み
   useEffect(() => {
     const loadFromStorage = () => {
@@ -82,6 +159,9 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
           favoriteTools: favoriteTools.slice(0, MAX_FAVORITE_ITEMS),
           popularTools: popularToolsData,
         });
+        
+        // 統合お気に入りを初期化
+        updateUnifiedFavorites();
       } catch (error) {
         logger.error('Failed to load quick access data', error, 'useQuickAccess');
         setState({
@@ -93,7 +173,15 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
     };
 
     loadFromStorage();
-  }, []);
+    
+    // 統合お気に入りシステムのイベントを監視
+    const handleFavoritesChange = () => {
+      updateUnifiedFavorites();
+    };
+    
+    favoritesEventManager.addListener(handleFavoritesChange);
+    return () => favoritesEventManager.removeListener(handleFavoritesChange);
+  }, [updateUnifiedFavorites]);
 
   // ツール使用履歴を追加
   const addToRecent = useCallback((tool: QuickAccessItem) => {
@@ -119,39 +207,49 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
     });
   }, []);
 
-  // お気に入りをトグル
+  // お気に入りをトグル（統合システム使用）
   const toggleFavorite = useCallback((tool: QuickAccessItem) => {
-    setState(prevState => {
-      const isCurrentlyFavorite = prevState.favoriteTools.some(item => item.id === tool.id);
+    try {
+      // スイートかどうかを判定
+      const isSuite = tool.id.startsWith('suite-') || tool.isSuite;
       
-      let newFavoriteTools;
-      if (isCurrentlyFavorite) {
-        // お気に入りから削除
-        newFavoriteTools = prevState.favoriteTools.filter(item => item.id !== tool.id);
+      logger.debug(`toggleFavorite: ${tool.id}, isSuite: ${isSuite}`, 'useQuickAccess');
+      
+      if (isSuite) {
+        // スイートのお気に入り管理
+        const success = favoritesManager.toggleSuite(tool.id);
+        if (success) {
+          logger.info(`Suite ${tool.id} favorite toggled`, 'useQuickAccess');
+        }
       } else {
-        // お気に入りに追加
-        const updatedTool = { ...tool, isFavorite: true };
-        newFavoriteTools = [updatedTool, ...prevState.favoriteTools].slice(0, MAX_FAVORITE_ITEMS);
+        // 個別ツールのお気に入り管理
+        const success = favoritesManager.toggleTool(tool.id);
+        if (success) {
+          logger.info(`Tool ${tool.id} favorite toggled`, 'useQuickAccess');
+        }
       }
 
-      // localStorageに保存
-      try {
-        localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(newFavoriteTools));
-      } catch (error) {
-        logger.error('Failed to save favorite tools', error, 'useQuickAccess');
-      }
+      // 統合お気に入りを更新
+      updateUnifiedFavorites();
 
-      return {
-        ...prevState,
-        favoriteTools: newFavoriteTools,
-      };
-    });
-  }, []);
+    } catch (error) {
+      logger.error('Failed to toggle favorite', error, 'useQuickAccess');
+    }
+  }, [updateUnifiedFavorites]);
 
-  // お気に入りかどうかをチェック
+  // お気に入りかどうかをチェック（統合システム使用）
   const isFavorite = useCallback((toolId: string) => {
-    return state.favoriteTools.some(item => item.id === toolId);
-  }, [state.favoriteTools]);
+    if (!toolId) return false;
+    
+    // スイートかどうかを判定
+    const isSuite = toolId.startsWith('suite-');
+    
+    const result = favoritesManager.isFavorite(toolId, isSuite ? 'suite' : 'tool');
+    
+    logger.debug(`isFavorite check: ${toolId}, isSuite: ${isSuite}, result: ${result}`, 'useQuickAccess');
+    
+    return result;
+  }, []);
 
   // 最近使用したツールをクリア
   const clearRecent = useCallback(() => {
@@ -192,5 +290,6 @@ export function useQuickAccess(allTools: QuickAccessItem[]) {
     isFavorite,
     clearRecent,
     clearFavorites,
+    unifiedFavoriteTools,
   };
 }

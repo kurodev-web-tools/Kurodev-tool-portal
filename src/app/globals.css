@@ -2,70 +2,72 @@
 @import "tailwindcss";
 @import '../styles/animations.css';
 
-/* Define shadcn/ui theme variables */
+/* Define shadcn/ui theme variables - Warm Cyber Minimalism */
 @layer base {
   :root {
-    --radius: 0.5rem;
-    --background: 240 10% 3.9%; /* Charcoal Gray */
-    --foreground: 0 0% 98%; /* White */
+    --radius: 0.25rem; /* 最小限の角丸 */
+    --background: 0 0% 18%; /* ウォームグレー #2D2D2D */
+    --foreground: 0 0% 97%; /* ソフトホワイト #F8F8F8 */
 
-    --card: 240 10% 3.9%; /* Charcoal Gray */
-    --card-foreground: 0 0% 98%; /* White */
-    --card-hover: 240 10% 10%; /* Dark mode card hover */
+    --card: 0 0% 18%; /* ウォームグレー #2D2D2D */
+    --card-foreground: 0 0% 97%; /* ソフトホワイト #F8F8F8 */
+    --card-hover: 0 0% 22%; /* ホバー時の明るいグレー */
 
-    --popover: 240 10% 3.9%; /* Charcoal Gray */
-    --popover-foreground: 0 0% 98%; /* White */
+    --popover: 0 0% 18%; /* ウォームグレー #2D2D2D */
+    --popover-foreground: 0 0% 97%; /* ソフトホワイト #F8F8F8 */
 
-    --primary: 237 100% 45%; /* Cyber Pop Blue */
-    --primary-foreground: 0 0% 98%; /* White */
-    --primary-hover: 237 100% 35%; /* Primary color for hover state */
+    --primary: 174 100% 41%; /* ウォームシアン #20B2AA */
+    --primary-foreground: 0 0% 97%; /* ソフトホワイト #F8F8F8 */
+    --primary-hover: 174 100% 35%; /* ウォームシアン ホバー */
 
-    --secondary: 210 100% 40%; /* Cool Blue */
-    --secondary-foreground: 0 0% 98%; /* White */
-    --secondary-hover: 210 100% 30%; /* Secondary color for hover state */
+    --secondary: 0 0% 25%; /* セカンダリグレー */
+    --secondary-foreground: 0 0% 97%; /* ソフトホワイト #F8F8F8 */
+    --secondary-hover: 0 0% 30%; /* セカンダリグレー ホバー */
 
-    --muted: 210 100% 15%; /* Dark Blue for cards */
-    --muted-foreground: 0 0% 98%; /* White */
+    --muted: 0 0% 25%; /* ミュートグレー */
+    --muted-foreground: 0 0% 65%; /* ミュートテキスト */
 
-    --accent: 237 100% 20%; /* Dark Blue for cards */
-    --accent-foreground: 0 0% 98%; /* White */
+    --accent: 0 84% 60%; /* 温かみのあるアクセント #FF6B6B */
+    --accent-foreground: 0 0% 97%; /* ソフトホワイト #F8F8F8 */
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 237 100% 65%; /* Primary color for ring */
+    --border: 0 0% 30%; /* 境界線グレー */
+    --input: 0 0% 25%; /* 入力フィールドグレー */
+    --ring: 174 100% 41%; /* ウォームシアン フォーカスリング */
   }
 }
 
 
 /* Make Tailwind aware of the shadcn/ui variables */
-@theme {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
+@layer base {
+  :root {
+    --color-background: hsl(var(--background));
+    --color-foreground: hsl(var(--foreground));
+    --color-card: hsl(var(--card));
+    --color-card-foreground: hsl(var(--card-foreground));
+    --color-popover: hsl(var(--popover));
+    --color-popover-foreground: hsl(var(--popover-foreground));
+    --color-primary: hsl(var(--primary));
+    --color-primary-foreground: hsl(var(--primary-foreground));
+    --color-secondary: hsl(var(--secondary));
+    --color-secondary-foreground: hsl(var(--secondary-foreground));
+    --color-muted: hsl(var(--muted));
+    --color-muted-foreground: hsl(var(--muted-foreground));
+    --color-accent: hsl(var(--accent));
+    --color-accent-foreground: hsl(var(--accent-foreground));
+    --color-destructive: hsl(var(--destructive));
+    --color-destructive-foreground: hsl(var(--destructive-foreground));
+    --color-border: hsl(var(--border));
+    --color-input: hsl(var(--input));
+    --color-ring: hsl(var(--ring));
 
-  --radius-DEFAULT: 1rem;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+    --radius-DEFAULT: 1rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+  }
 }
 
 /* Enhanced Templates */
@@ -101,10 +103,10 @@ button, a, [role="button"] {
   touch-action: manipulation;
 }
 
-/* Accessibility improvements */
+/* Phase 1: 強化されたアクセシビリティ */
 *:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+  outline: 3px solid #20B2AA;
+  outline-offset: 3px;
 }
 
 /* Enhanced focus for interactive elements */
@@ -114,9 +116,41 @@ a:focus,
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 3px solid #3b82f6;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  outline: 4px solid #20B2AA;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(32, 178, 170, 0.4);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  *:focus {
+    outline: 4px solid #ffffff;
+    outline-offset: 3px;
+  }
+  
+  .enhanced-card {
+    border: 2px solid #ffffff;
+  }
+  
+  .enhanced-card:hover {
+    border-color: #f59e0b;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .enhanced-card,
+  .stagger-animation,
+  .refined-hover,
+  .refined-glow,
+  .warm-refined-glow {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .enhanced-card:hover {
+    transform: none !important;
+  }
 }
 
 /* Button contrast improvements */
@@ -126,7 +160,7 @@ button {
 
 button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(32, 178, 170, 0.3);
 }
 
 button:active {
@@ -135,14 +169,14 @@ button:active {
 
 /* Enhanced button contrast for better visibility */
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(135deg, #20B2AA, #1a9b94);
   color: white;
-  border: 1px solid #2563eb;
+  border: 1px solid #1a9b94;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  border-color: #1d4ed8;
+  background: linear-gradient(135deg, #1a9b94, #168a83);
+  border-color: #168a83;
 }
 
 .btn-secondary {
@@ -499,35 +533,220 @@ button:active {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* カスタムスクロールバー */
+/* Warm Cyber Minimalism スクロールバー */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #2a2a2a;
-  border-radius: 4px;
+  background: #2D2D2D; /* ウォームグレー */
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-  border-radius: 4px;
-  border: 1px solid #374151;
+  background: #20B2AA; /* ウォームシアン */
+  border-radius: 2px;
+  border: 1px solid #404040;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
+  background: #1A9B94; /* ウォームシアン ホバー */
 }
 
 
-/* ダークモード専用の背景設定 */
+/* Warm Cyber Minimalism 背景設定 */
 html, body {
-  background: linear-gradient(135deg, #000000 0%, #1a1a2e 30%, #16213e 70%, #000000 100%) !important;
+  background: #2D2D2D !important; /* ウォームグレー */
+  color: #F8F8F8 !important; /* ソフトホワイト */
 }
 
-/* ヘッダーの背景色設定 */
+/* ヘッダーの背景色設定 - Warm Cyber Minimalism */
 header.border-b {
-  background: linear-gradient(90deg, #000000 0%, #1a1a2e 100%) !important;
+  background: #2D2D2D !important; /* ウォームグレー */
+  backdrop-filter: blur(8px);
+}
+
+/* Warm Cyber Minimalism 電子的エフェクト */
+.warm-cyber-glow {
+  box-shadow: 0 0 15px rgba(32, 178, 170, 0.3);
+  transition: box-shadow 0.4s ease;
+}
+
+.warm-cyber-glow:hover {
+  box-shadow: 0 0 30px rgba(32, 178, 170, 0.5);
+}
+
+.warm-accent-glow {
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+  transition: box-shadow 0.4s ease;
+}
+
+.warm-accent-glow:hover {
+  box-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+}
+
+.cyber-border {
+  border: 1px solid rgba(32, 178, 170, 0.2);
+  position: relative;
+}
+
+.cyber-border::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  background: linear-gradient(45deg, 
+    rgba(32, 178, 170, 0.4), 
+    rgba(255, 107, 107, 0.4)
+  );
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.cyber-border:hover::before {
+  opacity: 1;
+}
+
+.cyber-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(32, 178, 170, 0.2), 
+    transparent
+  );
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cyber-hover:hover::after {
+  left: 100%;
+}
+
+.digital-grid {
+  background-image: 
+    linear-gradient(rgba(32, 178, 170, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(32, 178, 170, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.hologram-effect {
+  background: linear-gradient(135deg, 
+    rgba(32, 178, 170, 0.1) 0%, 
+    rgba(255, 107, 107, 0.1) 50%, 
+    rgba(32, 178, 170, 0.1) 100%
+  );
+  backdrop-filter: blur(1px);
+}
+
+/* Phase 1: 洗練されたマイクロインタラクション */
+.enhanced-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+
+.enhanced-card:hover {
+  transform: translateY(-8px) rotateX(5deg);
+  box-shadow: 0 25px 50px rgba(32, 178, 170, 0.4);
+  border-color: rgba(32, 178, 170, 0.4);
+}
+
+.enhanced-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    rgba(59, 130, 246, 0.8), 
+    rgba(6, 182, 212, 0.8), 
+    rgba(245, 158, 11, 0.8)
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.enhanced-card:hover::before {
+  opacity: 1;
+}
+
+/* 段階的アニメーション */
+.stagger-animation {
+  animation: staggerIn 0.6s ease-out forwards;
+}
+
+@keyframes staggerIn {
+  0% { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.9); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+/* 洗練されたホバーエフェクト */
+.refined-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.refined-hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(59, 130, 246, 0.2), 
+    transparent
+  );
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.refined-hover:hover::after {
+  left: 100%;
+}
+
+/* 洗練されたグロー効果 */
+.refined-glow {
+  box-shadow: 0 0 15px rgba(32, 178, 170, 0.3);
+  transition: box-shadow 0.4s ease;
+}
+
+.refined-glow:hover {
+  box-shadow: 0 0 30px rgba(32, 178, 170, 0.5);
+}
+
+.warm-refined-glow {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  transition: box-shadow 0.4s ease;
+}
+
+.warm-refined-glow:hover {
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
 }
 
 /* アニメーション効果 */

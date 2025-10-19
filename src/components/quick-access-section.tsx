@@ -35,7 +35,7 @@ export function QuickAccessSection({ tools }: QuickAccessSectionProps) {
       <SwipeableQuickAccess
         title="お気に入り"
         icon={Heart}
-        items={quickAccess.favoriteTools}
+        items={quickAccess.unifiedFavoriteTools()}
         onItemClick={handleItemClick}
         onToggleFavorite={quickAccess.toggleFavorite}
         isFavorite={quickAccess.isFavorite}
