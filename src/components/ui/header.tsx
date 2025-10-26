@@ -320,12 +320,12 @@ export function Header() {
                   ツール切替
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 bg-slate-800/95 backdrop-blur-md border-slate-700">
-                {tools.map((tool) => (
+                             <DropdownMenuContent align="end" className="w-80 bg-[#2D2D2D]/95 backdrop-blur-md border-[#4A4A4A]">
+                 {tools.map((tool) => (
                   <DropdownMenuItem key={tool.id} asChild>
                     <Link 
                       href={tool.href}
-                      className="flex items-center space-x-3 p-3 w-full hover:bg-slate-700 transition-colors"
+                      className="flex items-center space-x-3 p-3 w-full hover:bg-[#3A3A3A] transition-colors"
                     >
                       <div className="w-10 h-10 bg-[#20B2AA] rounded-sm flex items-center justify-center shadow-sm warm-cyber-glow">
                         <tool.icon className="h-5 w-5 text-white" />
@@ -369,9 +369,9 @@ export function Header() {
                     <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                                 <DropdownMenuContent className="w-56 bg-[#2D2D2D]/95 backdrop-blur-md border-[#4A4A4A]">
+                   <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+                   <DropdownMenuSeparator />
                           <DropdownMenuItem asChild><Link href="/settings/profile">プロフィール編集</Link></DropdownMenuItem>
                           <DropdownMenuItem asChild><Link href="/settings/account">アカウント設定</Link></DropdownMenuItem>
                           <DropdownMenuItem asChild><Link href="/settings/notifications">通知設定</Link></DropdownMenuItem>
