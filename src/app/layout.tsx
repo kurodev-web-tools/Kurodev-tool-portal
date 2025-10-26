@@ -11,6 +11,7 @@ import { DebugPanelProvider } from "@/components/dev/debug-panel-provider";
 import { getAllFontVariables } from "@/config/fonts";
 import { CustomThemeProvider } from "@/contexts/ThemeContext";
 import { FavoritesInitializer } from "@/components/favorites-initializer";
+import { RootHeaderFooter } from "@/components/RootHeaderFooter";
 
 export const metadata: Metadata = {
   title: {
@@ -129,11 +130,12 @@ export default function RootLayout({
               <ErrorBoundary> {/* ErrorBoundary でラップ */}
                 <DebugPanelProvider>
                   <FavoritesInitializer />
-                  <Header />
-                  <main className="flex-grow">
+                  <RootHeaderFooter 
+                    header={<Header />}
+                    footer={<Footer />}
+                  >
                     {children}
-                  </main>
-                  <Footer />
+                  </RootHeaderFooter>
                 </DebugPanelProvider>
               </ErrorBoundary>
             </AuthProvider>
