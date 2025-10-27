@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { DayProps } from 'react-day-picker';
 import { ScheduleItem } from '@/types/schedule';
 import { Badge } from '@/components/ui/badge';
+import { getCategoryBackgroundColor, getCategoryBorderColor } from '@/lib/category-colors';
 
 interface MonthViewProps {
   selectedDate: Date | undefined;
@@ -64,7 +65,15 @@ export function MonthView({
             {daySchedules.slice(0, 3).map(schedule => (
               <Tooltip key={schedule.id} delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <div className="truncate text-[10px] leading-tight bg-secondary rounded-sm px-0.5 cursor-default">
+                  <div 
+                    className="truncate text-[10px] leading-tight rounded-sm px-0.5 cursor-default text-white"
+                    style={{
+                      backgroundColor: getCategoryBackgroundColor(schedule.category),
+                      borderColor: getCategoryBorderColor(schedule.category),
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                    }}
+                  >
                     {schedule.time || '未定'} {schedule.category || '未定'}
                   </div>
                 </TooltipTrigger>

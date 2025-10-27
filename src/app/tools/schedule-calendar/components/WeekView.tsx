@@ -9,6 +9,7 @@ import {
   getScheduleTimeSlots,
   getScheduleDuration
 } from '../utils/scheduleHelpers';
+import { getCategoryBackgroundColor, getCategoryBorderColor } from '@/lib/category-colors';
 
 interface WeekViewProps {
   weekDays: Date[];
@@ -79,12 +80,16 @@ export function WeekView({
                       
                       return (
                         <div 
-                          className={`absolute left-0 right-0 p-1 text-xs bg-blue-500/80 text-white rounded backdrop-blur-sm`}
+                          className="absolute left-0 right-0 p-1 text-xs text-white rounded backdrop-blur-sm"
                           style={{
                             top: topOffset,
                             height: height,
                             borderRadius: isFirstHour ? '0.375rem 0.375rem 0 0' : 
-                                         isLastHour ? '0 0 0.375rem 0.375rem' : '0'
+                                         isLastHour ? '0 0 0.375rem 0.375rem' : '0',
+                            backgroundColor: getCategoryBackgroundColor(schedule.category, 0.8),
+                            borderColor: getCategoryBorderColor(schedule.category),
+                            borderWidth: '1px',
+                            borderStyle: 'solid',
                           }}
                         >
                           {isFirstHour && (
@@ -139,7 +144,13 @@ export function WeekView({
                 {daySchedules.map((schedule) => (
                   <div
                     key={schedule.id}
-                    className="bg-blue-500/15 border border-blue-500/20 rounded px-2 py-1.5 cursor-pointer hover:bg-blue-500/25 transition-colors"
+                    className="rounded px-2 py-1.5 cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: getCategoryBackgroundColor(schedule.category),
+                      borderColor: getCategoryBorderColor(schedule.category),
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                    }}
                     onClick={() => {
                       setSelectedDate(day);
                       setIsModalOpen(true);

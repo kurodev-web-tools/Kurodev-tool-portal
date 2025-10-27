@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { getCategoryBackgroundColor, getCategoryBorderColor } from '@/lib/category-colors';
 
 export function ScheduleList() {
   const { schedules, selectedDate, setIsModalOpen, setEditingSchedule, refreshSchedules } = useSchedule();
@@ -83,7 +84,13 @@ export function ScheduleList() {
     });
 
   const renderScheduleItem = (schedule: ScheduleItem) => (
-    <div key={schedule.id} className="border p-2 rounded-md text-sm hover:bg-accent/50 transition-colors">
+    <div 
+      key={schedule.id} 
+      className="border p-2 rounded-md text-sm transition-colors"
+      style={{
+        borderColor: getCategoryBorderColor(schedule.category, 0.5),
+      }}
+    >
       <p className="font-bold truncate">{schedule.title || '(タイトルなし)'}</p>
       <p className="text-xs">{format(parseISO(schedule.date), 'M月d日 (E)', { locale: ja })} {schedule.time}</p>
       <p className="text-xs text-muted-foreground truncate">{schedule.category} / {schedule.platform}</p>
