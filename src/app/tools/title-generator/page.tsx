@@ -205,9 +205,17 @@ Instagram: @your_instagram`;
         <h3 className="text-xl font-semibold">AI提案エリア</h3>
         {isLoading ? (
           <div className="space-y-4">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
+            <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+              <Loader2 className="w-16 h-16 text-[#A0A0A0] mb-4 animate-spin" aria-hidden="true" />
+              <h3 className="text-xl font-semibold text-[#E0E0E0]">タイトルと概要欄を生成中...</h3>
+              <p className="text-[#A0A0A0] mt-2">AIが最適なタイトルと概要欄を考えています。しばらくお待ちください。</p>
+            </div>
+            {/* ローディング中のスケルトン */}
+            <div className="space-y-4" role="status" aria-label="タイトルと概要欄生成中">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
           </div>
         ) : (
           <>

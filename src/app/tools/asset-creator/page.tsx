@@ -17,6 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Loader2 } from 'lucide-react';
 import { useSidebar } from '@/hooks/use-sidebar';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useTemplate, ShapeType, TemplateProvider } from './contexts/TemplateContext';
@@ -481,7 +482,15 @@ function AssetCreatorPage() {
   }, [canvasOperations.redo]);
 
   if (!selectedTemplate) {
-    return <div className="flex h-full items-center justify-center"><p>テンプレートを読み込み中...</p></div>;
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 text-[#A0A0A0] mb-4 animate-spin mx-auto" aria-hidden="true" />
+          <p className="text-[#E0E0E0] text-lg font-semibold">テンプレートを読み込み中...</p>
+          <p className="text-[#A0A0A0] mt-2">しばらくお待ちください。</p>
+        </div>
+      </div>
+    );
   }
 
   const renderToolsPanel = () => (
