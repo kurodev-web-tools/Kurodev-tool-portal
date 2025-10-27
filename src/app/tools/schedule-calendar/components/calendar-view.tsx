@@ -16,7 +16,7 @@ import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { DayView } from './DayView';
 import { SnsPostTab } from './sns-post-tab';
-import { Calendar as CalendarIcon, Plus, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Filter, CalendarDays } from 'lucide-react';
 
 type ViewMode = 'month' | 'week' | 'day';
 
@@ -81,6 +81,13 @@ export function CalendarView() {
     setLastClickTime(currentTime);
   };
 
+  // 「今日」ボタンのクリックハンドラ
+  const handleJumpToToday = () => {
+    const today = new Date();
+    setSelectedDate(today);
+    setCurrentDate(today);
+  };
+
   // 週表示用の日付配列
   const weekDays = currentDate
     ? eachDayOfInterval({ 
@@ -127,6 +134,16 @@ export function CalendarView() {
 
           {/* アクションボタン */}
           <div className="flex items-center gap-2">
+            {/* 今日ボタン */}
+            <Button 
+              size="sm" 
+              onClick={handleJumpToToday}
+              className="h-8 bg-[#20B2AA] hover:bg-[#20B2AA]/90 text-white border-[#20B2AA]"
+            >
+              <CalendarDays className="h-4 w-4 mr-1" />
+              今日
+            </Button>
+
             {/* フィルターコンポーネント */}
             <ScheduleFilters
               showFilters={showFilters}

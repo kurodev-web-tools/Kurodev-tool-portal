@@ -2,11 +2,12 @@
 
 import { Calendar } from '@/components/ui/calendar';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, isSameDay, parseISO, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DayProps } from 'react-day-picker';
 import { ScheduleItem } from '@/types/schedule';
+import { Badge } from '@/components/ui/badge';
 
 interface MonthViewProps {
   selectedDate: Date | undefined;
@@ -30,6 +31,8 @@ export function MonthView({
     const dateToUse = props.day.date;
     const daySchedules = filteredSchedules.filter(s => isSameDay(parseISO(s.date), dateToUse));
     const { className: originalClassName = "", ...restOfProps } = props;
+    const isSelectedDate = selectedDate && isSameDay(dateToUse, selectedDate);
+    const isTodayDate = isToday(dateToUse);
 
     return (
       <td
@@ -37,13 +40,25 @@ export function MonthView({
         className={cn(
           originalClassName,
           "relative flex flex-col h-full p-1 !h-32",
-          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50"
+          isTodayDate && "bg-[#20B2AA]/20 border-2 border-[#20B2AA]",
+          isSelectedDate && !isTodayDate && "bg-[#20B2AA]/10 border border-[#20B2AA]/30"
         )}
         onClick={() => handleDesktopDayClick(dateToUse)}
       >
         <div className="relative flex flex-col h-full justify-between z-10">
-          <div className="text-sm font-bold flex-shrink-0">
-            {format(dateToUse, 'd')}
+          <div className="flex items-center justify-between flex-shrink-0">
+            <div className={cn(
+              "text-sm font-bold",
+              isTodayDate && "text-[#20B2AA]",
+              isSelectedDate && !isTodayDate && "text-[#20B2AA]"
+            )}>
+              {format(dateToUse, 'd')}
+            </div>
+            {isTodayDate && (
+              <Badge className="text-[8px] px-1 py-0 bg-[#20B2AA] text-white border-0">
+                今日
+              </Badge>
+            )}
           </div>
           <div className="flex-grow space-y-0.5 overflow-hidden">
             {daySchedules.slice(0, 3).map(schedule => (
@@ -69,18 +84,26 @@ export function MonthView({
     const dateToUse = props.day.date;
     const daySchedules = filteredSchedules.filter(s => isSameDay(parseISO(s.date), dateToUse));
     const { className: originalClassName = "", ...restOfProps } = props;
+    const isSelectedDate = selectedDate && isSameDay(dateToUse, selectedDate);
+    const isTodayDate = isToday(dateToUse);
 
     return (
       <td
         {...restOfProps}
         className={cn(
           originalClassName,
-          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50"
+          isTodayDate && "bg-[#20B2AA]/20 border-2 border-[#20B2AA]",
+          isSelectedDate && !isTodayDate && "bg-[#20B2AA]/10 border border-[#20B2AA]/30"
         )}
         onClick={() => handleDaySelect(dateToUse)}
       >
         <div className="relative h-full flex flex-col items-center justify-center">
-          <span>{format(dateToUse, 'd')}</span>
+          <span className={cn(
+            isTodayDate && "font-bold text-[#20B2AA]",
+            isSelectedDate && !isTodayDate && "font-semibold text-[#20B2AA]"
+          )}>
+            {format(dateToUse, 'd')}
+          </span>
           {daySchedules.length > 0 && (
             <div className="absolute bottom-1 w-1 h-1 bg-primary rounded-full" />
           )}
