@@ -7,7 +7,8 @@ import { deleteSchedule } from '@/lib/schedule-storage';
 import { format, isSameDay, isFuture, isPast, startOfToday, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Edit, Trash2, Search, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ import { logger } from '@/lib/logger';
 export function ScheduleList() {
   const { schedules, selectedDate, setIsModalOpen, setEditingSchedule, refreshSchedules } = useSchedule();
   const [scheduleIdToDelete, setScheduleIdToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const today = startOfToday();
 
   const handleEdit = (schedule: ScheduleItem) => {
@@ -45,13 +47,29 @@ export function ScheduleList() {
     }
   };
 
-  // 選択日の予定
+  // 検索フィルター関数
+  const matchesSearch = (schedule: ScheduleItem, query: string): boolean => {
+    if (!query) return true;
+    const lowerQuery = query.toLowerCase();
+    return (
+      (schedule.title || '').toLowerCase().includes(lowerQuery) ||
+      (schedule.notes || '').toLowerCase().includes(lowerQuery) ||
+      (schedule.category || '').toLowerCase().includes(lowerQuery) ||
+      (schedule.platform || '').toLowerCase().includes(lowerQuery) ||
+      (schedule.time || '').toLowerCase().includes(lowerQuery)
+    );
+  };
+
+  // 選択日の予定（検索フィルター適用）
   const selectedDaySchedules = selectedDate
-    ? schedules.filter(s => isSameDay(parseISO(s.date), selectedDate))
+    ? schedules.filter(s => 
+        isSameDay(parseISO(s.date), selectedDate) && matchesSearch(s, searchQuery)
+      )
     : [];
 
   // 全予定を日付順でソート（近い日付から降順）
   const allSchedules = schedules
+    .filter(s => matchesSearch(s, searchQuery))
     .sort((a, b) => {
       const dateA = parseISO(a.date);
       const dateB = parseISO(b.date);
@@ -83,6 +101,27 @@ export function ScheduleList() {
   return (
     <>
       <div className="space-y-6 mt-6">
+        {/* 検索バー */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="予定を検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9 bg-[#2D2D2D] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#A0A0A0]"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-[#20B2AA] transition-colors"
+              aria-label="検索をクリア"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         {/* 選択日の予定 */}
         <div>
           <h3 className="font-semibold mb-2 text-sm">
