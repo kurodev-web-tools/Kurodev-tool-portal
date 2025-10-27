@@ -66,7 +66,7 @@ export function MonthView({
               <Tooltip key={schedule.id} delayDuration={200}>
                 <TooltipTrigger asChild>
                   <div 
-                    className="truncate text-[10px] leading-tight rounded-sm px-0.5 cursor-default text-white"
+                    className="truncate text-xs leading-tight rounded-sm px-1 py-0.5 cursor-default text-white"
                     style={{
                       backgroundColor: getCategoryBackgroundColor(schedule.category),
                       borderColor: getCategoryBorderColor(schedule.category),

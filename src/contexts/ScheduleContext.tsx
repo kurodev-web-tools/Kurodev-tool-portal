@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react';
 import { ScheduleItem } from '@/types/schedule';
-import { loadSchedules } from '@/lib/schedule-storage';
+import { loadSchedules, updateSchedule as updateScheduleStorage } from '@/lib/schedule-storage';
+import { toast } from 'sonner';
 
 interface ScheduleContextType {
   isModalOpen: boolean;
@@ -13,6 +14,7 @@ interface ScheduleContextType {
   refreshSchedules: () => void;
   editingSchedule: ScheduleItem | null;
   setEditingSchedule: Dispatch<SetStateAction<ScheduleItem | null>>;
+  updateScheduleDate: (scheduleId: string, newDate: string) => void;
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -28,6 +30,24 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     setSchedules(loadedSchedules);
   };
 
+  // スケジュールの日付を更新する関数
+  const updateScheduleDate = (scheduleId: string, newDate: string) => {
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (!schedule) {
+      toast.error('予定が見つかりません');
+      return;
+    }
+
+    const updatedSchedule: ScheduleItem = {
+      ...schedule,
+      date: newDate,
+    };
+
+    updateScheduleStorage(updatedSchedule);
+    refreshSchedules();
+    toast.success('予定を移動しました');
+  };
+
   useEffect(() => {
     refreshSchedules();
   }, []);
@@ -41,7 +61,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       schedules, 
       refreshSchedules, 
       editingSchedule, 
-      setEditingSchedule 
+      setEditingSchedule,
+      updateScheduleDate
     }}>
       {children}
     </ScheduleContext.Provider>
