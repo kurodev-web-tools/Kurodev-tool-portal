@@ -3,12 +3,15 @@
 import React, { useState } from 'react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { ScheduleItem } from '@/types/schedule';
-import { deleteSchedule } from '@/lib/schedule-storage';
+import { deleteSchedule, updateSchedule, loadSchedules, saveSchedules } from '@/lib/schedule-storage';
 import { format, isSameDay, isFuture, isPast, startOfToday, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Edit, Trash2, Search, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Edit, Trash2, Search, X, CheckSquare, Square } from 'lucide-react';
+import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +28,11 @@ import { getCategoryBackgroundColor, getCategoryBorderColor } from '@/lib/catego
 
 export function ScheduleList() {
   const { schedules, selectedDate, setIsModalOpen, setEditingSchedule, refreshSchedules } = useSchedule();
+  const { settings } = useSettings();
   const [scheduleIdToDelete, setScheduleIdToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedScheduleIds, setSelectedScheduleIds] = useState<Set<string>>(new Set());
   const today = startOfToday();
 
   const handleEdit = (schedule: ScheduleItem) => {
@@ -46,6 +52,67 @@ export function ScheduleList() {
       }
       setScheduleIdToDelete(null);
     }
+  };
+
+  // 一括操作用の関数
+  const toggleSelection = (scheduleId: string) => {
+    const newSelected = new Set(selectedScheduleIds);
+    if (newSelected.has(scheduleId)) {
+      newSelected.delete(scheduleId);
+    } else {
+      newSelected.add(scheduleId);
+    }
+    setSelectedScheduleIds(newSelected);
+  };
+
+  const selectAll = (schedulesToSelect: ScheduleItem[]) => {
+    const allIds = schedulesToSelect.map(s => s.id);
+    setSelectedScheduleIds(new Set(allIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedScheduleIds(new Set());
+  };
+
+  const selectByCategory = (category: string) => {
+    const categoryIds = currentSchedules
+      .filter(s => s.category === category)
+      .map(s => s.id);
+    setSelectedScheduleIds(new Set(categoryIds));
+  };
+
+  const handleBulkDelete = () => {
+    const confirmed = window.confirm(`${selectedScheduleIds.size}件の予定を削除しますか？`);
+    if (confirmed) {
+      selectedScheduleIds.forEach(id => deleteSchedule(id));
+      toast.success(`${selectedScheduleIds.size}件の予定を削除しました`);
+      setSelectedScheduleIds(new Set());
+      refreshSchedules();
+    }
+  };
+
+  const handleBulkCategoryChange = (newCategory: string) => {
+    selectedScheduleIds.forEach(id => {
+      const schedule = schedules.find(s => s.id === id);
+      if (schedule) {
+        updateSchedule({ ...schedule, category: newCategory });
+      }
+    });
+    toast.success(`${selectedScheduleIds.size}件の予定のカテゴリを変更しました`);
+    setSelectedScheduleIds(new Set());
+    refreshSchedules();
+  };
+
+  const handleBulkPlatformChange = (newPlatform: string) => {
+    selectedScheduleIds.forEach(id => {
+      const schedule = schedules.find(s => s.id === id);
+      if (schedule) {
+        updateSchedule({ ...schedule, platform: newPlatform });
+      }
+    });
+    toast.success(`${selectedScheduleIds.size}件の予定のプラットフォームを変更しました`);
+    setSelectedScheduleIds(new Set());
+    refreshSchedules();
   };
 
   // 検索フィルター関数
@@ -83,25 +150,45 @@ export function ScheduleList() {
       return distanceA - distanceB;
     });
 
+  // 現在表示中のスケジュール（選択日または全予定）
+  const currentSchedules = selectedDate ? selectedDaySchedules : allSchedules;
+
   const renderScheduleItem = (schedule: ScheduleItem) => (
     <div 
       key={schedule.id} 
-      className="border p-2 rounded-md text-sm transition-colors"
+      className={`flex items-start gap-2 border p-2 rounded-md text-sm transition-colors ${
+        isSelectionMode && selectedScheduleIds.has(schedule.id)
+          ? 'bg-[#20B2AA]/20 border-[#20B2AA]'
+          : ''
+      }`}
       style={{
-        borderColor: getCategoryBorderColor(schedule.category, 0.5),
+        borderColor: isSelectionMode && selectedScheduleIds.has(schedule.id)
+          ? '#20B2AA'
+          : getCategoryBorderColor(schedule.category, 0.5),
       }}
     >
-      <p className="font-bold truncate">{schedule.title || '(タイトルなし)'}</p>
-      <p className="text-xs">{format(parseISO(schedule.date), 'M月d日 (E)', { locale: ja })} {schedule.time}</p>
-      <p className="text-xs text-muted-foreground truncate">{schedule.category} / {schedule.platform}</p>
-      <div className="flex justify-end mt-2 space-x-1">
-        <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleEdit(schedule)}>
-          <Edit className="h-3 w-3" />
-        </Button>
-        <Button variant="destructive" size="icon" className="h-6 w-6" onClick={() => setScheduleIdToDelete(schedule.id)}>
-          <Trash2 className="h-3 w-3" />
-        </Button>
+      {isSelectionMode && (
+        <Checkbox
+          checked={selectedScheduleIds.has(schedule.id)}
+          onCheckedChange={() => toggleSelection(schedule.id)}
+          className="mt-0.5"
+        />
+      )}
+      <div className="flex-1">
+        <p className="font-bold truncate">{schedule.title || '(タイトルなし)'}</p>
+        <p className="text-xs">{format(parseISO(schedule.date), 'M月d日 (E)', { locale: ja })} {schedule.time}</p>
+        <p className="text-xs text-muted-foreground truncate">{schedule.category} / {schedule.platform}</p>
       </div>
+      {!isSelectionMode && (
+        <div className="flex justify-end mt-2 space-x-1">
+          <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleEdit(schedule)}>
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button variant="destructive" size="icon" className="h-6 w-6" onClick={() => setScheduleIdToDelete(schedule.id)}>
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 
@@ -131,9 +218,116 @@ export function ScheduleList() {
 
         {/* 選択日の予定 */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm">
-            {selectedDate ? format(selectedDate, 'M月d日 (E)', { locale: ja }) : '日付を選択'} の予定
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-sm">
+              {selectedDate ? format(selectedDate, 'M月d日 (E)', { locale: ja }) : '日付を選択'} の予定
+            </h3>
+            {!isSelectionMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSelectionMode(true)}
+                className="h-7 text-xs"
+              >
+                選択モード
+              </Button>
+            )}
+          </div>
+          
+          {isSelectionMode && (
+            <div className="mb-3 p-3 bg-[#2D2D2D] rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedScheduleIds.size === selectedDaySchedules.length && selectedDaySchedules.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        const allIds = selectedDaySchedules.map(s => s.id);
+                        setSelectedScheduleIds(new Set(allIds));
+                      } else {
+                        clearSelection();
+                      }
+                    }}
+                  />
+                  <span className="text-xs font-medium">すべて選択</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsSelectionMode(false);
+                    clearSelection();
+                  }}
+                  className="h-7 text-xs"
+                >
+                  キャンセル
+                </Button>
+              </div>
+
+              {selectedScheduleIds.size > 0 && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">{selectedScheduleIds.size}件を選択中</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={clearSelection}
+                      className="h-7 text-xs"
+                    >
+                      クリア
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {settings.categories.slice(0, 5).map(cat => (
+                      <Button
+                        key={cat}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => selectByCategory(cat)}
+                        className="text-xs h-7"
+                      >
+                        {cat}のみ
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Select onValueChange={handleBulkCategoryChange}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="カテゴリ変更" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {settings.categories.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select onValueChange={handleBulkPlatformChange}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="プラットフォーム変更" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {settings.platforms.map(p => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="destructive"
+                      onClick={handleBulkDelete}
+                      className="col-span-1 sm:col-span-2 h-8 text-xs"
+                    >
+                      削除 ({selectedScheduleIds.size})
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             {selectedDaySchedules.length > 0 ? (
               selectedDaySchedules.map(renderScheduleItem)
@@ -145,7 +339,114 @@ export function ScheduleList() {
 
         {/* スケジュール一覧 */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm">スケジュール一覧</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-sm">スケジュール一覧</h3>
+            {!isSelectionMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSelectionMode(true)}
+                className="h-7 text-xs"
+              >
+                選択モード
+              </Button>
+            )}
+          </div>
+
+          {isSelectionMode && (
+            <div className="mb-3 p-3 bg-[#2D2D2D] rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedScheduleIds.size === allSchedules.length && allSchedules.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        const allIds = allSchedules.map(s => s.id);
+                        setSelectedScheduleIds(new Set(allIds));
+                      } else {
+                        clearSelection();
+                      }
+                    }}
+                  />
+                  <span className="text-xs font-medium">すべて選択</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsSelectionMode(false);
+                    clearSelection();
+                  }}
+                  className="h-7 text-xs"
+                >
+                  キャンセル
+                </Button>
+              </div>
+
+              {selectedScheduleIds.size > 0 && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">{selectedScheduleIds.size}件を選択中</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={clearSelection}
+                      className="h-7 text-xs"
+                    >
+                      クリア
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {settings.categories.slice(0, 5).map(cat => (
+                      <Button
+                        key={cat}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => selectByCategory(cat)}
+                        className="text-xs h-7"
+                      >
+                        {cat}のみ
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Select onValueChange={handleBulkCategoryChange}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="カテゴリ変更" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {settings.categories.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select onValueChange={handleBulkPlatformChange}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="プラットフォーム変更" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {settings.platforms.map(p => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="destructive"
+                      onClick={handleBulkDelete}
+                      className="col-span-1 sm:col-span-2 h-8 text-xs"
+                    >
+                      削除 ({selectedScheduleIds.size})
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2 pb-6">
             {allSchedules.length > 0 ? (
               allSchedules.map(renderScheduleItem)
