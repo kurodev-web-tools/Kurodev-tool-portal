@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Copy, Check, Heart, Download as DownloadIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -116,10 +117,9 @@ export default function VirtualBackgroundGeneratorPage() {
     const promptError = validatePrompt(prompt);
     if (promptError) {
       logger.error('バリデーションエラー', { error: promptError }, 'VirtualBgGenerator');
-      // トーストでエラーを表示
-      if (typeof window !== 'undefined' && window.alert) {
-        window.alert(promptError);
-      }
+      toast.error('プロンプトの検証エラー', {
+        description: promptError
+      });
       return;
     }
 

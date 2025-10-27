@@ -8,6 +8,7 @@ import { ThumbnailTemplate } from '@/types/template';
 import { Layer } from '../contexts/TemplateContext';
 import { TemplatePreviewGenerator } from '../utils/templatePreviewGenerator';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 
 export interface UseTemplateEditorParams {
   templates: ThumbnailTemplate[];
@@ -77,7 +78,9 @@ export const useTemplateEditor = ({
   // テンプレート作成（現在のレイヤーから）
   const handleCreateTemplate = useCallback(async (templateData: Partial<ThumbnailTemplate>) => {
     if (layers.length === 0) {
-      alert('テンプレートを作成するには、まずプレビューエリアにオブジェクトを配置してください。');
+      toast.error('テンプレート作成不可', {
+        description: 'テンプレートを作成するには、まずプレビューエリアにオブジェクトを配置してください。'
+      });
       return;
     }
     
@@ -170,7 +173,9 @@ export const useTemplateEditor = ({
         
         onTemplatesChange([...templates, importedTemplate]);
       } catch (error) {
-        alert('テンプレートファイルの読み込みに失敗しました。');
+        toast.error('テンプレート読み込み失敗', {
+          description: 'テンプレートファイルの読み込みに失敗しました。'
+        });
       }
     };
     reader.readAsText(file);

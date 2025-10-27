@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Palette, Target, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -47,7 +48,11 @@ export default function BrandingGeneratorPage() {
   const handleAnalyzeClick = useCallback(async () => {
     // バリデーション（例：活動状況が選択されているか）
     if (!activityStatus) {
-      logger.error('バリデーションエラー', { error: '活動状況を選択してください' }, 'BrandingGenerator');
+      const errorMsg = '活動状況を選択してください';
+      logger.error('バリデーションエラー', { error: errorMsg }, 'BrandingGenerator');
+      toast.error('入力エラー', {
+        description: errorMsg
+      });
       return;
     }
 

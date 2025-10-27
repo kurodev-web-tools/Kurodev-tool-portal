@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, FileText, Copy, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -49,8 +50,11 @@ export default function TitleGeneratorPage() {
     const descriptionError = validateDescription(finalDescription);
     
     if (titleError || descriptionError) {
-      // エラーメッセージを表示（実際の実装では適切なエラー表示を行う）
-      logger.error('バリデーションエラー', { error: titleError || descriptionError }, 'TitleGenerator');
+      const errorMsg = titleError || descriptionError;
+      logger.error('バリデーションエラー', { error: errorMsg }, 'TitleGenerator');
+      toast.error('入力エラー', {
+        description: errorMsg
+      });
       return;
     }
 
