@@ -25,9 +25,11 @@ import { format } from 'date-fns';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { Calendar, Clock, Bell, Repeat } from 'lucide-react';
+import { Calendar, Clock, Bell, Repeat, ListChecks } from 'lucide-react';
 import { generateRecurringSchedules, RepeatRule } from '@/lib/recurring-schedule';
-import { ScheduleItem } from '@/types/schedule';
+import { ScheduleItem, ChecklistItem } from '@/types/schedule';
+import { v4 as uuidv4 } from 'uuid';
+import { Plus, Trash2 } from 'lucide-react';
 
 const scheduleSchema = z.object({
   title: z.string().max(50, { message: "タイトルは50文字までです。" }).optional(),
@@ -54,6 +56,10 @@ export function ScheduleForm() {
   const [repeatEndOption, setRepeatEndOption] = useState<'never' | 'date' | 'count'>('never');
   const [repeatEndDate, setRepeatEndDate] = useState<string>('');
   const [repeatCount, setRepeatCount] = useState<number>(10);
+
+  // チェックリストの状態
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [newChecklistItem, setNewChecklistItem] = useState<string>('');
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleSchema),
@@ -84,9 +90,43 @@ export function ScheduleForm() {
     }
   };
 
+  // チェックリスト関連の関数
+  const addChecklistItem = () => {
+    if (newChecklistItem.trim()) {
+      setChecklist(prev => [...prev, {
+        id: uuidv4(),
+        text: newChecklistItem.trim(),
+        checked: false,
+      }]);
+      setNewChecklistItem('');
+    }
+  };
+
+  const updateChecklistItem = (id: string, updates: Partial<ChecklistItem>) => {
+    setChecklist(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  };
+
+  const deleteChecklistItem = (id: string) => {
+    setChecklist(prev => prev.filter(item => item.id !== id));
+  };
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklist(prev => prev.map(item => 
+      item.id === id ? { ...item, checked: !item.checked } : item
+    ));
+  };
+
   useEffect(() => {
     if (editingSchedule) {
       form.reset(editingSchedule);
+      // チェックリストも初期化
+      if (editingSchedule.checklist) {
+        setChecklist(editingSchedule.checklist);
+      } else {
+        setChecklist([]);
+      }
     } else if (selectedDate) {
       form.reset({
         ...form.getValues(),
@@ -97,6 +137,7 @@ export function ScheduleForm() {
         platform: '',
         notes: '',
       });
+      setChecklist([]); // 新規作成時はチェックリストをクリア
     }
   }, [editingSchedule, selectedDate, form]);
 
@@ -106,6 +147,7 @@ export function ScheduleForm() {
         ...data,
         reminders: reminders,
         isCompleted: false,
+        checklist: checklist.length > 0 ? checklist : undefined,
       };
       
       if (editingSchedule) {
@@ -147,6 +189,7 @@ export function ScheduleForm() {
       setIsModalOpen(false);
       setEditingSchedule(null);
       setReminders([]);
+      setChecklist([]); // チェックリストをリセット
       // 繰り返し設定をリセット
       setIsRecurring(false);
     } catch (error) {
@@ -461,6 +504,78 @@ export function ScheduleForm() {
                 </Label>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* チェックリストセクション */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ListChecks className={`${isDesktop ? 'h-5 w-5' : 'h-4 w-4'} text-green-500`} />
+              <h3 className={`${isDesktop ? 'text-lg' : 'text-base'} font-semibold`}>
+                チェックリスト
+                {checklist.length > 0 && (
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    ({checklist.filter(item => item.checked).length}/{checklist.length})
+                  </span>
+                )}
+              </h3>
+            </div>
+          </div>
+
+          {/* チェックリスト項目 */}
+          {checklist.length > 0 && (
+            <div className="space-y-2 border rounded-md p-3 bg-[#2D2D2D]">
+              {checklist.map((item) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={item.checked}
+                    onCheckedChange={() => toggleChecklistItem(item.id)}
+                    className={isDesktop ? '' : 'h-4 w-4'}
+                  />
+                  <Input
+                    value={item.text}
+                    onChange={(e) => updateChecklistItem(item.id, { text: e.target.value })}
+                    className={`flex-1 ${isDesktop ? '' : 'h-8 text-sm'} ${item.checked ? 'line-through text-muted-foreground' : ''}`}
+                    placeholder="チェックリスト項目"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteChecklistItem(item.id)}
+                    className={isDesktop ? 'h-8 w-8' : 'h-6 w-6'}
+                  >
+                    <Trash2 className={isDesktop ? 'h-4 w-4' : 'h-3 w-3'} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 新規チェックリスト項目の追加 */}
+          <div className="flex gap-2">
+            <Input
+              value={newChecklistItem}
+              onChange={(e) => setNewChecklistItem(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addChecklistItem();
+                }
+              }}
+              placeholder="新しいチェックリスト項目を入力..."
+              className={`flex-1 ${isDesktop ? '' : 'h-10 text-sm'}`}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addChecklistItem}
+              className={isDesktop ? '' : 'h-10 px-3'}
+            >
+              <Plus className={`${isDesktop ? 'h-4 w-4' : 'h-3 w-3'} mr-2`} />
+              <span className={isDesktop ? '' : 'text-xs'}>追加</span>
+            </Button>
           </div>
         </div>
 

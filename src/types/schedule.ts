@@ -5,6 +5,12 @@ export interface RecurringInfo {
   pattern: 'daily' | 'weekly' | 'monthly'; // 繰り返しパターン
 }
 
+export interface ChecklistItem {
+  id: string; // UUID
+  text: string; // チェックリスト項目のテキスト
+  checked: boolean; // チェック状態
+}
+
 export interface ScheduleItem {
   id: string; // UUID
   title?: string; // 予定のタイトル (任意に変更)
@@ -19,4 +25,5 @@ export interface ScheduleItem {
   recurringInfo?: RecurringInfo; // 繰り返し情報（表示用のみ）
   isArchived: boolean; // アーカイブフラグ
   archivedAt?: string; // アーカイブした日時（ISO 8601形式）
+  checklist?: ChecklistItem[]; // チェックリスト
 }
