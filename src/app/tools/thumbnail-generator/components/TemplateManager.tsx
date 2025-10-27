@@ -201,7 +201,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                       template.category === 'singing' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                       template.category === 'collaboration' ? 'bg-orange-100 text-orange-800 border-orange-200' :
                       template.category === 'event' ? 'bg-pink-100 text-pink-800 border-pink-200' :
-                      'bg-gray-100 text-gray-800 border-gray-200'
+                      'bg-[#2D2D2D] text-[#E0E0E0] border-[#4A4A4A]'
                     }`}
                   >
                     {template.category}

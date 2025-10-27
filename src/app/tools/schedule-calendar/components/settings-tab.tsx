@@ -177,7 +177,7 @@ export function SettingsTab() {
           <AccordionContent>
             <div className="flex flex-wrap gap-2 mb-4">
               {settings.categories.sort().map(category => (
-                <span key={category} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-sm w-[110px] justify-center">
+                <span key={category} className="flex items-center bg-secondary text-secondary-foreground border border-[#4A4A4A] px-3 py-1.5 rounded-md text-sm w-[110px] justify-center">
                   <span className="flex-1 text-center text-xs font-medium truncate">{category}</span>
                   <Button variant="ghost" size="icon" className="ml-1 h-4 w-4 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0" onClick={() => handleRemoveCategory(category)}>
                     ×
@@ -202,7 +202,7 @@ export function SettingsTab() {
           <AccordionContent>
             <div className="flex flex-wrap gap-2 mb-4">
               {settings.platforms.map(platform => (
-                <span key={platform} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-sm w-[110px] justify-center">
+                <span key={platform} className="flex items-center bg-secondary text-secondary-foreground border border-[#4A4A4A] px-3 py-1.5 rounded-md text-sm w-[110px] justify-center">
                   <span className="flex-1 text-center text-xs font-medium truncate">{platform}</span>
                   <Button variant="ghost" size="icon" className="ml-1 h-4 w-4 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0" onClick={() => handleRemovePlatform(platform)}>
                     ×
@@ -281,7 +281,7 @@ export function SettingsTab() {
           <AccordionContent>
             <div className="space-y-2 mb-4">
               {settings.hashtags.map(hashtag => (
-                <div key={hashtag} className="flex items-center justify-between bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm">
+                <div key={hashtag} className="flex items-center justify-between bg-secondary text-secondary-foreground border border-[#4A4A4A] px-3 py-2 rounded-md text-sm">
                   <span className="text-xs font-medium">{hashtag}</span>
                   <Button variant="ghost" size="icon" className="h-4 w-4 hover:bg-destructive hover:text-destructive-foreground" onClick={() => handleRemoveHashtag(hashtag)}>
                     ×

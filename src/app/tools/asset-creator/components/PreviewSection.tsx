@@ -140,7 +140,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
       />
       
       {/* プレビューエリア */}
-      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
+      <div className="flex-1 overflow-auto bg-[#1A1A1A] relative">
         <div className="flex items-center justify-center h-full p-4 lg:p-8">
           <div className="relative w-full h-full">
             {/* メインコンテンツエリア */}

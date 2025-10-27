@@ -30,12 +30,12 @@ export function WeekView({
       <div className="space-y-4">
         {/* デスクトップ用：時間軸ヘッダー */}
         <div className="flex">
-          <div className="w-16 text-sm text-gray-500">時間</div>
+          <div className="w-16 text-sm text-[#A0A0A0]">時間</div>
           <div className="flex-1 grid grid-cols-7 gap-1">
             {weekDays.map((day) => (
               <div key={day.toISOString()} className="text-center text-sm font-medium">
                 <div>{format(day, 'M/d', { locale: ja })}</div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-[#A0A0A0]">
                   {format(day, 'E', { locale: ja })}
                 </div>
               </div>
@@ -47,7 +47,7 @@ export function WeekView({
         <div className="flex">
           <div className="w-16 space-y-1">
             {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-              <div key={hour} className="text-xs text-gray-500 h-12 flex items-center justify-center">
+              <div key={hour} className="text-xs text-[#A0A0A0] h-12 flex items-center justify-center">
                 {hour.toString().padStart(2, '0')}:00
               </div>
             ))}
@@ -58,7 +58,7 @@ export function WeekView({
                 {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
                   <div
                     key={hour}
-                    className="h-12 border border-slate-600/30 rounded cursor-pointer hover:bg-slate-700/50 transition-colors bg-slate-800/20 backdrop-blur-sm relative"
+                    className="h-12 border border-[#4A4A4A]/30 rounded cursor-pointer hover:bg-[#3A3A3A]/50 transition-colors bg-[#2D2D2D]/20 backdrop-blur-sm relative"
                     onClick={() => {
                       setSelectedDate(day);
                       setIsModalOpen(true);
@@ -122,13 +122,13 @@ export function WeekView({
         });
 
         return (
-          <div key={day.toISOString()} className="bg-slate-800/50 rounded-lg p-2">
+          <div key={day.toISOString()} className="bg-[#2D2D2D]/50 rounded-lg p-2">
             {/* 日付ヘッダー */}
             <div className="flex items-center justify-between mb-2">
               <div className="text-base font-semibold text-white">
                 {format(day, 'M/d', { locale: ja })}
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-[#A0A0A0]">
                 {format(day, 'E', { locale: ja })}
               </div>
             </div>
@@ -151,7 +151,7 @@ export function WeekView({
                         <span className="text-xs text-blue-300 font-mono">
                           {schedule.time}
                         </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-[#A0A0A0]">
                           {getScheduleDuration(schedule)}分
                         </span>
                       </div>
@@ -176,7 +176,7 @@ export function WeekView({
                 ))}
               </div>
             ) : (
-              <div className="text-gray-400 text-xs text-center py-1.5">
+              <div className="text-[#A0A0A0] text-xs text-center py-1.5">
                 スケジュールなし
               </div>
             )}

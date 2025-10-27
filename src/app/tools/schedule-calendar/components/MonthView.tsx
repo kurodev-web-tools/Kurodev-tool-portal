@@ -37,7 +37,7 @@ export function MonthView({
         className={cn(
           originalClassName,
           "relative flex flex-col h-full p-1 !h-32",
-          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
+          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50"
         )}
         onClick={() => handleDesktopDayClick(dateToUse)}
       >
@@ -75,7 +75,7 @@ export function MonthView({
         {...restOfProps}
         className={cn(
           originalClassName,
-          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50 dark:bg-accent"
+          isSameDay(dateToUse, selectedDate || new Date()) && "bg-accent/50"
         )}
         onClick={() => handleDaySelect(dateToUse)}
       >
@@ -98,7 +98,7 @@ export function MonthView({
       selected={selectedDate}
       components={{ Day: DayComponent }}
       locale={ja}
-      className={`rounded-md border border-slate-700/50 w-full bg-slate-800/80 backdrop-blur-sm ${isDesktop ? '' : 'text-sm'}`}
+      className={`rounded-md border border-[#4A4A4A]/50 w-full bg-[#2D2D2D]/50 backdrop-blur-sm ${isDesktop ? '' : 'text-sm'}`}
     />
   );
 }

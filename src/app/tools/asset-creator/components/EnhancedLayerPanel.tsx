@@ -121,7 +121,7 @@ export const EnhancedLayerPanel: React.FC = () => {
   return (
     <div className="space-y-2" role="region" aria-label="レイヤー管理パネル">
       {/* レイヤー操作ボタン */}
-      <div className="flex gap-1 p-2 bg-gray-800 rounded" role="group" aria-label="レイヤー追加操作">
+      <div className="flex gap-1 p-2 bg-[#2D2D2D] rounded" role="group" aria-label="レイヤー追加操作">
         <Button 
           size="sm" 
           variant="outline" 
@@ -209,7 +209,7 @@ export const EnhancedLayerPanel: React.FC = () => {
       </div>
 
       {/* レイヤー一覧 */}
-      <div className="text-xs text-gray-400 px-2" role="note" aria-label="操作説明">
+      <div className="text-xs text-[#A0A0A0] px-2" role="note" aria-label="操作説明">
         ドラッグまたは↑↓ボタンで順序変更
       </div>
       <ScrollArea className="h-64" role="region" aria-label="レイヤー一覧">
@@ -234,7 +234,7 @@ export const EnhancedLayerPanel: React.FC = () => {
                               "flex items-center gap-2 p-2 rounded cursor-pointer transition-colors",
                               selectedLayerId === layer.id
                                 ? "bg-blue-600 text-white"
-                                : "bg-gray-700 hover:bg-gray-600",
+                                : "bg-[#3A3A3A] hover:bg-[#4A4A4A]",
                               snapshot.isDragging && "bg-blue-500 shadow-lg"
                             )}
                             onClick={() => setSelectedLayerId(layer.id)}
@@ -245,7 +245,7 @@ export const EnhancedLayerPanel: React.FC = () => {
                               className="cursor-grab active:cursor-grabbing"
                               title="ドラッグして順序変更"
                             >
-                              <GripVertical className="h-4 w-4 text-gray-400" />
+                              <GripVertical className="h-4 w-4 text-[#A0A0A0]" />
                             </div>
 
                             {/* レイヤー情報 */}
@@ -256,7 +256,7 @@ export const EnhancedLayerPanel: React.FC = () => {
                                   <div className="text-sm font-medium truncate">
                                     {getLayerTypeLabel(layer)}
                                   </div>
-                                  <div className="text-xs text-gray-400 truncate">
+                                  <div className="text-xs text-[#A0A0A0] truncate">
                                     {getLayerPreview(layer)}
                                   </div>
                                 </div>

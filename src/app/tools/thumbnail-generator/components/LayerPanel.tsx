@@ -116,7 +116,7 @@ export const LayerPanel: React.FC = () => {
       case 'shape':
         return <Square className="h-4 w-4 text-purple-500" />;
       default:
-        return <Square className="h-4 w-4 text-gray-500" />;
+        return <Square className="h-4 w-4 text-[#A0A0A0]" />;
     }
   };
 
@@ -136,7 +136,7 @@ export const LayerPanel: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* レイヤー操作ツールバー */}
-      <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="flex items-center gap-2 p-2 bg-[#2D2D2D] rounded-lg">
         {/* レイヤー追加ボタン（デスクトップのみ） */}
         {isDesktop && (
           <>
@@ -152,7 +152,7 @@ export const LayerPanel: React.FC = () => {
               <Square className="h-4 w-4 mr-1" />
               図形
             </Button>
-            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+            <div className="w-px h-6 bg-[#4A4A4A]" />
           </>
         )}
         
@@ -193,9 +193,9 @@ export const LayerPanel: React.FC = () => {
                             className={cn(
                               "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all group",
                               selectedLayerId === layer.id
-                                ? "bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-500"
-                                : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700",
-                              snapshot.isDragging && "shadow-lg opacity-90 bg-blue-100 dark:bg-blue-900/30"
+                                ? "bg-blue-100 bg-blue-900/30 border-2 border-blue-500"
+                                : "bg-[#2D2D2D] hover:bg-[#3A3A3A]",
+                              snapshot.isDragging && "shadow-lg opacity-90 bg-blue-100 bg-blue-900/30"
                             )}
                             onClick={() => setSelectedLayerId(layer.id)}
                           >
@@ -210,9 +210,9 @@ export const LayerPanel: React.FC = () => {
                                 <span className="text-sm font-medium truncate">
                                   {layer.name || `${layer.type} ${index + 1}`}
                                 </span>
-                                {layer.locked && <Lock className="h-3 w-3 text-gray-400" />}
+                                {layer.locked && <Lock className="h-3 w-3 text-[#A0A0A0]" />}
                               </div>
-                              <div className="text-xs text-gray-500 truncate">
+                              <div className="text-xs text-[#A0A0A0] truncate">
                                 {getLayerPreview(layer)}
                               </div>
                             </div>
@@ -299,8 +299,8 @@ export const LayerPanel: React.FC = () => {
       </div>
 
       {/* レイヤー統計 */}
-      <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <div className="text-xs text-gray-600 dark:text-gray-400">
+      <div className="p-3 bg-[#2D2D2D] rounded-lg">
+        <div className="text-xs text-[#A0A0A0]">
           レイヤー数: {layers.length} | 選択中: {selectedLayerId ? '1' : '0'}
         </div>
       </div>

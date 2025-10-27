@@ -95,7 +95,7 @@ export function CalendarView() {
         {/* ビュー切り替えコントロール */}
         <div className="flex items-center justify-between mb-6 p-4">
           {/* ビュー切り替えボタン */}
-          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-[#2D2D2D] rounded-lg p-1">
             <Button
               size="sm"
               variant={viewMode === 'month' ? 'default' : 'ghost'}
@@ -156,7 +156,7 @@ export function CalendarView() {
         </div>
 
         {/* メインカレンダー表示エリア */}
-        <div className={`flex-grow rounded-md ${isDesktop ? 'p-4' : 'p-2'} bg-slate-900/95 backdrop-blur-sm`}>
+        <div className={`flex-grow rounded-md ${isDesktop ? 'p-4' : 'p-2'} bg-[#1A1A1A] backdrop-blur-sm`}>
           <div className={`${isDesktop ? 'h-full overflow-y-auto' : 'min-h-full'}`}>
             {viewMode === 'month' && (
               <MonthView
@@ -189,7 +189,7 @@ export function CalendarView() {
           {/* モバイル表示用の追加機能 */}
           {!isDesktop && (
             <div className="mt-6">
-              <div className="bg-slate-800/80 border border-slate-600/30 rounded-lg p-4 backdrop-blur-sm">
+              <div className="bg-[#2D2D2D]/80 border border-[#4A4A4A]/30 rounded-lg p-4 backdrop-blur-sm">
                 <Tabs defaultValue="sns" className="w-full">
                   <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
                     <TabsTrigger value="sns" className="flex-1">
@@ -215,7 +215,7 @@ export function CalendarView() {
                         return selectedDaySchedules.length > 0 ? (
                           <div className="space-y-2">
                             {selectedDaySchedules.map((schedule) => (
-                              <div key={schedule.id} className="flex items-center justify-between p-2 bg-slate-700/60 rounded backdrop-blur-sm">
+                              <div key={schedule.id} className="flex items-center justify-between p-2 bg-[#3A3A3A]/60 rounded backdrop-blur-sm">
                                 <div>
                                   <p className="font-medium text-sm">{schedule.title || '(タイトルなし)'}</p>
                                   <p className="text-xs text-muted-foreground">{schedule.time}</p>
@@ -240,7 +240,7 @@ export function CalendarView() {
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {filteredSchedules.length > 0 ? (
                           filteredSchedules.slice(0, 10).map((schedule) => (
-                            <div key={schedule.id} className="flex items-center justify-between p-2 bg-slate-700/60 rounded backdrop-blur-sm">
+                            <div key={schedule.id} className="flex items-center justify-between p-2 bg-[#3A3A3A]/60 rounded backdrop-blur-sm">
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm truncate">{schedule.title || '(タイトルなし)'}</p>
                                 <p className="text-xs text-muted-foreground">{format(parseISO(schedule.date), "M/d HH:mm")}</p>
@@ -270,7 +270,7 @@ export function CalendarView() {
           <Button
             size="icon"
             variant="outline"
-            className="rounded-full h-12 w-12 shadow-lg bg-white dark:bg-slate-800"
+            className="rounded-full h-12 w-12 shadow-lg bg-white"
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter className="h-5 w-5" />

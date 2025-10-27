@@ -127,8 +127,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
                         <Card
                           key={template.id}
                           className={cn(
-                            "cursor-pointer hover:border-primary transition-colors group",
-                            selectedTemplateId === template.id && "border-primary ring-2 ring-primary"
+                            "cursor-pointer hover:border-[#20B2AA] transition-colors group",
+                            selectedTemplateId === template.id && "border-2 border-[#20B2AA] ring-2 ring-[#20B2AA]"
                           )}
                           onClick={() => onSelectTemplate(template)}
                         >

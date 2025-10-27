@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -33,10 +34,28 @@ export function ScheduleFilters({
   uniquePlatforms,
   hasActiveFilters
 }: ScheduleFiltersProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+
+    if (showFilters) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilters, setShowFilters]);
+
   return (
     <>
       {/* フィルターボタン（デスクトップ） */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block relative">
         <Button
           size="sm"
           variant="outline"
@@ -51,11 +70,10 @@ export function ScheduleFilters({
             </Badge>
           )}
         </Button>
-      </div>
 
-      {/* フィルターパネル */}
-      {showFilters && (
-        <div className="mb-4 p-4 bg-slate-800/80 border border-slate-600/30 rounded-lg backdrop-blur-sm">
+        {/* フィルターパネル */}
+        {showFilters && (
+          <div ref={panelRef} className="absolute right-0 top-full mt-2 w-96 p-4 bg-[#2D2D2D]/95 border border-[#4A4A4A] rounded-lg backdrop-blur-sm shadow-lg z-50">
           <h3 className="text-lg font-semibold mb-4">フィルター</h3>
           
           <div className="space-y-4">
@@ -175,7 +193,8 @@ export function ScheduleFilters({
             </Badge>
           )}
         </div>
-      )}
+        )}
+      </div>
     </>
   );
 }

@@ -31,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = memo(({
   return (
     <aside
       className={cn(
-        "fixed top-0 right-0 h-[calc(100vh-2rem)] w-4/5 max-w-sm bg-slate-900/95 backdrop-blur-sm p-4 border-l border-slate-600/30 z-40",
+        "fixed top-0 right-0 h-[calc(100vh-2rem)] w-4/5 max-w-sm bg-[#2D2D2D]/95 backdrop-blur-sm p-4 border-l border-[#4A4A4A]/30 z-40",
         "transition-transform duration-300 ease-in-out",
         isDesktop && "lg:static lg:w-96 lg:translate-x-0 lg:z-auto lg:h-full",
         isOpen ? 'translate-x-0' : 'translate-x-full',
@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = memo(({
           </Button>
         )}
       </div>
-      <div className="overflow-y-auto h-[calc(100%-4rem)]">
+      <div className="overflow-y-auto h-[calc(100%-4rem)] p-2">
         {children}
       </div>
     </aside>
@@ -96,7 +96,7 @@ export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
     if (tabs.length > 0) {
       return (
         <div className={cn(
-          "fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-slate-800/90 backdrop-blur-sm border border-slate-600/30 rounded-l-md",
+          "fixed top-1/2 right-0 -translate-y-1/2 z-30 flex flex-col bg-[#2D2D2D]/90 backdrop-blur-sm border border-[#4A4A4A]/30 rounded-l-md",
           className
         )}>
           {tabs.map((tab) => (

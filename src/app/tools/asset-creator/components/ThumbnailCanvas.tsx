@@ -50,7 +50,7 @@ export function ThumbnailCanvas({
         'stylish-enhanced': selectedTemplateId === 'template-2',
         'cute-enhanced': selectedTemplateId === 'template-3',
         'cool-enhanced': selectedTemplateId === 'template-4',
-        'bg-gray-200': selectedTemplateId === 'template-5',
+        'bg-[#2D2D2D]': selectedTemplateId === 'template-5',
       })}
     >
       <div id="download-target" className="w-full h-full relative overflow-hidden">

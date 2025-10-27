@@ -246,7 +246,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
   return (
     <div className={cn("space-y-2", className)} role="region" aria-label="レイヤー管理パネル">
       {/* レイヤー操作ボタン */}
-      <div className="flex gap-1 p-2 bg-gray-800 rounded" role="group" aria-label="レイヤー追加操作">
+      <div className="flex gap-1 p-2 bg-[#2D2D2D] rounded" role="group" aria-label="レイヤー追加操作">
         <Button 
           size="sm" 
           variant="outline" 
@@ -287,7 +287,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
       </div>
 
       {/* レイヤー一覧 */}
-      <div className="text-xs text-gray-400 px-2" role="note" aria-label="操作説明">
+      <div className="text-xs text-[#A0A0A0] px-2" role="note" aria-label="操作説明">
         ドラッグまたは↑↓ボタンで順序変更
       </div>
       <ScrollArea className="h-[35vh] lg:h-[70vh] md:h-[55vh] sm:h-[35vh]" role="region" aria-label="レイヤー一覧">
@@ -318,8 +318,8 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                             className={cn(
                               "flex items-center gap-2 p-2 rounded cursor-pointer transition-all duration-200",
                               selectedLayerId === layer.id
-                                ? "bg-blue-600 text-white shadow-md"
-                                : "bg-gray-700 hover:bg-gray-600",
+                                ? "bg-[#20B2AA]/20 border border-[#20B2AA] shadow-md"
+                                : "bg-[#2D2D2D] hover:bg-[#3A3A3A]",
                               snapshot.isDragging && "shadow-lg rotate-2 scale-105",
                               !layer.visible && "opacity-50"
                             )}
@@ -339,7 +339,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                               className="cursor-grab active:cursor-grabbing"
                               title="ドラッグして順序変更"
                             >
-                              <GripVertical className="h-4 w-4 text-gray-400" />
+                              <GripVertical className="h-4 w-4 text-[#A0A0A0]" />
                             </div>
                             
                             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -349,7 +349,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                                   {getLayerTypeLabel(layer)}
                                 </div>
                                 <div 
-                                  className="text-xs text-gray-400 truncate" 
+                                  className="text-xs text-[#A0A0A0] truncate" 
                                   title={getFullLayerName(layer)}
                                 >
                                   {getLayerPreview(layer)}
@@ -427,7 +427,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
       {/* 図形選択モーダル（必要に応じて外部から提供） */}
       {showShapeSelectorModal && onShapeSelect && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+          <div className="bg-[#2D2D2D] p-6 rounded-lg max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">図形を選択</h3>
             <div className="grid grid-cols-3 gap-3">
               {['rectangle', 'circle', 'triangle', 'line', 'arrow', 'star', 'polygon', 'heart', 'diamond'].map((shape) => (

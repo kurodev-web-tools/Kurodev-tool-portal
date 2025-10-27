@@ -58,7 +58,7 @@ export default function ThumbnailPreview({ isShiftKeyDown, aspectRatio, customAs
         'stylish-enhanced': selectedTemplate.id === 'template-2',
         'cute-enhanced': selectedTemplate.id === 'template-3',
         'cool-enhanced': selectedTemplate.id === 'template-4',
-        'bg-gray-200': selectedTemplate.id === 'template-5',
+        'bg-[#2D2D2D]': selectedTemplate.id === 'template-5',
       })}
     >
       <div id="download-target" className="w-full h-full relative overflow-hidden">

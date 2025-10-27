@@ -444,7 +444,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                   step={0.1}
                   className="mt-2"
                 />
-                <div className="text-xs text-gray-500 text-center mt-1">
+                <div className="text-xs text-[#A0A0A0] text-center mt-1">
                   {selectedLayer.fontSize || '2rem'}
                 </div>
               </div>
@@ -455,7 +455,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                     type="color"
                     value={selectedLayer.color || '#ffffff'}
                     onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="w-8 h-8 rounded border border-gray-300"
+                    className="w-8 h-8 rounded border border-[#4A4A4A]"
                   />
                   <Input
                     value={selectedLayer.color || '#ffffff'}
@@ -468,17 +468,17 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
 
             {/* フォント設定 */}
             <div className="space-y-3">
-              <h5 className="text-sm font-medium text-gray-300">フォント設定</h5>
+              <h5 className="text-sm font-medium text-[#E0E0E0]">フォント設定</h5>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs text-gray-400">フォントファミリー</Label>
+                  <Label className="text-xs text-[#A0A0A0]">フォントファミリー</Label>
                   <FontSelector
                     value={selectedLayer.fontFamily || 'Arial, sans-serif'}
                     onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { fontFamily: value })}
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-400">フォントウェイト</Label>
+                  <Label className="text-xs text-[#A0A0A0]">フォントウェイト</Label>
                   <Select
                     value={selectedLayer.fontWeight || 'normal'}
                     onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { fontWeight: value })}
@@ -504,7 +504,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs text-gray-400">フォントスタイル</Label>
+                  <Label className="text-xs text-[#A0A0A0]">フォントスタイル</Label>
                   <Select
                     value={selectedLayer.fontStyle || 'normal'}
                     onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { fontStyle: value })}
@@ -520,7 +520,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-400">文字装飾</Label>
+                  <Label className="text-xs text-[#A0A0A0]">文字装飾</Label>
                   <Select
                     value={selectedLayer.textDecoration || 'none'}
                     onValueChange={(value) => editorState.updateLayer(selectedLayer.id, { textDecoration: value })}
@@ -540,7 +540,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
               {/* 文字シャドウ - ビジュアルエディタ */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-gray-400">文字シャドウ</Label>
+                  <Label className="text-xs text-[#A0A0A0]">文字シャドウ</Label>
                   <Button
                     size="sm"
                     variant={uiState.shadowEnabled ? "default" : "outline"}
@@ -569,10 +569,10 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                   };
                   
                   return (
-                    <div className="space-y-3 pl-2 border-l-2 border-gray-700">
+                    <div className="space-y-3 pl-2 border-l-2 border-[#4A4A4A]">
                       {/* 水平位置 */}
                       <div>
-                        <Label className="text-xs text-gray-500">水平位置（X）</Label>
+                        <Label className="text-xs text-[#A0A0A0]">水平位置（X）</Label>
                         <Slider
                           value={[shadow.x]}
                           onValueChange={([value]) => handleShadowChange('x', value)}
@@ -581,14 +581,14 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                           step={1}
                           className="mt-2"
                         />
-                        <div className="text-xs text-gray-500 text-center mt-1">
+                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
                           {shadow.x}px
                         </div>
                       </div>
                       
                       {/* 垂直位置 */}
                       <div>
-                        <Label className="text-xs text-gray-500">垂直位置（Y）</Label>
+                        <Label className="text-xs text-[#A0A0A0]">垂直位置（Y）</Label>
                         <Slider
                           value={[shadow.y]}
                           onValueChange={([value]) => handleShadowChange('y', value)}
@@ -597,14 +597,14 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                           step={1}
                           className="mt-2"
                         />
-                        <div className="text-xs text-gray-500 text-center mt-1">
+                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
                           {shadow.y}px
                         </div>
                       </div>
                       
                       {/* ぼかし */}
                       <div>
-                        <Label className="text-xs text-gray-500">ぼかし</Label>
+                        <Label className="text-xs text-[#A0A0A0]">ぼかし</Label>
                         <Slider
                           value={[shadow.blur]}
                           onValueChange={([value]) => handleShadowChange('blur', value)}
@@ -613,20 +613,20 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                           step={1}
                           className="mt-2"
                         />
-                        <div className="text-xs text-gray-500 text-center mt-1">
+                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
                           {shadow.blur}px
                         </div>
                       </div>
                       
                       {/* 影の色 */}
                       <div>
-                        <Label className="text-xs text-gray-500">影の色</Label>
+                        <Label className="text-xs text-[#A0A0A0]">影の色</Label>
                         <div className="flex items-center gap-2 mt-2">
                           <input
                             type="color"
                             value={shadow.color}
                             onChange={(e) => handleShadowChange('color', e.target.value)}
-                            className="w-10 h-8 rounded border border-gray-600"
+                            className="w-10 h-8 rounded border border-[#4A4A4A]"
                           />
                           <Input
                             value={shadow.color}
@@ -638,7 +638,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                       
                       {/* 不透明度 */}
                       <div>
-                        <Label className="text-xs text-gray-500">不透明度</Label>
+                        <Label className="text-xs text-[#A0A0A0]">不透明度</Label>
                         <Slider
                           value={[shadow.opacity * 100]}
                           onValueChange={([value]) => handleShadowChange('opacity', value / 100)}
@@ -647,7 +647,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                           step={1}
                           className="mt-2"
                         />
-                        <div className="text-xs text-gray-500 text-center mt-1">
+                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
                           {Math.round(shadow.opacity * 100)}%
                         </div>
                       </div>
@@ -690,7 +690,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                 step={1}
                 className="mt-2"
               />
-              <div className="text-xs text-gray-500 text-center mt-1">
+              <div className="text-xs text-[#A0A0A0] text-center mt-1">
                 {selectedLayer.opacity || 100}%
               </div>
             </div>
@@ -704,7 +704,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                 step={1}
                 className="mt-2"
               />
-              <div className="text-xs text-gray-500 text-center mt-1">
+              <div className="text-xs text-[#A0A0A0] text-center mt-1">
                 {selectedLayer.rotation || 0}°
               </div>
             </div>
@@ -734,7 +734,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                     type="color"
                     value={selectedLayer.backgroundColor || '#000000'}
                     onChange={(e) => editorState.updateLayer(selectedLayer.id, { backgroundColor: e.target.value })}
-                    className="w-8 h-8 rounded border border-gray-300"
+                    className="w-8 h-8 rounded border border-[#4A4A4A]"
                   />
                   <Input
                     value={selectedLayer.backgroundColor || '#000000'}
@@ -750,7 +750,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                     type="color"
                     value={selectedLayer.borderColor || '#000000'}
                     onChange={(e) => editorState.updateLayer(selectedLayer.id, { borderColor: e.target.value })}
-                    className="w-8 h-8 rounded border border-gray-300"
+                    className="w-8 h-8 rounded border border-[#4A4A4A]"
                   />
                   <Input
                     value={selectedLayer.borderColor || '#000000'}
@@ -770,7 +770,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                 step={1}
                 className="mt-2"
               />
-              <div className="text-xs text-gray-500 text-center mt-1">
+              <div className="text-xs text-[#A0A0A0] text-center mt-1">
                 {selectedLayer.borderWidth || 0}px
               </div>
             </div>
@@ -896,7 +896,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
       )}
       
       {/* プレビューエリア */}
-      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative">
+      <div className="flex-1 overflow-auto bg-[#1A1A1A] relative">
         <div className="flex items-center justify-center h-full p-4 lg:p-8">
           <div className="relative w-full h-full">
             {/* メインコンテンツエリア */}

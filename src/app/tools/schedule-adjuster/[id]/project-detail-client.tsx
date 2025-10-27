@@ -32,7 +32,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
           <span className={`px-2 py-1 rounded-full text-sm ${
             project.status === 'active' 
               ? 'bg-green-100 text-green-800' 
-              : 'bg-gray-100 text-gray-800'
+              : 'bg-[#2D2D2D] text-[#E0E0E0]'
           }`}>
             {project.status === 'active' ? '進行中' : '完了'}
           </span>

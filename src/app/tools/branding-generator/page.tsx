@@ -163,10 +163,10 @@ export default function BrandingGeneratorPage() {
       <div className="flex-grow space-y-4 overflow-auto">
         {isAnalyzing ? (
           <div className="space-y-4">
-            <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
-              <Loader2 className="w-16 h-16 text-gray-400 mb-4 animate-spin" aria-hidden="true" />
-              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">ブランディングを分析中...</h3>
-              <p className="text-gray-500 mt-2">AIがあなたの個性や強みを分析しています。しばらくお待ちください。</p>
+            <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+              <Loader2 className="w-16 h-16 text-[#A0A0A0] mb-4 animate-spin" aria-hidden="true" />
+              <h3 className="text-xl font-semibold text-[#E0E0E0]">ブランディングを分析中...</h3>
+              <p className="text-[#A0A0A0] mt-2">AIがあなたの個性や強みを分析しています。しばらくお待ちください。</p>
             </div>
             {/* ローディング中のスケルトン */}
             <div className="space-y-4" role="status" aria-label="ブランディング分析中">
@@ -222,7 +222,7 @@ export default function BrandingGeneratorPage() {
                   {analysisResults.colorPalette.map((color: string, index: number) => (
                     <div
                       key={index}
-                      className="w-12 h-12 rounded-md border-2 border-gray-300"
+                      className="w-12 h-12 rounded-md border-2 border-[#4A4A4A]"
                       style={{ backgroundColor: color }}
                       aria-label={`カラー ${index + 1}: ${color}`}
                     />

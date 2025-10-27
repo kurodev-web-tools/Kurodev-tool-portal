@@ -81,7 +81,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <nav 
-      className="flex items-center gap-2 p-2 bg-gray-800 border-b border-gray-700"
+      className="flex items-center gap-2 p-2 bg-[#2D2D2D] border-b border-[#4A4A4A]"
       role="toolbar"
       aria-label="Asset Creator ツールバー"
     >
@@ -136,7 +136,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <ZoomOut className="h-4 w-4" aria-hidden="true" />
         </Button>
         <span 
-          className="text-sm text-gray-300 min-w-[60px] text-center"
+          className="text-sm text-[#E0E0E0] min-w-[60px] text-center"
           aria-label={`現在のズーム倍率: ${Math.round(zoom * 100)}パーセント`}
           role="status"
         >

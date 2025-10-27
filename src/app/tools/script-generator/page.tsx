@@ -235,7 +235,7 @@ export default function ScriptGeneratorPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="secondary" className="w-full">ペルソナを管理する</Button>
+        <Button variant="outline" className="w-full">ペルソナを管理する</Button>
       </TabsContent>
       <TabsContent value="history" className="mt-4 space-y-2">
         <p className="text-sm text-muted-foreground">過去に生成した企画案:</p>
@@ -255,10 +255,10 @@ export default function ScriptGeneratorPage() {
       <main className="flex-1 p-4 overflow-y-auto lg:pt-4 pt-20">
         {isGeneratingIdeas ? (
           <div className="space-y-4">
-            <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
-              <Loader2 className="w-16 h-16 text-gray-400 mb-4 animate-spin" aria-hidden="true" />
-              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">企画案を生成中...</h3>
-              <p className="text-gray-500 mt-2">AIがあなたにぴったりの企画案を考えています。しばらくお待ちください。</p>
+            <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
+              <Loader2 className="w-16 h-16 text-[#A0A0A0] mb-4 animate-spin" aria-hidden="true" />
+              <h3 className="text-xl font-semibold text-[#E0E0E0]">企画案を生成中...</h3>
+              <p className="text-[#A0A0A0] mt-2">AIがあなたにぴったりの企画案を考えています。しばらくお待ちください。</p>
             </div>
             {/* ローディング中のスケルトン */}
             <div className="space-y-4" role="status" aria-label="企画案を生成中">
@@ -282,10 +282,10 @@ export default function ScriptGeneratorPage() {
             </div>
           </div>
         ) : generatedIdeas.length === 0 ? (
-          <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
-            <Lightbulb className="w-16 h-16 text-gray-400 mb-4" aria-hidden="true" />
-            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">企画案を生成しよう！</h3>
-            <p className="text-gray-500 mt-2">サイドパネルからキーワードや企画の方向性を入力して、「企画案を生成する」ボタンを押してください。</p>
+          <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
+            <Lightbulb className="w-16 h-16 text-[#A0A0A0] mb-4" aria-hidden="true" />
+            <h3 className="text-xl font-semibold text-[#E0E0E0]">企画案を生成しよう！</h3>
+            <p className="text-[#A0A0A0] mt-2">サイドパネルからキーワードや企画の方向性を入力して、「企画案を生成する」ボタンを押してください。</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -339,7 +339,7 @@ export default function ScriptGeneratorPage() {
                   </CardFooter>
                 </Card>
                 {selectedIdeaId === idea.id && (
-                  <Card className="bg-gray-50 dark:bg-gray-900">
+                  <Card className="bg-[#2D2D2D]">
                     <CardHeader>
                       <CardTitle className="text-lg">台本骨子</CardTitle>
                     </CardHeader>

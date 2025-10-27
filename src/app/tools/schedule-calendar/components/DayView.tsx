@@ -39,7 +39,7 @@ export function DayView({ selectedDate, filteredSchedules, isDesktop }: DayViewP
             {daySchedules.map((schedule) => (
               <li 
                 key={schedule.id} 
-                className={`${isDesktop ? 'p-3' : 'p-2'} border border-slate-600/30 rounded-md bg-slate-800/60 backdrop-blur-sm`}
+                className={`${isDesktop ? 'p-3' : 'p-2'} border border-[#4A4A4A]/30 rounded-md bg-[#2D2D2D]/60 backdrop-blur-sm`}
               >
                 <p className={`${isDesktop ? 'text-sm' : 'text-xs'} font-medium`}>
                   <strong>タイトル:</strong> {schedule.title}

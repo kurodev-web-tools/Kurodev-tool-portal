@@ -334,10 +334,10 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
             <h4 className="font-medium">バッチエクスポート</h4>
             <div className="space-y-2">
               {settings.batchSizes.map((size, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                <div key={index} className="flex items-center justify-between p-2 bg-[#2D2D2D] rounded">
                   <div>
                     <span className="font-medium">{size.name}</span>
-                    <span className="text-sm text-gray-500 ml-2">{size.width}×{size.height}</span>
+                    <span className="text-sm text-[#A0A0A0] ml-2">{size.width}×{size.height}</span>
                   </div>
                   <Badge variant="secondary">{size.platform}</Badge>
                 </div>
@@ -359,7 +359,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
           </Button>
           
           {showAdvanced && (
-            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="space-y-4 p-4 bg-[#2D2D2D] rounded-lg">
               {/* 背景色 */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">背景色</Label>
@@ -368,7 +368,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
                     type="color"
                     value={settings.backgroundColor || '#ffffff'}
                     onChange={(e) => updateSettings({ backgroundColor: e.target.value })}
-                    className="w-8 h-8 rounded border border-gray-300"
+                    className="w-8 h-8 rounded border border-[#4A4A4A]"
                   />
                   <Input
                     value={settings.backgroundColor || '#ffffff'}
@@ -417,11 +417,11 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
             // モバイル：重要な情報のみ縦並び
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">解像度:</span>
+                <span className="text-[#A0A0A0]">解像度:</span>
                 <span className="font-medium">{currentResolution.width}×{currentResolution.height}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">形式:</span>
+                <span className="text-[#A0A0A0]">形式:</span>
                 <span className="font-medium">{settings.format.toUpperCase()}</span>
               </div>
             </div>
@@ -429,19 +429,19 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
             // デスクトップ：従来通り
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">解像度:</span>
+                <span className="text-[#A0A0A0]">解像度:</span>
                 <span className="ml-2 font-medium">{currentResolution.width}×{currentResolution.height}</span>
               </div>
               <div>
-                <span className="text-gray-500">形式:</span>
+                <span className="text-[#A0A0A0]">形式:</span>
                 <span className="ml-2 font-medium">{settings.format.toUpperCase()}</span>
               </div>
               <div>
-                <span className="text-gray-500">品質:</span>
+                <span className="text-[#A0A0A0]">品質:</span>
                 <span className="ml-2 font-medium">{QUALITY_PRESETS[settings.quality].label}</span>
               </div>
               <div>
-                <span className="text-gray-500">ファイル数:</span>
+                <span className="text-[#A0A0A0]">ファイル数:</span>
                 <span className="ml-2 font-medium">
                   {settings.batchExport ? settings.batchSizes.length : 1}個
                 </span>

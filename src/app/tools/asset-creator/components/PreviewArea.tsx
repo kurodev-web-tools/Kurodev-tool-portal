@@ -150,7 +150,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
       )}
       
       {/* プレビューエリア */}
-      <div className={`${isDesktop ? 'flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 relative' : 'flex-shrink-0 bg-gray-100 dark:bg-gray-900 relative max-h-[50vh] overflow-auto'}`}>
+      <div className={`${isDesktop ? 'flex-1 overflow-auto bg-[#1A1A1A] relative' : 'flex-shrink-0 bg-[#1A1A1A] relative max-h-[50vh] overflow-auto'}`}>
         <div className={`${isDesktop ? 'flex items-center justify-center h-full p-4 lg:p-8' : 'flex items-center justify-center p-4'}`}>
           <GenericEnhancedPreview
             zoom={zoom}

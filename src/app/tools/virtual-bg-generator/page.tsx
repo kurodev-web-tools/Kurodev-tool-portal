@@ -967,7 +967,7 @@ export default function VirtualBackgroundGeneratorPage() {
                           className={`h-4 w-4 ${
                             favoriteImages.includes(imageUrl) 
                               ? 'fill-red-500 text-red-500' 
-                              : 'text-gray-600'
+                              : 'text-[#A0A0A0]'
                           }`} 
                         />
                       </Button>
@@ -994,10 +994,10 @@ export default function VirtualBackgroundGeneratorPage() {
         <div className="h-full flex items-center justify-center">
           {isLoading ? (
             <div className="text-center text-muted-foreground px-4">
-              <div className="w-full h-full bg-gray-200 dark:bg-gray-800 rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
-                <Loader2 className="w-16 h-16 text-gray-400 mb-4 animate-spin" aria-hidden="true" />
-                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">バーチャル背景を生成中...</h3>
-                <p className="text-gray-500 mt-2">AIがあなたにぴったりの背景画像を生成しています。しばらくお待ちください。</p>
+              <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+                <Loader2 className="w-16 h-16 text-[#A0A0A0] mb-4 animate-spin" aria-hidden="true" />
+                <h3 className="text-xl font-semibold text-[#E0E0E0]">バーチャル背景を生成中...</h3>
+                <p className="text-[#A0A0A0] mt-2">AIがあなたにぴったりの背景画像を生成しています。しばらくお待ちください。</p>
               </div>
               {/* ローディング中のスケルトン */}
               <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4" role="status" aria-label="バーチャル背景生成中">

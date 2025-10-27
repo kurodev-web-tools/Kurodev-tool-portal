@@ -296,7 +296,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
       <div className="space-y-3">
         {/* 検索バー */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" />
           <Input
             placeholder="テンプレートを検索..."
             value={searchQuery}
@@ -357,7 +357,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
             key={template.id}
             className={cn(
               "relative group cursor-pointer transition-all hover:scale-[1.02] md:hover:scale-105 p-1",
-              selectedTemplateId === template.id && "ring-2 ring-blue-500 ring-inset"
+              selectedTemplateId === template.id && "ring-2 ring-[#20B2AA] ring-inset"
             )}
             onClick={() => onSelectTemplate(template)}
           >
@@ -365,7 +365,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
             <Card className="overflow-hidden md:block">
               <div className="flex md:block">
                 {/* プレビュー画像部分 */}
-                <div className="w-24 h-16 md:w-full md:aspect-video bg-gray-100 dark:bg-gray-800 relative flex-shrink-0">
+                <div className="w-24 h-16 md:w-full md:aspect-video bg-[#2D2D2D] relative flex-shrink-0">
                   {template.preview ? (
                     <img
                       src={template.preview}
@@ -455,7 +455,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm md:text-sm truncate">{template.name}</h4>
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-1 md:line-clamp-2">{template.description}</p>
+                      <p className="text-xs text-[#A0A0A0] mt-1 line-clamp-1 md:line-clamp-2">{template.description}</p>
                     </div>
                     {/* モバイル用削除ボタン */}
                     {template.isCustom && (
@@ -500,7 +500,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
                   </div>
                   
                   {/* メタデータ情報 */}
-                  <div className="flex items-center justify-between mt-1 text-xs text-gray-400">
+                  <div className="flex items-center justify-between mt-1 text-xs text-[#A0A0A0]">
                     <span>{template.metadata.estimatedTime}分</span>
                     <span>{template.layout.objects.length}オブジェクト</span>
                   </div>
@@ -625,7 +625,7 @@ const CustomTemplateCreator: React.FC<CustomTemplateCreatorProps> = ({ onCreateT
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-[#A0A0A0]">
             既存のサムネイル画像をアップロードしてテンプレートとして保存できます
           </p>
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
@@ -649,30 +649,30 @@ const CustomTemplateCreator: React.FC<CustomTemplateCreatorProps> = ({ onCreateT
               />
               {templateImage && (
                 <div className="space-y-2">
-                  <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                  <div className="aspect-video bg-[#2D2D2D] rounded-md overflow-hidden">
                     <img
                       src={templateImage}
                       alt="テンプレート"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <p className="text-xs text-gray-500">元画像 (1280×720px推奨)</p>
+                  <p className="text-xs text-[#A0A0A0]">元画像 (1280×720px推奨)</p>
                 </div>
               )}
               {previewImage && (
                 <div className="space-y-2">
-                  <div className="aspect-video bg-gray-100 rounded-md overflow-hidden max-w-xs">
+                  <div className="aspect-video bg-[#2D2D2D] rounded-md overflow-hidden max-w-xs">
                     <img
                       src={previewImage}
                       alt="プレビュー"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <p className="text-xs text-gray-500">プレビュー画像 (320×180px)</p>
+                  <p className="text-xs text-[#A0A0A0]">プレビュー画像 (320×180px)</p>
                 </div>
               )}
               {isUploading && (
-                <p className="text-xs text-gray-500 mt-1">アップロード中...</p>
+                <p className="text-xs text-[#A0A0A0] mt-1">アップロード中...</p>
               )}
               {isGeneratingPreview && (
                 <p className="text-xs text-blue-500 mt-1">プレビュー生成中...</p>
