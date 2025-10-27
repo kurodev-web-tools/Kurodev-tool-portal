@@ -244,7 +244,14 @@ export function ScheduleList() {
         />
       )}
       <div className="flex-1">
-        <p className="font-bold truncate">{schedule.title || '(タイトルなし)'}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-bold truncate">{schedule.title || '(タイトルなし)'}</p>
+          {schedule.checklist && schedule.checklist.length > 0 && (
+            <Badge variant="secondary" className="h-5 px-2 text-xs">
+              {schedule.checklist.filter(item => item.checked).length}/{schedule.checklist.length}
+            </Badge>
+          )}
+        </div>
         <p className="text-xs">{format(parseISO(schedule.date), 'M月d日 (E)', { locale: ja })} {schedule.time}</p>
         <p className="text-xs text-muted-foreground truncate">{schedule.category} / {schedule.platform}</p>
         {schedule.isArchived && schedule.archivedAt && (
