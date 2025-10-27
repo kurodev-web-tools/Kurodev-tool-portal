@@ -3,14 +3,16 @@
 import React, { useState } from 'react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { ScheduleItem } from '@/types/schedule';
-import { deleteSchedule, updateSchedule, loadSchedules, saveSchedules } from '@/lib/schedule-storage';
+import { deleteSchedule, updateSchedule, loadSchedules, saveSchedules, archiveSchedule, unarchiveSchedule, archiveSchedules, unarchiveSchedules } from '@/lib/schedule-storage';
 import { format, isSameDay, isFuture, isPast, startOfToday, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Trash2, Search, X, CheckSquare, Square } from 'lucide-react';
+import { Edit, Trash2, Search, X, CheckSquare, Square, Archive } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
 import {
   AlertDialog,

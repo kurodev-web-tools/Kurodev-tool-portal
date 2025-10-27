@@ -17,4 +17,6 @@ export interface ScheduleItem {
   reminders?: string[]; // リマインダー設定
   isCompleted: boolean; // 完了フラグ
   recurringInfo?: RecurringInfo; // 繰り返し情報（表示用のみ）
+  isArchived: boolean; // アーカイブフラグ
+  archivedAt?: string; // アーカイブした日時（ISO 8601形式）
 }

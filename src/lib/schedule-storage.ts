@@ -26,12 +26,13 @@ export function saveSchedules(schedules: ScheduleItem[]): void {
 }
 
 // 新しいスケジュールアイテムを追加する
-export function addSchedule(newItem: Omit<ScheduleItem, 'id' | 'isCompleted'>): ScheduleItem {
+export function addSchedule(newItem: Omit<ScheduleItem, 'id' | 'isCompleted' | 'isArchived'>): ScheduleItem {
   const schedules = loadSchedules();
   const newSchedule: ScheduleItem = {
     ...newItem,
     id: uuidv4(),
     isCompleted: false,
+    isArchived: false,
   };
   schedules.push(newSchedule);
   saveSchedules(schedules);
@@ -53,4 +54,64 @@ export function deleteSchedule(id: string): void {
   const schedules = loadSchedules();
   const filteredSchedules = schedules.filter(item => item.id !== id);
   saveSchedules(filteredSchedules);
+}
+
+// スケジュールをアーカイブする
+export function archiveSchedule(id: string): void {
+  const schedules = loadSchedules();
+  const index = schedules.findIndex(item => item.id === id);
+  if (index !== -1) {
+    schedules[index] = {
+      ...schedules[index],
+      isArchived: true,
+      archivedAt: new Date().toISOString(),
+    };
+    saveSchedules(schedules);
+  }
+}
+
+// スケジュールをアーカイブから復元する
+export function unarchiveSchedule(id: string): void {
+  const schedules = loadSchedules();
+  const index = schedules.findIndex(item => item.id === id);
+  if (index !== -1) {
+    schedules[index] = {
+      ...schedules[index],
+      isArchived: false,
+      archivedAt: undefined,
+    };
+    saveSchedules(schedules);
+  }
+}
+
+// 複数のスケジュールをアーカイブする
+export function archiveSchedules(ids: string[]): void {
+  const schedules = loadSchedules();
+  ids.forEach(id => {
+    const index = schedules.findIndex(item => item.id === id);
+    if (index !== -1) {
+      schedules[index] = {
+        ...schedules[index],
+        isArchived: true,
+        archivedAt: new Date().toISOString(),
+      };
+    }
+  });
+  saveSchedules(schedules);
+}
+
+// 複数のスケジュールをアーカイブから復元する
+export function unarchiveSchedules(ids: string[]): void {
+  const schedules = loadSchedules();
+  ids.forEach(id => {
+    const index = schedules.findIndex(item => item.id === id);
+    if (index !== -1) {
+      schedules[index] = {
+        ...schedules[index],
+        isArchived: false,
+        archivedAt: undefined,
+      };
+    }
+  });
+  saveSchedules(schedules);
 }
