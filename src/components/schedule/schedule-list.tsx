@@ -35,6 +35,7 @@ export function ScheduleList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedScheduleIds, setSelectedScheduleIds] = useState<Set<string>>(new Set());
+  const [filterTab, setFilterTab] = useState<'active' | 'completed' | 'archived' | 'all'>('active');
   const today = startOfToday();
 
   const handleEdit = (schedule: ScheduleItem) => {
@@ -117,6 +118,49 @@ export function ScheduleList() {
     refreshSchedules();
   };
 
+  // アーカイブ関連の関数
+  const handleArchive = (schedule: ScheduleItem) => {
+    try {
+      archiveSchedule(schedule.id);
+      toast.success('予定をアーカイブしました。');
+      refreshSchedules();
+    } catch (error) {
+      logger.error('アーカイブ失敗', error, 'ScheduleList');
+      toast.error('アーカイブに失敗しました。');
+    }
+  };
+
+  const handleUnarchive = (schedule: ScheduleItem) => {
+    try {
+      unarchiveSchedule(schedule.id);
+      toast.success('予定を復元しました。');
+      refreshSchedules();
+    } catch (error) {
+      logger.error('復元失敗', error, 'ScheduleList');
+      toast.error('復元に失敗しました。');
+    }
+  };
+
+  const handleBulkArchive = () => {
+    const confirmed = window.confirm(`${selectedScheduleIds.size}件の予定をアーカイブしますか？`);
+    if (confirmed) {
+      archiveSchedules(Array.from(selectedScheduleIds));
+      toast.success(`${selectedScheduleIds.size}件の予定をアーカイブしました`);
+      setSelectedScheduleIds(new Set());
+      refreshSchedules();
+    }
+  };
+
+  const handleBulkUnarchive = () => {
+    const confirmed = window.confirm(`${selectedScheduleIds.size}件の予定を復元しますか？`);
+    if (confirmed) {
+      unarchiveSchedules(Array.from(selectedScheduleIds));
+      toast.success(`${selectedScheduleIds.size}件の予定を復元しました`);
+      setSelectedScheduleIds(new Set());
+      refreshSchedules();
+    }
+  };
+
   // 検索フィルター関数
   const matchesSearch = (schedule: ScheduleItem, query: string): boolean => {
     if (!query) return true;
@@ -130,16 +174,37 @@ export function ScheduleList() {
     );
   };
 
+  // フィルター関数
+  const matchesFilter = (schedule: ScheduleItem): boolean => {
+    switch (filterTab) {
+      case 'active':
+        return !schedule.isCompleted && !schedule.isArchived;
+      case 'completed':
+        return schedule.isCompleted && !schedule.isArchived;
+      case 'archived':
+        return schedule.isArchived;
+      case 'all':
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  // 統計計算
+  const activeSchedules = schedules.filter(s => !s.isCompleted && !s.isArchived);
+  const completedSchedules = schedules.filter(s => s.isCompleted && !s.isArchived);
+  const archivedSchedules = schedules.filter(s => s.isArchived);
+
   // 選択日の予定（検索フィルター適用）
   const selectedDaySchedules = selectedDate
     ? schedules.filter(s => 
-        isSameDay(parseISO(s.date), selectedDate) && matchesSearch(s, searchQuery)
+        isSameDay(parseISO(s.date), selectedDate) && matchesSearch(s, searchQuery) && matchesFilter(s)
       )
     : [];
 
   // 全予定を日付順でソート（近い日付から降順）
   const allSchedules = schedules
-    .filter(s => matchesSearch(s, searchQuery))
+    .filter(s => matchesSearch(s, searchQuery) && matchesFilter(s))
     .sort((a, b) => {
       const dateA = parseISO(a.date);
       const dateB = parseISO(b.date);
@@ -161,6 +226,8 @@ export function ScheduleList() {
       className={`flex items-start gap-2 border p-2 rounded-md text-sm transition-colors ${
         isSelectionMode && selectedScheduleIds.has(schedule.id)
           ? 'bg-[#20B2AA]/20 border-[#20B2AA]'
+          : schedule.isArchived
+          ? 'opacity-50 grayscale'
           : ''
       }`}
       style={{
@@ -180,12 +247,24 @@ export function ScheduleList() {
         <p className="font-bold truncate">{schedule.title || '(タイトルなし)'}</p>
         <p className="text-xs">{format(parseISO(schedule.date), 'M月d日 (E)', { locale: ja })} {schedule.time}</p>
         <p className="text-xs text-muted-foreground truncate">{schedule.category} / {schedule.platform}</p>
+        {schedule.isArchived && schedule.archivedAt && (
+          <p className="text-xs text-muted-foreground mt-1">アーカイブ日: {format(parseISO(schedule.archivedAt), 'yyyy/MM/dd', { locale: ja })}</p>
+        )}
       </div>
       {!isSelectionMode && (
         <div className="flex justify-end mt-2 space-x-1">
           <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleEdit(schedule)}>
             <Edit className="h-3 w-3" />
           </Button>
+          {schedule.isArchived ? (
+            <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleUnarchive(schedule)} title="復元">
+              <Archive className="h-3 w-3" />
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleArchive(schedule)} title="アーカイブ">
+              <Archive className="h-3 w-3" />
+            </Button>
+          )}
           <Button variant="destructive" size="icon" className="h-6 w-6" onClick={() => setScheduleIdToDelete(schedule.id)}>
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -197,6 +276,37 @@ export function ScheduleList() {
   return (
     <>
       <div className="space-y-6 mt-6">
+        {/* フィルタータブ */}
+        <Tabs value={filterTab} onValueChange={(value: any) => setFilterTab(value)}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="active" className="relative">
+              アクティブ
+              {activeSchedules.length > 0 && (
+                <Badge className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
+                  {activeSchedules.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              完了済み
+              {completedSchedules.length > 0 && (
+                <Badge className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
+                  {completedSchedules.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="archived">
+              アーカイブ
+              {archivedSchedules.length > 0 && (
+                <Badge className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
+                  {archivedSchedules.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="all">すべて</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* 検索バー */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -324,6 +434,26 @@ export function ScheduleList() {
                     >
                       削除 ({selectedScheduleIds.size})
                     </Button>
+
+                    {filterTab !== 'archived' && (
+                      <Button
+                        variant="outline"
+                        onClick={handleBulkArchive}
+                        className="col-span-1 sm:col-span-2 h-8 text-xs"
+                      >
+                        アーカイブ ({selectedScheduleIds.size})
+                      </Button>
+                    )}
+
+                    {filterTab === 'archived' && (
+                      <Button
+                        variant="outline"
+                        onClick={handleBulkUnarchive}
+                        className="col-span-1 sm:col-span-2 h-8 text-xs"
+                      >
+                        復元 ({selectedScheduleIds.size})
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
