@@ -25,7 +25,9 @@ import { format } from 'date-fns';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useSettings } from '@/app/tools/schedule-calendar/components/settings-tab';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { Calendar, Clock, Bell } from 'lucide-react';
+import { Calendar, Clock, Bell, Repeat } from 'lucide-react';
+import { generateRecurringSchedules, RepeatRule } from '@/lib/recurring-schedule';
+import { ScheduleItem } from '@/types/schedule';
 
 const scheduleSchema = z.object({
   title: z.string().max(50, { message: "タイトルは50文字までです。" }).optional(),
@@ -45,6 +47,13 @@ export function ScheduleForm() {
   const { settings } = useSettings();
   const [reminders, setReminders] = useState<string[]>([]);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  
+  // 繰り返し設定の状態
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [repeatType, setRepeatType] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [repeatEndOption, setRepeatEndOption] = useState<'never' | 'date' | 'count'>('never');
+  const [repeatEndDate, setRepeatEndDate] = useState<string>('');
+  const [repeatCount, setRepeatCount] = useState<number>(10);
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleSchema),
@@ -96,19 +105,50 @@ export function ScheduleForm() {
       const scheduleData = {
         ...data,
         reminders: reminders,
+        isCompleted: false,
       };
       
       if (editingSchedule) {
+        // 編集中の予定は通常通り更新（繰り返し予定でも個別に更新）
         updateSchedule({ ...editingSchedule, ...scheduleData });
         toast.success("スケジュールを更新しました。");
       } else {
-        addSchedule(scheduleData);
-        toast.success("スケジュールを保存しました。");
+        // 新規作成
+        if (isRecurring) {
+          // 繰り返し予定を生成
+          const repeatRule: RepeatRule = {
+            type: repeatType,
+            interval: 1,
+            count: repeatEndOption === 'count' ? repeatCount : undefined,
+            endDate: repeatEndOption === 'date' ? repeatEndDate : undefined,
+          };
+          
+          // 一時的なIDを付与（generateRecurringSchedules内で新しいIDが生成される）
+          const baseSchedule: ScheduleItem = {
+            ...scheduleData,
+            id: 'temp-id',
+          } as ScheduleItem;
+          
+          const recurringSchedules = generateRecurringSchedules(baseSchedule, repeatRule);
+          
+          // 全ての予定を保存
+          recurringSchedules.forEach(schedule => {
+            addSchedule(schedule);
+          });
+          
+          toast.success(`${recurringSchedules.length}件のスケジュールを作成しました。`);
+        } else {
+          // 通常の予定
+          addSchedule(scheduleData);
+          toast.success("スケジュールを保存しました。");
+        }
       }
       refreshSchedules();
       setIsModalOpen(false);
       setEditingSchedule(null);
       setReminders([]);
+      // 繰り返し設定をリセット
+      setIsRecurring(false);
     } catch (error) {
       logger.error('スケジュール保存失敗', error, 'ScheduleForm');
       toast.error("処理に失敗しました。");
@@ -296,6 +336,109 @@ export function ScheduleForm() {
             )}
           />
         </div>
+
+        {/* 繰り返し設定セクション */}
+        {!editingSchedule && (
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Repeat className={`${isDesktop ? 'h-5 w-5' : 'h-4 w-4'} text-purple-500`} />
+              <h3 className={`${isDesktop ? 'text-lg' : 'text-base'} font-semibold`}>繰り返し設定</h3>
+            </div>
+
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="isRecurring"
+                checked={isRecurring}
+                onCheckedChange={(checked) => setIsRecurring(checked === true)}
+                className={isDesktop ? '' : 'h-4 w-4'}
+              />
+              <Label htmlFor="isRecurring" className={`${isDesktop ? 'text-sm' : 'text-xs'} font-medium cursor-pointer`}>
+                繰り返し予定にする
+              </Label>
+            </div>
+
+            {isRecurring && (
+              <div className={`space-y-4 ml-6 pl-4 border-l-2 border-purple-500/30 ${isDesktop ? '' : 'space-y-3'}`}>
+                {/* 繰り返しパターン */}
+                <div>
+                  <Label className={`${isDesktop ? 'text-sm' : 'text-xs'} font-medium mb-2 block`}>
+                    繰り返しパターン
+                  </Label>
+                  <Select value={repeatType} onValueChange={(value: any) => setRepeatType(value)}>
+                    <SelectTrigger className={isDesktop ? '' : 'h-10 text-sm'}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">毎日</SelectItem>
+                      <SelectItem value="weekly">毎週</SelectItem>
+                      <SelectItem value="monthly">毎月</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 終了条件 */}
+                <div className="space-y-2">
+                  <Label className={`${isDesktop ? 'text-sm' : 'text-xs'} font-medium`}>
+                    終了条件
+                  </Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="never"
+                        checked={repeatEndOption === 'never'}
+                        onCheckedChange={() => setRepeatEndOption('never')}
+                        className={isDesktop ? '' : 'h-4 w-4'}
+                      />
+                      <Label htmlFor="never" className={`${isDesktop ? 'text-sm' : 'text-xs'} cursor-pointer`}>
+                        終了しない
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 flex-wrap gap-2">
+                      <Checkbox
+                        id="date"
+                        checked={repeatEndOption === 'date'}
+                        onCheckedChange={() => setRepeatEndOption('date')}
+                        className={isDesktop ? '' : 'h-4 w-4'}
+                      />
+                      <Label htmlFor="date" className={`${isDesktop ? 'text-sm' : 'text-xs'} cursor-pointer`}>
+                        指定した日まで
+                      </Label>
+                      {repeatEndOption === 'date' && (
+                        <Input
+                          type="date"
+                          value={repeatEndDate}
+                          onChange={(e) => setRepeatEndDate(e.target.value)}
+                          className={`ml-2 ${isDesktop ? 'w-40' : 'w-32 h-10 text-sm'}`}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 flex-wrap gap-2">
+                      <Checkbox
+                        id="count"
+                        checked={repeatEndOption === 'count'}
+                        onCheckedChange={() => setRepeatEndOption('count')}
+                        className={isDesktop ? '' : 'h-4 w-4'}
+                      />
+                      <Label htmlFor="count" className={`${isDesktop ? 'text-sm' : 'text-xs'} cursor-pointer`}>
+                        回数指定
+                      </Label>
+                      {repeatEndOption === 'count' && (
+                        <Input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={repeatCount}
+                          onChange={(e) => setRepeatCount(Number(e.target.value))}
+                          className={`ml-2 ${isDesktop ? 'w-20' : 'w-16 h-10 text-sm'}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* リマインダー設定セクション */}
         <div className="space-y-4">

@@ -1,4 +1,10 @@
 // src/types/schedule.ts
+
+export interface RecurringInfo {
+  groupId: string; // 同じ繰り返しグループのID
+  pattern: 'daily' | 'weekly' | 'monthly'; // 繰り返しパターン
+}
+
 export interface ScheduleItem {
   id: string; // UUID
   title?: string; // 予定のタイトル (任意に変更)
@@ -10,4 +16,5 @@ export interface ScheduleItem {
   duration?: number; // 予定時間（分）
   reminders?: string[]; // リマインダー設定
   isCompleted: boolean; // 完了フラグ
+  recurringInfo?: RecurringInfo; // 繰り返し情報（表示用のみ）
 }
