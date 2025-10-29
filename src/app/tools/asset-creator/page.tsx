@@ -23,7 +23,8 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useTemplate, ShapeType, TemplateProvider } from './contexts/TemplateContext';
 import { EditorProvider } from '@/contexts/EditorContext';
 import { ToolbarSection } from './components/ToolbarSection';
-import { SidebarSection } from './components/SidebarSection';
+import { LeftSidebar } from './components/LeftSidebar';
+import { RightToolbar } from './components/RightToolbar';
 import { PreviewSection } from './components/PreviewSection';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { useCanvasOperations } from './hooks/useCanvasOperations';
@@ -39,8 +40,12 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 function AssetCreatorPage() {
-  // UI状態管理
-  const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
+  // UI状態管理  
+  const { isOpen: isLeftSidebarOpen, setIsOpen: setIsLeftSidebarOpen, isDesktop } = useSidebar({
+    defaultOpen: false,
+    desktopDefaultOpen: true,
+  });
+  const { isOpen: isRightSidebarOpen, setIsOpen: setIsRightSidebarOpen } = useSidebar({
     defaultOpen: false,
     desktopDefaultOpen: true,
   });
@@ -114,12 +119,12 @@ function AssetCreatorPage() {
     }
 
     // サイドバーの状態に応じて動的調整
-    if (isSidebarOpen) {
+    if (isLeftSidebarOpen || isRightSidebarOpen) {
       return { width: 'min(1600px, 80vw)', maxWidth: 'none' };
     } else {
       return { width: 'min(1800px, 90vw)', maxWidth: 'none' };
     }
-  }, [isDesktop, isPreviewDedicatedMode, isSidebarOpen]);
+  }, [isDesktop, isPreviewDedicatedMode, isLeftSidebarOpen, isRightSidebarOpen]);
 
   // キャンバス操作機能
   const canvasOperations = useCanvasOperations(layers, selectedLayerId, restoreState);
@@ -176,11 +181,13 @@ function AssetCreatorPage() {
   // デスクトップ表示時は初期状態でサイドバーを開く
   React.useEffect(() => {
     if (isDesktop) {
-      setIsSidebarOpen(true);
+      setIsLeftSidebarOpen(true);
+      setIsRightSidebarOpen(true);
     } else {
-      setIsSidebarOpen(false);
+      setIsLeftSidebarOpen(false);
+      setIsRightSidebarOpen(false);
     }
-  }, [isDesktop]);
+  }, [isDesktop, setIsLeftSidebarOpen, setIsRightSidebarOpen]);
 
   // 高度なエクスポート処理
   const handleAdvancedExport = React.useCallback(async (element: HTMLElement, settings: AssetExportSettings) => {
@@ -1545,18 +1552,46 @@ function AssetCreatorPage() {
 
   return (
     <div className="relative flex flex-col lg:h-screen">
-      {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
-      {isSidebarOpen && !isDesktop && (
+      {/* モバイル用オーバーレイ（左サイドバーが開いている時のみ表示） */}
+      {isLeftSidebarOpen && !isDesktop && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => setIsLeftSidebarOpen(false)}
+        />
+      )}
+      
+      {/* モバイル用オーバーレイ（右サイドバーが開いている時のみ表示） */}
+      {isRightSidebarOpen && !isDesktop && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setIsRightSidebarOpen(false)}
         />
       )}
 
-      <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
-        <main className="flex-1 overflow-y-auto">
-          <div className={`${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
-            <div className={`${isDesktop ? '' : 'min-h-[60vh]'}`}>
+      <div className="flex flex-col lg:flex-row lg:h-full lg:overflow-hidden">
+        {/* 左サイドバー (20%) - テンプレート・レイヤー管理 */}
+        <LeftSidebar
+          isDesktop={isDesktop}
+          isSidebarOpen={isLeftSidebarOpen}
+          setIsSidebarOpen={setIsLeftSidebarOpen}
+          layers={layers}
+          updateLayer={updateLayer}
+          removeLayer={removeLayer}
+          selectedLayerId={selectedLayerId}
+          setSelectedLayerId={setSelectedLayerId}
+          reorderLayers={reorderLayers}
+          duplicateLayer={duplicateLayer}
+          addLayer={addLayer}
+          moveLayerUp={moveLayerUp}
+          moveLayerDown={moveLayerDown}
+          selectedTemplate={selectedTemplate}
+          setSelectedTemplate={setSelectedTemplate}
+        />
+
+        {/* 中央プレビューエリア (60%) */}
+        <main className="w-3/5 flex flex-col min-w-0 overflow-hidden">
+          <div className={`flex-1 flex flex-col ${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
+            <div className="flex-1 flex flex-col min-h-0">
               <PreviewSection
                 isDesktop={isDesktop}
                 isPreviewDedicatedMode={isPreviewDedicatedMode}
@@ -1601,39 +1636,34 @@ function AssetCreatorPage() {
               />
             </div>
           </div>
+          
           {/* モバイル用コントロール - プレビュー専用モード時は非表示 */}
           {!isDesktop && !isPreviewDedicatedMode && (
             <div className="border-t bg-background/95 backdrop-blur-sm">
-              <div className="p-2">
-                <p className="text-xs text-muted-foreground mb-2">
-                  💡 ヒント: 「ツール設定」でレイヤーの詳細編集、「レイヤー管理」でレイヤーの並び替えができます。テンプレートやエクスポートはサイドバーからアクセスできます。
-                </p>
+              <div className="p-2 flex justify-between items-center">
+                <button
+                  onClick={() => setIsLeftSidebarOpen(true)}
+                  className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
+                >
+                  📁 テンプレート・レイヤー
+                </button>
+                <button
+                  onClick={() => setIsRightSidebarOpen(true)}
+                  className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
+                >
+                  🛠️ ツール・エクスポート
+                </button>
               </div>
-              {/* モバイル用コントロールはPreviewSectionコンポーネント内で処理 */}
             </div>
           )}
         </main>
 
-        <SidebarSection
+        {/* 右ツールバー (20%) - ツール設定・エクスポート */}
+        <RightToolbar
           isDesktop={isDesktop}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          selectedTab={selectedTab}
-          setSelectedTab={setSelectedTab}
+          isSidebarOpen={isRightSidebarOpen}
+          setIsSidebarOpen={setIsRightSidebarOpen}
           isExporting={isExporting}
-          isPreviewDedicatedMode={isPreviewDedicatedMode}
-          layers={layers}
-          updateLayer={updateLayer}
-          removeLayer={removeLayer}
-          selectedLayerId={selectedLayerId}
-          setSelectedLayerId={setSelectedLayerId}
-          reorderLayers={reorderLayers}
-          duplicateLayer={duplicateLayer}
-          addLayer={addLayer}
-          moveLayerUp={moveLayerUp}
-          moveLayerDown={moveLayerDown}
-          selectedTemplate={selectedTemplate}
-          setSelectedTemplate={setSelectedTemplate}
           renderToolsPanel={renderToolsPanel}
           handleBatchExport={handleBatchExport}
           handleAdvancedExport={handleAdvancedExport}
