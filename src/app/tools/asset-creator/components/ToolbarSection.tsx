@@ -11,6 +11,7 @@ interface ToolbarSectionProps {
   setIsPreviewDedicatedMode: (mode: boolean) => void;
   zoom: number;
   setZoom: (zoom: number) => void;
+  onFitToScreen?: () => void;
   canUndo: boolean;
   canRedo: boolean;
   showGrid: boolean;
@@ -33,6 +34,7 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
   setIsPreviewDedicatedMode,
   zoom,
   setZoom,
+  onFitToScreen,
   canUndo,
   canRedo,
   showGrid,
@@ -55,6 +57,7 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
         <Toolbar
           zoom={zoom}
           setZoom={setZoom}
+          onFitToScreen={onFitToScreen}
           onUndo={handleToolbarUndo}
           onRedo={handleToolbarRedo}
           onSave={handleSave}

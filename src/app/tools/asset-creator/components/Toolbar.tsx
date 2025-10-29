@@ -28,6 +28,7 @@ import {
 interface ToolbarProps {
   zoom: number;
   setZoom: (zoom: number) => void;
+  onFitToScreen?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
   onSave?: () => void;
@@ -50,6 +51,7 @@ interface ToolbarProps {
 export const Toolbar: React.FC<ToolbarProps> = ({
   zoom,
   setZoom,
+  onFitToScreen,
   onUndo,
   onRedo,
   onSave,
@@ -67,16 +69,56 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   showCenterLines = false,
   setShowCenterLines,
 }) => {
+  // 業界標準のズーム刻み (Adobe/Figma準拠) + 最小10%統一
+  const MIN_ZOOM = 0.10; // 10%最小値
+  const MAX_ZOOM = 3.0;  // 300%最大値
+  const ZOOM_PRESETS = [0.10, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0];
+
+  const getNextZoomLevel = (currentZoom: number, direction: 'in' | 'out'): number => {
+    if (direction === 'in') {
+      // 現在のズーム率より大きい最小のプリセットを見つける
+      const nextPreset = ZOOM_PRESETS.find(preset => preset > currentZoom);
+      return nextPreset || Math.min(currentZoom + 0.25, MAX_ZOOM);
+    } else {
+      // 現在のズーム率より小さい最大のプリセットを見つける
+      const prevPreset = [...ZOOM_PRESETS].reverse().find(preset => preset < currentZoom);
+      return prevPreset || Math.max(currentZoom - 0.25, MIN_ZOOM);
+    }
+  };
+
   const handleZoomIn = () => {
-    setZoom(Math.min(zoom + 0.1, 3));
+    setZoom(getNextZoomLevel(zoom, 'in'));
   };
 
   const handleZoomOut = () => {
-    setZoom(Math.max(zoom - 0.1, 0.1));
+    setZoom(getNextZoomLevel(zoom, 'out'));
   };
 
   const handleFitToScreen = () => {
-    setZoom(1);
+    if (onFitToScreen) {
+      onFitToScreen();
+    } else {
+      setZoom(1); // フォールバック
+    }
+  };
+
+  // ズーム%クリックで直接入力機能（最小10%統一）
+  const handleZoomPercentClick = () => {
+    const currentPercent = Math.round(zoom * 100);
+    const input = prompt(
+      `ズーム率を入力してください (10-300%)`,
+      currentPercent.toString()
+    );
+    
+    if (input && !isNaN(Number(input))) {
+      const newPercent = Number(input);
+      if (newPercent >= 10 && newPercent <= 300) {
+        const newZoom = newPercent / 100;
+        setZoom(newZoom);
+      } else {
+        alert('ズーム率は10%から300%の間で入力してください。');
+      }
+    }
   };
 
   return (
@@ -129,24 +171,26 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           variant="outline" 
           size="sm" 
           onClick={handleZoomOut}
-          disabled={zoom <= 0.1}
+          disabled={zoom <= MIN_ZOOM}
           title="ズームアウト"
           aria-label="ズームアウト"
         >
           <ZoomOut className="h-4 w-4" aria-hidden="true" />
         </Button>
-        <span 
-          className="text-sm text-[#E0E0E0] min-w-[60px] text-center"
-          aria-label={`現在のズーム倍率: ${Math.round(zoom * 100)}パーセント`}
-          role="status"
+        <button
+          className="text-sm text-[#E0E0E0] min-w-[60px] text-center hover:text-[#00D4FF] hover:bg-[#4A4A4A] rounded px-1 transition-colors cursor-pointer"
+          onClick={handleZoomPercentClick}
+          title="クリックしてズーム率を直接入力"
+          aria-label={`現在のズーム倍率: ${Math.round(zoom * 100)}パーセント - クリックして変更`}
+          type="button"
         >
           {Math.round(zoom * 100)}%
-        </span>
+        </button>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={handleZoomIn}
-          disabled={zoom >= 3}
+          disabled={zoom >= MAX_ZOOM}
           title="ズームイン"
           aria-label="ズームイン"
         >
@@ -156,10 +200,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           variant="outline" 
           size="sm" 
           onClick={handleFitToScreen}
-          title="100%にリセット"
-          aria-label="ズームを100%にリセット"
+          title="画面にフィット（最適なサイズに自動調整）"
+          aria-label="プレビューを画面に最適なサイズでフィット"
         >
-          <span className="text-xs">フィット</span>
+          <span className="text-xs">画面フィット</span>
         </Button>
         {onTogglePreviewMode && (
           <Button 

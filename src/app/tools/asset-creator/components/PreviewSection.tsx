@@ -37,6 +37,8 @@ interface PreviewSectionProps {
   // ズーム
   zoom: number;
   setZoom: (zoom: number) => void;
+  onFitToScreen?: () => void;
+  baseSizeRef: React.RefObject<number>;
   
   // レイヤー関連
   layers: Layer[];
@@ -90,6 +92,8 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
   setGridSize,
   zoom,
   setZoom,
+  onFitToScreen,
+  baseSizeRef,
   layers,
   selectedLayerId,
   setSelectedLayerId,
@@ -123,6 +127,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
         setIsPreviewDedicatedMode={setIsPreviewDedicatedMode}
         zoom={zoom}
         setZoom={setZoom}
+        onFitToScreen={onFitToScreen}
         canUndo={canUndo}
         canRedo={canRedo}
         showGrid={showGrid}
@@ -140,22 +145,25 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
       />
       
       {/* プレビューエリア */}
-      <div className="flex-1 overflow-auto bg-[#1A1A1A] relative">
-        <div className="flex items-center justify-center h-full p-4 lg:p-8">
-          <div className="relative w-full h-full">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[#1A1A1A] relative">
+        <div 
+          className="flex items-start justify-center min-h-full p-4 lg:p-8"
+          data-preview-container="true"
+        >
+          <div className="w-full max-w-4xl">
             {/* メインコンテンツエリア */}
             <div
               id="thumbnail-preview"
               style={{ 
+                width: `${baseSizeRef.current * zoom}px`,
                 aspectRatio: aspectRatio === 'custom' 
                   ? `${customAspectRatio.width}/${customAspectRatio.height}` 
                   : (aspectRatio || '16:9').replace(':', '/'),
                 maxWidth: '100%',
-                transform: `scale(${zoom})`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.2s ease-in-out'
+                margin: '0 auto',
+                transition: 'width 0.2s ease-in-out'
               }}
-              className="bg-card relative border rounded-md shadow-lg w-full"
+              className="bg-card relative border rounded-md shadow-lg"
             >
               <div id="download-target" className="w-full h-full relative overflow-hidden">
                 {layers.map((layer) => {
@@ -235,13 +243,14 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
             {/* グリッドオーバーレイ */}
             {showGrid && (
               <div 
-                className="absolute inset-0 pointer-events-none opacity-30"
+                className="absolute inset-0 pointer-events-none opacity-60"
                 style={{
                   backgroundImage: `
-                    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+                    linear-gradient(rgba(136, 218, 255, 0.25) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(136, 218, 255, 0.25) 1px, transparent 1px)
                   `,
                   backgroundSize: `${gridSize}px ${gridSize}px`,
+                  filter: 'drop-shadow(0 0 1px rgba(136, 218, 255, 0.3))',
                 }}
                 aria-hidden="true"
               />
@@ -251,7 +260,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
             {showAspectGuide && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div 
-                  className="border-2 border-dashed border-blue-400/60 bg-blue-400/5 rounded"
+                  className="border-2 border-dashed border-cyan-400/80 bg-cyan-400/10 rounded shadow-lg"
                   style={{
                     width: '90%',
                     height: '90%',
@@ -268,7 +277,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
             {showSafeArea && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div 
-                  className="border-2 border-dashed border-green-400/60 bg-green-400/5 rounded"
+                  className="border-2 border-dashed border-emerald-400/85 bg-emerald-400/10 rounded shadow-lg"
                   style={{
                     width: '80%',
                     height: '80%',
@@ -285,10 +294,10 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
             {showCenterLines && (
               <>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-full h-px bg-red-400/60" aria-hidden="true" />
+                  <div className="w-full h-0.5 bg-rose-400/85 shadow-sm" aria-hidden="true" />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="h-full w-px bg-red-400/60" aria-hidden="true" />
+                  <div className="h-full w-0.5 bg-rose-400/85 shadow-sm" aria-hidden="true" />
                 </div>
               </>
             )}

@@ -101,21 +101,29 @@ function AssetCreatorPage() {
     }
   }, [selectedLayer]);
 
-  // プレビューエリアのサイズ計算
+
+  // プレビューエリアのサイズ計算（プレビュー専用モード最大化対応）
   const getPreviewSize = React.useCallback(() => {
     if (!isDesktop) {
       // モバイル表示：画面幅を最大限活用
       if (isPreviewDedicatedMode) {
-        // フルスクリーン表示時は画面幅の95%を使用
-        return { width: '95vw', maxWidth: 'none' };
+        // フルスクリーン表示時は画面幅の98%を使用（最大化）
+        return { width: '98vw', maxWidth: 'none' };
       }
       // 通常表示時は画面幅の90%を使用（サイドバー分を考慮）
       return { width: '90vw', maxWidth: 'none' };
     }
 
-    // プレビュー専用モード
+    // プレビュー専用モード（最大化機能強化）
     if (isPreviewDedicatedMode) {
-      return { width: 'min(2000px, 95vw)', maxWidth: 'none' };
+      // 画面サイズの最大95%を使用し、より大きなプレビューを実現
+      const maxWidth = Math.min(window.innerWidth * 0.95, 2400); // 最大2400px
+      const maxHeight = Math.min(window.innerHeight * 0.85, 1600); // 最大1600px
+      return { 
+        width: `${maxWidth}px`, 
+        maxWidth: 'none',
+        maxHeight: `${maxHeight}px`
+      };
     }
 
     // サイドバーの状態に応じて動的調整
@@ -138,6 +146,176 @@ function AssetCreatorPage() {
 
   // キーボードショートカット
   const { isShiftKeyDown, canUndo, canRedo } = useKeyboardShortcuts({ canvasOperations });
+
+  // アスペクト比に応じた動的安全マージン計算（拡張性重視 + ユーザーフィードバック反映）
+  const calculateSafetyMarginByAspectRatio = React.useCallback((aspectRatioValue: number): number => {
+    // アスペクト比の値に基づいて自動的に安全マージンを計算
+    // 将来のアスペクト比追加にも自動対応
+    if (aspectRatioValue >= 2.0) {
+      // 超横長 (21:9, 32:9など)
+      return 0.95;
+    } else if (aspectRatioValue >= 1.5) {
+      // 横長 (16:9, 16:10など) - 最大サイズで表示
+      return 1.00;
+    } else if (aspectRatioValue >= 1.2) {
+      // やや横長 (4:3, 5:4など) - 最大サイズで表示
+      return 1.00;
+    } else if (aspectRatioValue >= 0.9) {
+      // ほぼ正方形 (1:1など) - 大きく表示
+      return 0.90;
+    } else if (aspectRatioValue >= 0.6) {
+      // 縦長 (9:16, 3:4など) - フッター見切れ防止のため小さく（現状キープ）
+      return 0.55;
+    } else {
+      // 超縦長 (1:2など将来の極端な縦長比率)
+      return 0.50;
+    }
+  }, []);
+
+  // アスペクト比ごとの基準サイズを記憶（refで管理）
+  const baseSizeRef = React.useRef<number>(400); // デフォルト400px
+
+  // アスペクト比ごとの基準サイズを動的に計算
+  const calculateBaseSize = React.useCallback(() => {
+    const previewContainer = document.querySelector('[data-preview-container="true"]');
+    
+    if (!previewContainer) {
+      return 400; // フォールバック
+    }
+
+    const containerRect = previewContainer.getBoundingClientRect();
+    
+    // コンテナサイズが0以下の場合は前回の値を保持
+    if (containerRect.width <= 0 || containerRect.height <= 0) {
+      return baseSizeRef.current; // 前回の値を保持
+    }
+    
+    const padding = isDesktop ? 32 : 16;
+    
+    // アスペクト比を計算
+    let aspectRatioValue: number;
+    if (aspectRatio === 'custom') {
+      aspectRatioValue = customAspectRatio.width / customAspectRatio.height;
+    } else {
+      const [w, h] = aspectRatio.split(':').map(Number);
+      aspectRatioValue = w / h;
+    }
+    
+    // アスペクト比に応じた動的安全マージンを適用
+    const dynamicSafetyMargin = calculateSafetyMarginByAspectRatio(aspectRatioValue);
+    const availableWidth = Math.max((containerRect.width - (padding * 2)) * dynamicSafetyMargin, 200);
+    const availableHeight = Math.max((containerRect.height - (padding * 2)) * dynamicSafetyMargin, 150);
+
+    // 【重要】利用可能領域に完全に収まる最大サイズを計算
+    let optimalWidth: number;
+    let optimalHeight: number;
+    
+    // 幅制限での最大サイズ
+    const maxWidthFromWidthLimit = availableWidth;
+    const maxHeightFromWidthLimit = maxWidthFromWidthLimit / aspectRatioValue;
+    
+    // 高さ制限での最大サイズ
+    const maxHeightFromHeightLimit = availableHeight;
+    const maxWidthFromHeightLimit = maxHeightFromHeightLimit * aspectRatioValue;
+    
+    // 両方の制限を満たすサイズを選択
+    if (maxHeightFromWidthLimit <= availableHeight) {
+      optimalWidth = maxWidthFromWidthLimit;
+      optimalHeight = maxHeightFromWidthLimit;
+    } else {
+      optimalWidth = maxWidthFromHeightLimit;
+      optimalHeight = maxHeightFromHeightLimit;
+    }
+
+    // このサイズが基準サイズ（100%）
+    logger.info('基準サイズ計算完了', {
+      aspectRatio: aspectRatio,
+      aspectRatioValue: aspectRatioValue.toFixed(2),
+      optimalSize: { width: optimalWidth.toFixed(1), height: optimalHeight.toFixed(1) },
+      calculatedBaseSize: optimalWidth.toFixed(1)
+    }, 'calculateBaseSize');
+
+    return optimalWidth;
+  }, [aspectRatio, customAspectRatio, isDesktop, calculateSafetyMarginByAspectRatio]);
+
+  // アスペクト比変更時に基準サイズを更新
+  React.useEffect(() => {
+    const newBaseSize = calculateBaseSize();
+    baseSizeRef.current = newBaseSize;
+    // 基準サイズが変わったので、ズームも100%に戻す
+    setZoom(1.0);
+  }, [aspectRatio, customAspectRatio, calculateBaseSize, setZoom]);
+
+  // 画面フィットボタンのハンドラー
+  const handleFitToScreen = React.useCallback(() => {
+    // 常に100%に戻す（基準サイズ = 100%）
+    setZoom(1.0);
+  }, [setZoom]);
+
+  // ウィンドウリサイズ時の基準サイズ更新
+  React.useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    const handleResize = () => {
+      // 【重要】リサイズ後は基準サイズを再計算し、ズームを100%に戻す
+      const newBaseSize = calculateBaseSize();
+      baseSizeRef.current = newBaseSize;
+      // 基準サイズが変わったので、ズームも100%に戻す
+      setZoom(1.0);
+    };
+
+    // デバウンス処理で頻繁なリサイズイベントを制御
+    const debouncedHandleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleResize, 150);
+    };
+
+    window.addEventListener('resize', debouncedHandleResize);
+
+    return () => {
+      window.removeEventListener('resize', debouncedHandleResize);
+      clearTimeout(timeoutId);
+    };
+  }, [calculateBaseSize, setZoom]);
+
+  // Ctrl+マウスホイールズーム（Adobe標準準拠 + 最小10%統一）
+  React.useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      // Ctrl（Windows）またはCmd（Mac）が押されている場合のみ
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        
+        // ホイールの方向を判定（deltaY > 0 = 下方向 = ズームアウト）
+        const direction = e.deltaY > 0 ? 'out' : 'in';
+        
+        // 業界標準のズーム刻み（最小10%統一）
+        const ZOOM_PRESETS = [0.10, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0];
+        const MIN_ZOOM = 0.10;
+        const MAX_ZOOM = 3.0;
+        
+        const getNextZoomLevel = (currentZoom: number, dir: 'in' | 'out'): number => {
+          if (dir === 'in') {
+            const nextPreset = ZOOM_PRESETS.find(preset => preset > currentZoom);
+            return nextPreset || Math.min(currentZoom + 0.25, MAX_ZOOM);
+          } else {
+            const prevPreset = [...ZOOM_PRESETS].reverse().find(preset => preset < currentZoom);
+            return prevPreset || Math.max(currentZoom - 0.25, MIN_ZOOM);
+          }
+        };
+        
+        setZoom(prevZoom => getNextZoomLevel(prevZoom, direction));
+      }
+    };
+
+    // プレビューエリア要素にイベントリスナーを追加
+    const previewElement = document.getElementById('thumbnail-preview');
+    if (previewElement) {
+      previewElement.addEventListener('wheel', handleWheel, { passive: false });
+      return () => {
+        previewElement.removeEventListener('wheel', handleWheel);
+      };
+    }
+  }, [setZoom]);
 
   // レイヤーの変更を監視して履歴を保存
   const prevLayersRef = React.useRef(layers);
@@ -1610,6 +1788,8 @@ function AssetCreatorPage() {
                 setGridSize={setGridSize}
                 zoom={zoom}
                 setZoom={setZoom}
+                onFitToScreen={handleFitToScreen}
+                baseSizeRef={baseSizeRef}
                 layers={layers}
                 selectedLayerId={selectedLayerId}
                 setSelectedLayerId={setSelectedLayerId}
