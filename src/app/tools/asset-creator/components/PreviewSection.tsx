@@ -239,69 +239,72 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                   return null;
                 })}
               </div>
+
+              {/* オーバーレイコンテナ（プレビュー要素内に配置） */}
+              <div className="absolute inset-0 pointer-events-none">
+                {/* グリッドオーバーレイ */}
+                {showGrid && (
+                  <div 
+                    className="absolute inset-0 opacity-60"
+                    style={{
+                      backgroundImage: `
+                        linear-gradient(rgba(136, 218, 255, 0.25) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(136, 218, 255, 0.25) 1px, transparent 1px)
+                      `,
+                      backgroundSize: `${gridSize * zoom}px ${gridSize * zoom}px`,
+                      filter: 'drop-shadow(0 0 1px rgba(136, 218, 255, 0.3))',
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
+
+                {/* アスペクト比ガイド */}
+                {showAspectGuide && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div 
+                      className="border-2 border-dashed border-cyan-400/80 bg-cyan-400/10 rounded shadow-lg"
+                      style={{
+                        width: '90%',
+                        height: '90%',
+                        aspectRatio: aspectRatio === 'custom' 
+                          ? `${customAspectRatio.width}/${customAspectRatio.height}`
+                          : (aspectRatio || '16:9'),
+                      }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                )}
+
+                {/* セーフエリアガイド */}
+                {showSafeArea && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div 
+                      className="border-2 border-dashed border-emerald-400/85 bg-emerald-400/10 rounded shadow-lg"
+                      style={{
+                        width: '80%',
+                        height: '80%',
+                        aspectRatio: aspectRatio === 'custom' 
+                          ? `${customAspectRatio.width}/${customAspectRatio.height}`
+                          : (aspectRatio || '16:9'),
+                      }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                )}
+
+                {/* 中央線ガイド */}
+                {showCenterLines && (
+                  <>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-full h-0.5 bg-rose-400/85 shadow-sm" aria-hidden="true" />
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-full w-0.5 bg-rose-400/85 shadow-sm" aria-hidden="true" />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-
-            {/* グリッドオーバーレイ */}
-            {showGrid && (
-              <div 
-                className="absolute inset-0 pointer-events-none opacity-60"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(rgba(136, 218, 255, 0.25) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(136, 218, 255, 0.25) 1px, transparent 1px)
-                  `,
-                  backgroundSize: `${gridSize}px ${gridSize}px`,
-                  filter: 'drop-shadow(0 0 1px rgba(136, 218, 255, 0.3))',
-                }}
-                aria-hidden="true"
-              />
-            )}
-
-            {/* アスペクト比ガイド */}
-            {showAspectGuide && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div 
-                  className="border-2 border-dashed border-cyan-400/80 bg-cyan-400/10 rounded shadow-lg"
-                  style={{
-                    width: '90%',
-                    height: '90%',
-                    aspectRatio: aspectRatio === 'custom' 
-                      ? `${customAspectRatio.width}/${customAspectRatio.height}`
-                      : (aspectRatio || '16:9'),
-                  }}
-                  aria-hidden="true"
-                />
-              </div>
-            )}
-
-            {/* セーフエリアガイド */}
-            {showSafeArea && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div 
-                  className="border-2 border-dashed border-emerald-400/85 bg-emerald-400/10 rounded shadow-lg"
-                  style={{
-                    width: '80%',
-                    height: '80%',
-                    aspectRatio: aspectRatio === 'custom' 
-                      ? `${customAspectRatio.width}/${customAspectRatio.height}`
-                      : (aspectRatio || '16:9'),
-                  }}
-                  aria-hidden="true"
-                />
-              </div>
-            )}
-
-            {/* 中央線ガイド */}
-            {showCenterLines && (
-              <>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-full h-0.5 bg-rose-400/85 shadow-sm" aria-hidden="true" />
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="h-full w-0.5 bg-rose-400/85 shadow-sm" aria-hidden="true" />
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
