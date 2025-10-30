@@ -120,7 +120,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
 }) => {
   // プレビューのレンダリング
   const renderPreview = () => (
-    <>
+    <div className="flex flex-col h-full min-h-0">
       <ToolbarSection
         isDesktop={isDesktop}
         isPreviewDedicatedMode={isPreviewDedicatedMode}
@@ -146,13 +146,11 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
       
       {/* プレビューエリア */}
       <div 
-        className="flex-1 overflow-y-auto overflow-x-auto bg-[#1A1A1A] relative custom-scrollbar" 
-        style={{ minHeight: 0 }}
+        className="flex-1 min-h-0 overflow-auto bg-[#1A1A1A] relative custom-scrollbar" 
         data-preview-container="true"
       >
         <div 
           className="flex items-start justify-center p-4 lg:p-8"
-          style={{ minHeight: '100%' }}
         >
           <div className="w-full">
             {/* メインコンテンツエリア */}
@@ -307,7 +305,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 
   // モバイル用コントロール

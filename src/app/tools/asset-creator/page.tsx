@@ -147,23 +147,24 @@ function AssetCreatorPage() {
   // キーボードショートカット
   const { isShiftKeyDown, canUndo, canRedo } = useKeyboardShortcuts({ canvasOperations });
 
+  // スクロール実装後のフィット最適化用マージン（将来の微調整を容易にするため定数化）
+  const SAFETY = {
+    ultraWide: 0.96,      // >= 2.0
+    wide16_9: 0.96,       // >= 1.5
+    wide4_3: 0.95,        // >= 1.2
+    square: 0.90,         // >= 0.9 (1:1)
+    portrait: 0.50,       // >= 0.6 (縦長)
+    ultraPortrait: 0.90,  // < 0.6 (9:16含む)
+  } as const;
+
   // アスペクト比に応じた動的安全マージン計算（スクロールなしで確実に収める）
   const calculateSafetyMarginByAspectRatio = React.useCallback((aspectRatioValue: number): number => {
-    // アスペクト比の値に基づいて自動的に安全マージンを計算
-    // 将来のアスペクト比追加にも自動対応
-    if (aspectRatioValue >= 2.0) {
-      return 0.96; // 超横長
-    } else if (aspectRatioValue >= 1.5) {
-      return 0.96; // 16:9（元に戻す）
-    } else if (aspectRatioValue >= 1.2) {
-      return 0.95; // 4:3（据え置き）
-    } else if (aspectRatioValue >= 0.9) {
-      return 0.80; // 1:1（要望）
-    } else if (aspectRatioValue >= 0.6) {
-      return 0.50; // 9:16（要望）
-    } else {
-      return 0.45; // 超縦長（<0.6 はすべてここ：9:16含む）
-    }
+    if (aspectRatioValue >= 2.0) return SAFETY.ultraWide;
+    if (aspectRatioValue >= 1.5) return SAFETY.wide16_9;
+    if (aspectRatioValue >= 1.2) return SAFETY.wide4_3;
+    if (aspectRatioValue >= 0.9) return SAFETY.square;
+    if (aspectRatioValue >= 0.6) return SAFETY.portrait;
+    return SAFETY.ultraPortrait;
   }, []);
 
   // アスペクト比ごとの基準サイズを記憶（refで管理）
@@ -1840,7 +1841,7 @@ function AssetCreatorPage() {
 
         {/* 中央プレビューエリア (60%) */}
         <main className="w-3/5 flex flex-col min-w-0 overflow-hidden">
-          <div className={`flex-1 flex flex-col ${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
+          <div className={`flex-1 flex flex-col min-h-0 ${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
             <div className="flex-1 flex flex-col min-h-0">
               <PreviewSection
                 isDesktop={isDesktop}
