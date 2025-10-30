@@ -17,6 +17,8 @@ interface ThumbnailTextProps {
   textDecoration?: string;
   textShadow?: string;
   letterSpacing?: string;
+  textStrokeWidth?: string;
+  textStrokeColor?: string;
   className?: string;
   x: number;
   y: number;
@@ -55,6 +57,8 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   textDecoration,
   textShadow,
   letterSpacing,
+  textStrokeWidth,
+  textStrokeColor,
   className,
   x,
   y,
@@ -211,9 +215,10 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
               textDecoration,
               textShadow,
               letterSpacing,
+              WebkitTextStroke: textStrokeWidth && textStrokeColor ? `${textStrokeWidth} ${textStrokeColor}` : undefined,
               lineHeight: 1, 
               whiteSpace: 'pre-wrap' 
-            }}
+            } as React.CSSProperties}
           >
             {text}
           </p>

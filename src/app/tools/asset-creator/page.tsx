@@ -62,6 +62,7 @@ function AssetCreatorPage() {
   
   // シャドウエディタの状態
   const [shadowEnabled, setShadowEnabled] = React.useState(false);
+  const [outlineEnabled, setOutlineEnabled] = React.useState(false);
   
   const { handleAsyncError } = useErrorHandler();
 
@@ -96,8 +97,14 @@ function AssetCreatorPage() {
       } else {
         setShadowEnabled(false);
       }
+      if (selectedLayer.textStrokeWidth && selectedLayer.textStrokeWidth !== '0px') {
+        setOutlineEnabled(true);
+      } else {
+        setOutlineEnabled(false);
+      }
     } else {
       setShadowEnabled(false);
+      setOutlineEnabled(false);
     }
   }, [selectedLayer]);
 
@@ -953,6 +960,64 @@ function AssetCreatorPage() {
                     className="flex-1"
                   />
                 </div>
+              </div>
+
+              {/* アウトライン */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-[#A0A0A0]">アウトライン</Label>
+                  <Button
+                    size="sm"
+                    variant={outlineEnabled ? "default" : "outline"}
+                    onClick={() => {
+                      const newEnabled = !outlineEnabled;
+                      setOutlineEnabled(newEnabled);
+                      if (!newEnabled) {
+                        updateLayer(selectedLayer.id, { textStrokeWidth: '0px' });
+                      } else {
+                        updateLayer(selectedLayer.id, { textStrokeWidth: '2px', textStrokeColor: '#000000' });
+                      }
+                    }}
+                    className="h-6 px-3 text-xs"
+                  >
+                    {outlineEnabled ? 'ON' : 'OFF'}
+                  </Button>
+                </div>
+                
+                {outlineEnabled && (
+                  <div className="space-y-2 pl-2 border-l-2 border-[#4A4A4A]">
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">太さ</Label>
+                      <Slider
+                        value={[parseFloat(selectedLayer.textStrokeWidth?.replace('px', '') || '2')]}
+                        onValueChange={([value]) => updateLayer(selectedLayer.id, { textStrokeWidth: `${value}px` })}
+                        min={0.5}
+                        max={20}
+                        step={0.5}
+                        className="mt-2"
+                      />
+                      <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                        {selectedLayer.textStrokeWidth || '2px'}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">色</Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="color"
+                          value={selectedLayer.textStrokeColor || '#000000'}
+                          onChange={(e) => updateLayer(selectedLayer.id, { textStrokeColor: e.target.value })}
+                          className="w-8 h-7 rounded border border-[#4A4A4A]"
+                        />
+                        <Input
+                          value={selectedLayer.textStrokeColor || '#000000'}
+                          onChange={(e) => updateLayer(selectedLayer.id, { textStrokeColor: e.target.value })}
+                          className="flex-1 h-7 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
