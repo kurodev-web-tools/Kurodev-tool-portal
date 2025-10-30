@@ -173,13 +173,28 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
     return text.substring(0, maxLength - 3) + '...';
   };
 
+  // 画像ファイル名用の中間省略（拡張子は保持）
+  const truncateFilenameMiddle = (filename: string, maxLength: number): string => {
+    if (!filename) return '';
+    if (filename.length <= maxLength) return filename;
+    const parts = filename.split('.');
+    const ext = parts.length > 1 ? parts.pop() as string : '';
+    const base = parts.join('.');
+    const keep = Math.max(2, maxLength - (ext ? ext.length + 4 : 3)); // 両端合計 + '…' + '.' + ext
+    const head = Math.ceil(keep / 2);
+    const tail = Math.floor(keep / 2);
+    const start = base.slice(0, head);
+    const end = base.slice(-tail);
+    return ext ? `${start}…${end}.${ext}` : `${start}…${end}`;
+  };
+
   const getLayerPreview = (layer: UnifiedLayer): string => {
     if (isTextLayer(layer)) {
-      return truncateText(layer.text || 'テキスト', isDesktop ? 20 : 12);
+      return truncateText(layer.text || 'テキスト', isDesktop ? 12 : 8);
     } else if (isImageLayer(layer)) {
-      return truncateText(layer.name || '画像', isDesktop ? 20 : 12);
+      return truncateFilenameMiddle(layer.name || '画像', isDesktop ? 14 : 10);
     } else if (isShapeLayer(layer)) {
-      return truncateText(layer.name || '図形', isDesktop ? 20 : 12);
+      return truncateText(layer.name || '図形', isDesktop ? 12 : 8);
     }
     return 'レイヤー';
   };
@@ -395,10 +410,10 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                               <GripVertical className="h-4 w-4 text-[#A0A0A0]" />
                             </div>
                             
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-1 min-w-0 basis-0">
                               {getLayerIcon(layer)}
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium truncate">
+                                <div className="text-sm font-medium truncate pr-2">
                                   {getLayerTypeLabel(layer)}
                                 </div>
                                 {renamingId === layer.id ? (
@@ -416,7 +431,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                                   />
                                 ) : (
                                   <button
-                                    className="text-xs text-[#A0A0A0] truncate text-left w-full hover:text-[#E0E0E0]"
+                                    className="text-xs text-[#A0A0A0] truncate text-left w-full hover:text-[#E0E0E0] pr-2"
                                     title={getFullLayerName(layer)}
                                     onDoubleClick={() => startRename(layer)}
                                     type="button"
@@ -428,7 +443,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 flex-shrink-0 w-[184px] justify-end">
                               <Button
                                 size="sm"
                                 variant="ghost"
