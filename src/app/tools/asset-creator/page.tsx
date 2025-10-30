@@ -828,41 +828,9 @@ function AssetCreatorPage() {
                 placeholder="テキストを入力してください"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm font-medium">フォントサイズ</Label>
-                <Slider
-                  value={[parseFloat(selectedLayer.fontSize?.replace('rem', '') || '2')]}
-                  onValueChange={([value]) => updateLayer(selectedLayer.id, { fontSize: `${value}rem` })}
-                  min={0.5}
-                  max={8}
-                  step={0.1}
-                  className="mt-2"
-                />
-                <div className="text-xs text-[#A0A0A0] text-center mt-1">
-                  {selectedLayer.fontSize || '2rem'}
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">色</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="color"
-                    value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="w-8 h-8 rounded border border-[#4A4A4A]"
-                  />
-                  <Input
-                    value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* フォント設定 */}
-            <div className="space-y-3">
+            <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
               <h5 className="text-sm font-medium text-[#E0E0E0]">フォント設定</h5>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -932,124 +900,179 @@ function AssetCreatorPage() {
                   </Select>
                 </div>
               </div>
-              {/* 文字シャドウ - ビジュアルエディタ */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-[#A0A0A0]">文字シャドウ</Label>
-                  <Button
-                    size="sm"
-                    variant={shadowEnabled ? "default" : "outline"}
-                    onClick={() => {
-                      const newEnabled = !shadowEnabled;
-                      setShadowEnabled(newEnabled);
-                      if (!newEnabled) {
-                        updateLayer(selectedLayer.id, { textShadow: 'none' });
-                      } else {
-                        updateLayer(selectedLayer.id, { textShadow: '2px 2px 4px rgba(0,0,0,0.5)' });
-                      }
-                    }}
-                    className="h-6 px-3 text-xs"
-                  >
-                    {shadowEnabled ? 'ON' : 'OFF'}
-                  </Button>
+            </div>
+
+            {/* サイズ設定 */}
+            <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
+              <h5 className="text-sm font-medium text-[#E0E0E0]">サイズ設定</h5>
+              <div>
+                <Label className="text-xs text-[#A0A0A0]">フォントサイズ</Label>
+                <Slider
+                  value={[parseFloat(selectedLayer.fontSize?.replace('rem', '') || '2')]}
+                  onValueChange={([value]) => updateLayer(selectedLayer.id, { fontSize: `${value}rem` })}
+                  min={0.5}
+                  max={8}
+                  step={0.1}
+                  className="mt-2"
+                />
+                <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                  {selectedLayer.fontSize || '2rem'}
                 </div>
+              </div>
+              <div>
+                <Label className="text-xs text-[#A0A0A0]">文字間隔</Label>
+                <Slider
+                  value={[parseFloat(selectedLayer.letterSpacing?.replace('px', '') || '0')]}
+                  onValueChange={([value]) => updateLayer(selectedLayer.id, { letterSpacing: `${value}px` })}
+                  min={-10}
+                  max={20}
+                  step={0.5}
+                  className="mt-2"
+                />
+                <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                  {selectedLayer.letterSpacing || '0px'}
+                </div>
+              </div>
+            </div>
+
+            {/* 色・効果 */}
+            <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
+              <h5 className="text-sm font-medium text-[#E0E0E0]">色・効果</h5>
+              <div>
+                <Label className="text-xs text-[#A0A0A0]">色</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="color"
+                    value={selectedLayer.color || '#ffffff'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                    className="w-8 h-8 rounded border border-[#4A4A4A]"
+                  />
+                  <Input
+                    value={selectedLayer.color || '#ffffff'}
+                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 文字シャドウ - ビジュアルエディタ */}
+            <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-[#A0A0A0]">文字シャドウ</Label>
+                <Button
+                  size="sm"
+                  variant={shadowEnabled ? "default" : "outline"}
+                  onClick={() => {
+                    const newEnabled = !shadowEnabled;
+                    setShadowEnabled(newEnabled);
+                    if (!newEnabled) {
+                      updateLayer(selectedLayer.id, { textShadow: 'none' });
+                    } else {
+                      updateLayer(selectedLayer.id, { textShadow: '2px 2px 4px rgba(0,0,0,0.5)' });
+                    }
+                  }}
+                  className="h-6 px-3 text-xs"
+                >
+                  {shadowEnabled ? 'ON' : 'OFF'}
+                </Button>
+              </div>
+              
+              {shadowEnabled && (() => {
+                const shadow = parseTextShadow(selectedLayer.textShadow);
+                const handleShadowChange = (param: 'x' | 'y' | 'blur' | 'color' | 'opacity', value: number | string) => {
+                  const current = parseTextShadow(selectedLayer.textShadow);
+                  const updated = { ...current, [param]: value };
+                  const newShadow = buildTextShadow(updated.x, updated.y, updated.blur, updated.color, updated.opacity);
+                  updateLayer(selectedLayer.id, { textShadow: newShadow });
+                };
                 
-                {shadowEnabled && (() => {
-                  const shadow = parseTextShadow(selectedLayer.textShadow);
-                  const handleShadowChange = (param: 'x' | 'y' | 'blur' | 'color' | 'opacity', value: number | string) => {
-                    const current = parseTextShadow(selectedLayer.textShadow);
-                    const updated = { ...current, [param]: value };
-                    const newShadow = buildTextShadow(updated.x, updated.y, updated.blur, updated.color, updated.opacity);
-                    updateLayer(selectedLayer.id, { textShadow: newShadow });
-                  };
-                  
-                  return (
-                    <div className="space-y-3 pl-2 border-l-2 border-[#4A4A4A]">
-                      {/* 水平位置 */}
-                      <div>
-                        <Label className="text-xs text-[#A0A0A0]">水平位置（X）</Label>
-                        <Slider
-                          value={[shadow.x]}
-                          onValueChange={([value]) => handleShadowChange('x', value)}
-                          min={-20}
-                          max={20}
-                          step={1}
-                          className="mt-2"
-                        />
-                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
-                          {shadow.x}px
-                        </div>
-                      </div>
-                      
-                      {/* 垂直位置 */}
-                      <div>
-                        <Label className="text-xs text-[#A0A0A0]">垂直位置（Y）</Label>
-                        <Slider
-                          value={[shadow.y]}
-                          onValueChange={([value]) => handleShadowChange('y', value)}
-                          min={-20}
-                          max={20}
-                          step={1}
-                          className="mt-2"
-                        />
-                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
-                          {shadow.y}px
-                        </div>
-                      </div>
-                      
-                      {/* ぼかし */}
-                      <div>
-                        <Label className="text-xs text-[#A0A0A0]">ぼかし</Label>
-                        <Slider
-                          value={[shadow.blur]}
-                          onValueChange={([value]) => handleShadowChange('blur', value)}
-                          min={0}
-                          max={30}
-                          step={1}
-                          className="mt-2"
-                        />
-                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
-                          {shadow.blur}px
-                        </div>
-                      </div>
-                      
-                      {/* 影の色 */}
-                      <div>
-                        <Label className="text-xs text-[#A0A0A0]">影の色</Label>
-                        <div className="flex items-center gap-2 mt-2">
-                          <input
-                            type="color"
-                            value={shadow.color}
-                            onChange={(e) => handleShadowChange('color', e.target.value)}
-                            className="w-10 h-8 rounded border border-[#4A4A4A]"
-                          />
-                          <Input
-                            value={shadow.color}
-                            onChange={(e) => handleShadowChange('color', e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* 不透明度 */}
-                      <div>
-                        <Label className="text-xs text-[#A0A0A0]">不透明度</Label>
-                        <Slider
-                          value={[shadow.opacity * 100]}
-                          onValueChange={([value]) => handleShadowChange('opacity', value / 100)}
-                          min={0}
-                          max={100}
-                          step={1}
-                          className="mt-2"
-                        />
-                        <div className="text-xs text-[#A0A0A0] text-center mt-1">
-                          {Math.round(shadow.opacity * 100)}%
-                        </div>
+                return (
+                  <div className="space-y-3 pl-2 border-l-2 border-[#4A4A4A]">
+                    {/* 水平位置 */}
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">水平位置（X）</Label>
+                      <Slider
+                        value={[shadow.x]}
+                        onValueChange={([value]) => handleShadowChange('x', value)}
+                        min={-20}
+                        max={20}
+                        step={1}
+                        className="mt-2"
+                      />
+                      <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                        {shadow.x}px
                       </div>
                     </div>
-                  );
-                })()}
-              </div>
+                    
+                    {/* 垂直位置 */}
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">垂直位置（Y）</Label>
+                      <Slider
+                        value={[shadow.y]}
+                        onValueChange={([value]) => handleShadowChange('y', value)}
+                        min={-20}
+                        max={20}
+                        step={1}
+                        className="mt-2"
+                      />
+                      <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                        {shadow.y}px
+                      </div>
+                    </div>
+                    
+                    {/* ぼかし */}
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">ぼかし</Label>
+                      <Slider
+                        value={[shadow.blur]}
+                        onValueChange={([value]) => handleShadowChange('blur', value)}
+                        min={0}
+                        max={30}
+                        step={1}
+                        className="mt-2"
+                      />
+                      <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                        {shadow.blur}px
+                      </div>
+                    </div>
+                    
+                    {/* 影の色 */}
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">影の色</Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="color"
+                          value={shadow.color}
+                          onChange={(e) => handleShadowChange('color', e.target.value)}
+                          className="w-10 h-8 rounded border border-[#4A4A4A]"
+                        />
+                        <Input
+                          value={shadow.color}
+                          onChange={(e) => handleShadowChange('color', e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* 不透明度 */}
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">不透明度</Label>
+                      <Slider
+                        value={[shadow.opacity * 100]}
+                        onValueChange={([value]) => handleShadowChange('opacity', value / 100)}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="mt-2"
+                      />
+                      <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                        {Math.round(shadow.opacity * 100)}%
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

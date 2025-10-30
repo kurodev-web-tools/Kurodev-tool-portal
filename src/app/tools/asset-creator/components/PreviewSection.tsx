@@ -208,6 +208,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                         fontStyle={layer.fontStyle}
                         textDecoration={layer.textDecoration}
                         textShadow={layer.textShadow}
+                        letterSpacing={layer.letterSpacing}
                         x={layer.x} 
                         y={layer.y} 
                         width={layer.width} 

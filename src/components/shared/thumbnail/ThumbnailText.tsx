@@ -16,6 +16,7 @@ interface ThumbnailTextProps {
   fontStyle?: string;
   textDecoration?: string;
   textShadow?: string;
+  letterSpacing?: string;
   className?: string;
   x: number;
   y: number;
@@ -53,6 +54,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   fontStyle,
   textDecoration,
   textShadow,
+  letterSpacing,
   className,
   x,
   y,
@@ -208,6 +210,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
               fontStyle,
               textDecoration,
               textShadow,
+              letterSpacing,
               lineHeight: 1, 
               whiteSpace: 'pre-wrap' 
             }}
