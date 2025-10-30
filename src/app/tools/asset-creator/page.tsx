@@ -59,11 +59,23 @@ function AssetCreatorPage() {
   const [showSafeArea, setShowSafeArea] = React.useState(false);
   const [showCenterLines, setShowCenterLines] = React.useState(false);
   const [gridSize, setGridSize] = React.useState(20);
+  const [gridColor, setGridColor] = React.useState('rgba(136, 218, 255, 0.25)');
+  const [gridOpacity, setGridOpacity] = React.useState(0.6);
+  const [showMajorLines, setShowMajorLines] = React.useState(true);
+  const [majorInterval, setMajorInterval] = React.useState(5);
+  const [snapToGrid, setSnapToGrid] = React.useState(false);
+  const [snapStrength, setSnapStrength] = React.useState(8);
   
   // シャドウエディタの状態
   const [shadowEnabled, setShadowEnabled] = React.useState(false);
   const [outlineEnabled, setOutlineEnabled] = React.useState(false);
   const [gradientEnabled, setGradientEnabled] = React.useState(false);
+  
+  // カスタムグラデーション用の状態
+  const [customColor1, setCustomColor1] = React.useState('#ff0000');
+  const [customColor2, setCustomColor2] = React.useState('#0000ff');
+  const [customAngle, setCustomAngle] = React.useState(90);
+  const [showCustom, setShowCustom] = React.useState(false);
   
   const { handleAsyncError } = useErrorHandler();
 
@@ -105,6 +117,18 @@ function AssetCreatorPage() {
       }
       if (selectedLayer.textGradient) {
         setGradientEnabled(true);
+        // グラデーションが設定されている場合、カスタム値を更新
+        const parseGradient = (gradient: string) => {
+          const match = gradient.match(/linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]+),\s*(#[0-9a-fA-F]+)\)/);
+          if (match) {
+            return { angle: parseInt(match[1]), color1: match[2], color2: match[3] };
+          }
+          return { angle: 90, color1: '#ff0000', color2: '#0000ff' };
+        };
+        const parsed = parseGradient(selectedLayer.textGradient);
+        setCustomColor1(parsed.color1);
+        setCustomColor2(parsed.color2);
+        setCustomAngle(parsed.angle);
       } else {
         setGradientEnabled(false);
       }
@@ -114,6 +138,40 @@ function AssetCreatorPage() {
       setGradientEnabled(false);
     }
   }, [selectedLayer]);
+
+  // グリッド設定の保存/復元
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('assetCreator:grid:v1');
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (typeof s.showGrid === 'boolean') setShowGrid(s.showGrid);
+        if (typeof s.gridSize === 'number') setGridSize(s.gridSize);
+        if (typeof s.gridColor === 'string') setGridColor(s.gridColor);
+        if (typeof s.gridOpacity === 'number') setGridOpacity(s.gridOpacity);
+        if (typeof s.showMajorLines === 'boolean') setShowMajorLines(s.showMajorLines);
+        if (typeof s.majorInterval === 'number') setMajorInterval(s.majorInterval);
+        if (typeof s.snapToGrid === 'boolean') setSnapToGrid(s.snapToGrid);
+        if (typeof s.snapStrength === 'number') setSnapStrength(s.snapStrength);
+      }
+    } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    try {
+      const payload = {
+        showGrid,
+        gridSize,
+        gridColor,
+        gridOpacity,
+        showMajorLines,
+        majorInterval,
+        snapToGrid,
+        snapStrength,
+      };
+      localStorage.setItem('assetCreator:grid:v1', JSON.stringify(payload));
+    } catch {}
+  }, [showGrid, gridSize, gridColor, gridOpacity, showMajorLines, majorInterval, snapToGrid, snapStrength]);
 
 
   // プレビューエリアのサイズ計算（プレビュー専用モード最大化対応）
@@ -622,9 +680,18 @@ function AssetCreatorPage() {
 
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
-    updateLayer(id, { x: d.x, y: d.y });
+    let x = d.x;
+    let y = d.y;
+    if (snapToGrid) {
+      const step = gridSize;
+      const sx = Math.round(x / step) * step;
+      const sy = Math.round(y / step) * step;
+      if (Math.abs(sx - x) <= snapStrength) x = sx;
+      if (Math.abs(sy - y) <= snapStrength) y = sy;
+    }
+    updateLayer(id, { x, y });
     // 履歴はuseEffectで管理
-  }, [updateLayer]);
+  }, [updateLayer, snapToGrid, gridSize, snapStrength]);
 
   const handleLayerResize = React.useCallback((id: string, dir: string, ref: HTMLElement, delta: ResizableDelta, position: Position) => {
     updateLayer(id, {
@@ -975,22 +1042,148 @@ function AssetCreatorPage() {
                   </Button>
                 </div>
                 
-                {gradientEnabled && (
-                  <div className="pl-2 border-l-2 border-[#4A4A4A]">
-                    <div>
-                      <Label className="text-xs text-[#A0A0A0]">グラデーションCSS</Label>
-                      <Input
-                        value={selectedLayer.textGradient || ''}
-                        onChange={(e) => updateLayer(selectedLayer.id, { textGradient: e.target.value })}
-                        className="h-7 text-xs mt-2"
-                        placeholder="linear-gradient(90deg, #ff0000, #0000ff)"
-                      />
-                      <div className="text-[10px] text-[#808080] mt-1">
-                        例: linear-gradient(90deg, #ff0000, #0000ff)
+                {gradientEnabled && (() => {
+                  // よく使うグラデーションプリセット
+                  const gradientPresets = [
+                    { name: '虹', gradient: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)' },
+                    { name: '金', gradient: 'linear-gradient(135deg, #ffd700, #ffed4e)' },
+                    { name: '銀', gradient: 'linear-gradient(135deg, #c0c0c0, #ffffff)' },
+                    { name: '紅白', gradient: 'linear-gradient(90deg, #ff6b9d, #ffffff)' },
+                    { name: '青→白', gradient: 'linear-gradient(90deg, #4169e1, #87ceeb)' },
+                    { name: '紫→ピンク', gradient: 'linear-gradient(90deg, #9b59b6, #e91e63)' },
+                    { name: 'オレンジ→ピンク', gradient: 'linear-gradient(90deg, #ff8c00, #ff69b4)' },
+                    { name: '緑→青', gradient: 'linear-gradient(90deg, #00ff7f, #00ced1)' },
+                  ];
+
+                  const applyCustomGradient = () => {
+                    updateLayer(selectedLayer.id, { 
+                      textGradient: `linear-gradient(${customAngle}deg, ${customColor1}, ${customColor2})` 
+                    });
+                  };
+
+                  return (
+                    <div className="pl-2 border-l-2 border-[#4A4A4A] space-y-3">
+                      {/* プリセット */}
+                      <div>
+                        <Label className="text-xs text-[#A0A0A0]">プリセット</Label>
+                        <div className="grid grid-cols-4 gap-2 mt-2">
+                          {gradientPresets.map((preset) => (
+                            <button
+                              key={preset.name}
+                              onClick={() => {
+                                updateLayer(selectedLayer.id, { textGradient: preset.gradient });
+                                setShowCustom(false);
+                              }}
+                              className="h-8 rounded border border-[#4A4A4A] hover:border-[#808080] transition-colors text-[10px] relative overflow-hidden group"
+                              style={{
+                                background: preset.gradient,
+                              }}
+                              title={preset.name}
+                            >
+                              <span className="relative z-10 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                                {preset.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* カスタム */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-xs text-[#A0A0A0]">カスタム</Label>
+                          <Button
+                            size="sm"
+                            variant={showCustom ? "default" : "outline"}
+                            onClick={() => setShowCustom(!showCustom)}
+                            className="h-6 px-3 text-xs"
+                          >
+                            {showCustom ? '閉じる' : '開く'}
+                          </Button>
+                        </div>
+                        
+                        {showCustom && (
+                          <div className="space-y-2">
+                            <div>
+                              <Label className="text-xs text-[#A0A0A0]">開始色</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <input
+                                  type="color"
+                                  value={customColor1}
+                                  onChange={(e) => setCustomColor1(e.target.value)}
+                                  className="w-8 h-7 rounded border border-[#4A4A4A]"
+                                />
+                                <Input
+                                  value={customColor1}
+                                  onChange={(e) => setCustomColor1(e.target.value)}
+                                  className="flex-1 h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-[#A0A0A0]">終了色</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <input
+                                  type="color"
+                                  value={customColor2}
+                                  onChange={(e) => setCustomColor2(e.target.value)}
+                                  className="w-8 h-7 rounded border border-[#4A4A4A]"
+                                />
+                                <Input
+                                  value={customColor2}
+                                  onChange={(e) => setCustomColor2(e.target.value)}
+                                  className="flex-1 h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-[#A0A0A0]">方向</Label>
+                              <Select
+                                value={customAngle.toString()}
+                                onValueChange={(value) => setCustomAngle(parseInt(value))}
+                              >
+                                <SelectTrigger className="h-7 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">→ 横</SelectItem>
+                                  <SelectItem value="90">↓ 縦</SelectItem>
+                                  <SelectItem value="135">↘ 斜め右下</SelectItem>
+                                  <SelectItem value="45">↗ 斜め右上</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button
+                              onClick={applyCustomGradient}
+                              size="sm"
+                              className="w-full h-7 text-xs"
+                            >
+                              適用
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 詳細設定（CSS手入力） */}
+                      <details className="text-xs">
+                        <summary className="text-[#A0A0A0] cursor-pointer hover:text-[#E0E0E0]">
+                          詳細設定（CSS手入力）
+                        </summary>
+                        <div className="mt-2">
+                          <Input
+                            value={selectedLayer.textGradient || ''}
+                            onChange={(e) => updateLayer(selectedLayer.id, { textGradient: e.target.value })}
+                            className="h-7 text-xs"
+                            placeholder="linear-gradient(90deg, #ff0000, #0000ff)"
+                          />
+                          <div className="text-[10px] text-[#808080] mt-1">
+                            例: linear-gradient(90deg, #ff0000, #0000ff)
+                          </div>
+                        </div>
+                      </details>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* 通常の色（グラデーション無効時のみ表示） */}
@@ -1311,6 +1504,81 @@ function AssetCreatorPage() {
           </div>
         </div>
       )}
+
+      {/* プレビュー設定（デスクトップ右ペイン用） */}
+      <div className="space-y-4 pt-2 border-t border-[#4A4A4A]" id="grid-settings">
+        <h4 className="font-medium">プレビュー設定</h4>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">グリッド表示</Label>
+            <Button
+              size="sm"
+              variant={showGrid ? "default" : "outline"}
+              onClick={() => setShowGrid(!showGrid)}
+              className="h-7 px-3 text-xs"
+            >
+              {showGrid ? 'ON' : 'OFF'}
+            </Button>
+          </div>
+          {showGrid && (
+            <div className="space-y-3 pl-2 border-l">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">グリッドサイズ</Label>
+                <div className="flex gap-1">
+                  {[10,20,40].map(n => (
+                    <Button key={n} size="sm" variant={gridSize===n?"default":"outline"} onClick={() => setGridSize(n)} className="h-7 px-2 text-xs">{n}px</Button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground w-20">色</Label>
+                <input
+                  type="color"
+                  value={(function(){try{const m=gridColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),/);if(m){const r=parseInt(m[1],10),g=parseInt(m[2],10),b=parseInt(m[3],10);const hx=(x:number)=>x.toString(16).padStart(2,'0');return `#${hx(r)}${hx(g)}${hx(b)}`}}catch(e){}return '#88daff';})()}
+                  onChange={(e)=>{const hex=e.target.value;const r=parseInt(hex.slice(1,3),16);const g=parseInt(hex.slice(3,5),16);const b=parseInt(hex.slice(5,7),16);setGridColor(`rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, gridOpacity))})`);}}
+                  className="w-8 h-7 rounded border"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">不透明度</Label>
+                <Slider
+                  value={[Math.round(gridOpacity*100)]}
+                  onValueChange={([v])=>setGridOpacity(v/100)}
+                  min={10}
+                  max={100}
+                  step={5}
+                  className="mt-2"
+                />
+                <div className="text-xs text-muted-foreground text-center mt-1">{Math.round(gridOpacity*100)}%</div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">主要線</Label>
+                <Button size="sm" variant={showMajorLines?"default":"outline"} onClick={()=>setShowMajorLines(!showMajorLines)} className="h-7 px-3 text-xs">{showMajorLines?"ON":"OFF"}</Button>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">主要線の間隔</Label>
+                <div className="flex gap-1 mt-1">
+                  {[3,5,10].map(n => (
+                    <Button key={n} size="sm" variant={majorInterval===n?"default":"outline"} onClick={()=>setMajorInterval(n)} className="h-7 px-2 text-xs">{n}</Button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">スナップ</Label>
+                <Button size="sm" variant={snapToGrid?"default":"outline"} onClick={()=>setSnapToGrid(!snapToGrid)} className="h-7 px-3 text-xs">{snapToGrid?"ON":"OFF"}</Button>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">スナップ強度</Label>
+                <div className="flex gap-1 mt-1">
+                  {[0,4,8,16].map(n => (
+                    <Button key={n} size="sm" variant={snapStrength===n?"default":"outline"} onClick={()=>setSnapStrength(n)} className="h-7 px-2 text-xs">{n}px</Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* レイヤーが選択されていない場合 */}
       {!selectedLayer && (
@@ -1842,6 +2110,55 @@ function AssetCreatorPage() {
                     </div>
                   </div>
                 )}
+                {showGrid && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground w-20">色</Label>
+                      <input
+                        type="color"
+                  value={(function(){try{const m=gridColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),/);if(m){const r=parseInt(m[1],10),g=parseInt(m[2],10),b=parseInt(m[3],10);const hx=(n: number)=>n.toString(16).padStart(2,'0');return `#${hx(r)}${hx(g)}${hx(b)}`}}catch(e){}return '#88daff';})()}
+                        onChange={(e)=>{const hex=e.target.value;const r=parseInt(hex.slice(1,3),16);const g=parseInt(hex.slice(3,5),16);const b=parseInt(hex.slice(5,7),16);setGridColor(`rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, gridOpacity))})`);}}
+                        className="w-8 h-7 rounded border"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">不透明度</Label>
+                      <Slider
+                        value={[Math.round(gridOpacity*100)]}
+                        onValueChange={([v])=>setGridOpacity(v/100)}
+                        min={10}
+                        max={100}
+                        step={5}
+                        className="mt-2"
+                      />
+                      <div className="text-xs text-muted-foreground text-center mt-1">{Math.round(gridOpacity*100)}%</div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-muted-foreground">主要線</Label>
+                      <Button size="sm" variant={showMajorLines?"default":"outline"} onClick={()=>setShowMajorLines(!showMajorLines)} className="h-6 px-2 text-xs">{showMajorLines?"ON":"OFF"}</Button>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">主要線の間隔</Label>
+                      <div className="flex gap-1 mt-1">
+                        {[3,5,10].map(n=> (
+                          <Button key={n} size="sm" variant={majorInterval===n?"default":"outline"} onClick={()=>setMajorInterval(n)} className="h-6 px-2 text-xs">{n}</Button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-muted-foreground">スナップ</Label>
+                      <Button size="sm" variant={snapToGrid?"default":"outline"} onClick={()=>setSnapToGrid(!snapToGrid)} className="h-6 px-2 text-xs">{snapToGrid?"ON":"OFF"}</Button>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">スナップ強度</Label>
+                      <div className="flex gap-1 mt-1">
+                        {[0,4,8,16].map(n=> (
+                          <Button key={n} size="sm" variant={snapStrength===n?"default":"outline"} onClick={()=>setSnapStrength(n)} className="h-6 px-2 text-xs">{n}px</Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
               </div>
             </div>
@@ -2000,6 +2317,18 @@ function AssetCreatorPage() {
                 setShowCenterLines={setShowCenterLines}
                 gridSize={gridSize}
                 setGridSize={setGridSize}
+                gridColor={gridColor}
+                setGridColor={setGridColor}
+                gridOpacity={gridOpacity}
+                setGridOpacity={setGridOpacity}
+                showMajorLines={showMajorLines}
+                setShowMajorLines={setShowMajorLines}
+                majorInterval={majorInterval}
+                setMajorInterval={setMajorInterval}
+                snapToGrid={snapToGrid}
+                setSnapToGrid={setSnapToGrid}
+                snapStrength={snapStrength}
+                setSnapStrength={setSnapStrength}
                 zoom={zoom}
                 setZoom={setZoom}
                 onFitToScreen={handleFitToScreen}

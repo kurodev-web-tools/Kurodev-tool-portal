@@ -228,6 +228,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             variant={showGrid ? "default" : "outline"}
             size="sm"
             onClick={() => setShowGrid(!showGrid)}
+            onDoubleClick={() => {
+              const el = document.getElementById('grid-settings');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
             title="グリッド表示 (G)"
             aria-label={showGrid ? "グリッドを非表示" : "グリッドを表示"}
           >

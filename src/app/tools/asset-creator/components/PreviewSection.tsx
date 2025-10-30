@@ -33,6 +33,18 @@ interface PreviewSectionProps {
   setShowCenterLines: (show: boolean) => void;
   gridSize: number;
   setGridSize: (size: number) => void;
+  gridColor: string;
+  setGridColor: (color: string) => void;
+  gridOpacity: number;
+  setGridOpacity: (o: number) => void;
+  showMajorLines: boolean;
+  setShowMajorLines: (s: boolean) => void;
+  majorInterval: number;
+  setMajorInterval: (n: number) => void;
+  snapToGrid: boolean;
+  setSnapToGrid: (s: boolean) => void;
+  snapStrength: number;
+  setSnapStrength: (n: number) => void;
   
   // ズーム
   zoom: number;
@@ -90,6 +102,18 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
   setShowCenterLines,
   gridSize,
   setGridSize,
+  gridColor,
+  setGridColor,
+  gridOpacity,
+  setGridOpacity,
+  showMajorLines,
+  setShowMajorLines,
+  majorInterval,
+  setMajorInterval,
+  snapToGrid,
+  setSnapToGrid,
+  snapStrength,
+  setSnapStrength,
   zoom,
   setZoom,
   onFitToScreen,
@@ -249,14 +273,32 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                 {/* グリッドオーバーレイ */}
                 {showGrid && (
                   <div 
-                    className="absolute inset-0 opacity-60"
+                    className="absolute inset-0"
                     style={{
-                      backgroundImage: `
-                        linear-gradient(rgba(136, 218, 255, 0.25) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(136, 218, 255, 0.25) 1px, transparent 1px)
-                      `,
-                      backgroundSize: `${gridSize * zoom}px ${gridSize * zoom}px`,
-                      filter: 'drop-shadow(0 0 1px rgba(136, 218, 255, 0.3))',
+                      opacity: gridOpacity,
+                      backgroundImage: (() => {
+                        const unit = gridSize * zoom;
+                        const minor = `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+                        if (!showMajorLines) return minor;
+                        // 主要線は少し濃い色に（アルファを強める）
+                        let majorColor = gridColor;
+                        try {
+                          const m = gridColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([0-9.]+)\)/);
+                          if (m) {
+                            const r = m[1], g = m[2], b = m[3];
+                            majorColor = `rgba(${r}, ${g}, ${b}, ${Math.min(1, Number(m[4]) + 0.2)})`;
+                          }
+                        } catch {}
+                        const major = `linear-gradient(${majorColor} 1px, transparent 1px), linear-gradient(90deg, ${majorColor} 1px, transparent 1px)`;
+                        return `${minor}, ${major}`;
+                      })(),
+                      backgroundSize: (() => {
+                        const unit = gridSize * zoom;
+                        if (!showMajorLines) return `${unit}px ${unit}px`;
+                        const majorSize = unit * Math.max(1, majorInterval);
+                        return `${unit}px ${unit}px, ${majorSize}px ${majorSize}px`;
+                      })(),
+                      backgroundPosition: '0 0, 0 0',
                     }}
                     aria-hidden="true"
                   />
