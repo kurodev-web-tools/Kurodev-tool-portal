@@ -68,6 +68,35 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
 
   const [showShapeSelectorModal, setShowShapeSelectorModal] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameText, setRenameText] = useState<string>("");
+
+  const startRename = (layer: UnifiedLayer) => {
+    setRenamingId(layer.id);
+    setRenameText((() => {
+      if (isTextLayer(layer)) return layer.text || layer.name || "";
+      return layer.name || "";
+    })());
+  };
+
+  const commitRename = () => {
+    if (!renamingId) return;
+    const layer = layers.find(l => l.id === renamingId);
+    if (!layer) {
+      setRenamingId(null);
+      return;
+    }
+    if (isTextLayer(layer)) {
+      updateLayer(layer.id, { text: renameText, name: renameText });
+    } else {
+      updateLayer(layer.id, { name: renameText });
+    }
+    setRenamingId(null);
+  };
+
+  const cancelRename = () => {
+    setRenamingId(null);
+  };
 
   const handleToggleVisibility = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -324,13 +353,37 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                               !layer.visible && "opacity-50"
                             )}
                             onClick={() => setSelectedLayerId(layer.id)}
-                            role="button"
+                            role="row"
                             tabIndex={0}
                             aria-label={`${getLayerTypeLabel(layer)}: ${getLayerPreview(layer)}`}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
                                 setSelectedLayerId(layer.id);
+                              }
+                              if (e.key === 'F2') {
+                                e.preventDefault();
+                                startRename(layer);
+                              }
+                              if (e.key === 'ArrowUp' && !e.ctrlKey) {
+                                e.preventDefault();
+                                const prev = Math.max(0, index - 1);
+                                const target = layers[prev];
+                                if (target) setSelectedLayerId(target.id);
+                              }
+                              if (e.key === 'ArrowDown' && !e.ctrlKey) {
+                                e.preventDefault();
+                                const next = Math.min(layers.length - 1, index + 1);
+                                const target = layers[next];
+                                if (target) setSelectedLayerId(target.id);
+                              }
+                              if (e.key === 'ArrowUp' && e.ctrlKey) {
+                                e.preventDefault();
+                                moveLayerUp(layer.id);
+                              }
+                              if (e.key === 'ArrowDown' && e.ctrlKey) {
+                                e.preventDefault();
+                                moveLayerDown(layer.id);
                               }
                             }}
                           >
@@ -348,12 +401,30 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                                 <div className="text-sm font-medium truncate">
                                   {getLayerTypeLabel(layer)}
                                 </div>
-                                <div 
-                                  className="text-xs text-[#A0A0A0] truncate" 
-                                  title={getFullLayerName(layer)}
-                                >
-                                  {getLayerPreview(layer)}
-                                </div>
+                                {renamingId === layer.id ? (
+                                  <input
+                                    autoFocus
+                                    value={renameText}
+                                    onChange={(e) => setRenameText(e.target.value)}
+                                    onBlur={commitRename}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') commitRename();
+                                      if (e.key === 'Escape') cancelRename();
+                                    }}
+                                    className="bg-transparent text-xs text-[#E0E0E0] outline-none border-b border-[#4A4A4A] w-full"
+                                    aria-label="レイヤー名を編集"
+                                  />
+                                ) : (
+                                  <button
+                                    className="text-xs text-[#A0A0A0] truncate text-left w-full hover:text-[#E0E0E0]"
+                                    title={getFullLayerName(layer)}
+                                    onDoubleClick={() => startRename(layer)}
+                                    type="button"
+                                    aria-label={`${getFullLayerName(layer)} を編集`}
+                                  >
+                                    {getLayerPreview(layer)}
+                                  </button>
+                                )}
                               </div>
                             </div>
 
@@ -361,54 +432,54 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0"
+                                className="h-8 w-8 p-0"
                                 onClick={(e) => handleMoveLayerUp(layer.id, e)}
                                 disabled={index === 0}
                                 title="上に移動"
                                 aria-label="レイヤーを上に移動"
                               >
-                                <ArrowUp className="h-3 w-3" />
+                                <ArrowUp className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0"
+                                className="h-8 w-8 p-0"
                                 onClick={(e) => handleMoveLayerDown(layer.id, e)}
                                 disabled={index === layers.length - 1}
                                 title="下に移動"
                                 aria-label="レイヤーを下に移動"
                               >
-                                <ArrowDown className="h-3 w-3" />
+                                <ArrowDown className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0"
+                                className="h-8 w-8 p-0"
                                 onClick={(e) => handleToggleVisibility(layer.id, e)}
                                 title={layer.visible ? "非表示にする" : "表示する"}
                                 aria-label={layer.visible ? "レイヤーを非表示にする" : "レイヤーを表示する"}
                               >
-                                {layer.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                                {layer.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0"
+                                className="h-8 w-8 p-0"
                                 onClick={(e) => handleToggleLock(layer.id, e)}
                                 title={layer.locked ? "ロックを解除する" : "ロックする"}
                                 aria-label={layer.locked ? "レイヤーのロックを解除する" : "レイヤーをロックする"}
                               >
-                                {layer.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                                {layer.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
+                                className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
                                 onClick={(e) => handleRemoveLayer(layer.id, e)}
                                 title="レイヤーを削除"
                                 aria-label="レイヤーを削除"
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
