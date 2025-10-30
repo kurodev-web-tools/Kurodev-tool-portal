@@ -63,6 +63,7 @@ function AssetCreatorPage() {
   // シャドウエディタの状態
   const [shadowEnabled, setShadowEnabled] = React.useState(false);
   const [outlineEnabled, setOutlineEnabled] = React.useState(false);
+  const [gradientEnabled, setGradientEnabled] = React.useState(false);
   
   const { handleAsyncError } = useErrorHandler();
 
@@ -102,9 +103,15 @@ function AssetCreatorPage() {
       } else {
         setOutlineEnabled(false);
       }
+      if (selectedLayer.textGradient) {
+        setGradientEnabled(true);
+      } else {
+        setGradientEnabled(false);
+      }
     } else {
       setShadowEnabled(false);
       setOutlineEnabled(false);
+      setGradientEnabled(false);
     }
   }, [selectedLayer]);
 
@@ -945,22 +952,66 @@ function AssetCreatorPage() {
             {/* 色・効果 */}
             <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
               <h5 className="text-sm font-medium text-[#E0E0E0]">色・効果</h5>
-              <div>
-                <Label className="text-xs text-[#A0A0A0]">色</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="color"
-                    value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="w-8 h-8 rounded border border-[#4A4A4A]"
-                  />
-                  <Input
-                    value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="flex-1"
-                  />
+              
+              {/* グラデーション */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-[#A0A0A0]">グラデーション</Label>
+                  <Button
+                    size="sm"
+                    variant={gradientEnabled ? "default" : "outline"}
+                    onClick={() => {
+                      const newEnabled = !gradientEnabled;
+                      setGradientEnabled(newEnabled);
+                      if (!newEnabled) {
+                        updateLayer(selectedLayer.id, { textGradient: undefined });
+                      } else {
+                        updateLayer(selectedLayer.id, { textGradient: 'linear-gradient(90deg, #ff0000, #0000ff)' });
+                      }
+                    }}
+                    className="h-6 px-3 text-xs"
+                  >
+                    {gradientEnabled ? 'ON' : 'OFF'}
+                  </Button>
                 </div>
+                
+                {gradientEnabled && (
+                  <div className="pl-2 border-l-2 border-[#4A4A4A]">
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">グラデーションCSS</Label>
+                      <Input
+                        value={selectedLayer.textGradient || ''}
+                        onChange={(e) => updateLayer(selectedLayer.id, { textGradient: e.target.value })}
+                        className="h-7 text-xs mt-2"
+                        placeholder="linear-gradient(90deg, #ff0000, #0000ff)"
+                      />
+                      <div className="text-[10px] text-[#808080] mt-1">
+                        例: linear-gradient(90deg, #ff0000, #0000ff)
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* 通常の色（グラデーション無効時のみ表示） */}
+              {!gradientEnabled && (
+                <div>
+                  <Label className="text-xs text-[#A0A0A0]">色</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="color"
+                      value={selectedLayer.color || '#ffffff'}
+                      onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                      className="w-8 h-8 rounded border border-[#4A4A4A]"
+                    />
+                    <Input
+                      value={selectedLayer.color || '#ffffff'}
+                      onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* アウトライン */}
               <div className="space-y-2 pt-1">

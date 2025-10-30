@@ -61,6 +61,7 @@ export interface TextLayer extends BaseLayer {
   letterSpacing?: string;
   textStrokeWidth?: string;
   textStrokeColor?: string;
+  textGradient?: string;
 }
 
 /**

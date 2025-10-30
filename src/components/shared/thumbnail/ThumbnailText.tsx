@@ -19,6 +19,7 @@ interface ThumbnailTextProps {
   letterSpacing?: string;
   textStrokeWidth?: string;
   textStrokeColor?: string;
+  textGradient?: string;
   className?: string;
   x: number;
   y: number;
@@ -59,6 +60,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   letterSpacing,
   textStrokeWidth,
   textStrokeColor,
+  textGradient,
   className,
   x,
   y,
@@ -207,7 +209,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
           <p 
             className={cn("cursor-move", className)} 
             style={{ 
-              color, 
+              color: textGradient ? 'transparent' : color, 
               fontSize, 
               fontFamily,
               fontWeight,
@@ -216,6 +218,9 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
               textShadow,
               letterSpacing,
               WebkitTextStroke: textStrokeWidth && textStrokeColor ? `${textStrokeWidth} ${textStrokeColor}` : undefined,
+              WebkitBackgroundClip: textGradient ? 'text' : undefined,
+              backgroundClip: textGradient ? 'text' : undefined,
+              backgroundImage: textGradient,
               lineHeight: 1, 
               whiteSpace: 'pre-wrap' 
             } as React.CSSProperties}
