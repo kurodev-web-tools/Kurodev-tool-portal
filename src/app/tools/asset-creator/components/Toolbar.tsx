@@ -284,22 +284,29 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               <span className="hidden sm:inline">エクスポート</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent role="menu" aria-label="エクスポート品質選択">
+          <DropdownMenuContent 
+            role="menu" 
+            aria-label="エクスポート品質選択"
+            className="bg-[#2D2D2D] border-[#4A4A4A]"
+          >
             <DropdownMenuItem 
               onClick={() => onDownload('normal')}
               role="menuitem"
+              className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
             >
               標準品質 (720p)
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => onDownload('high')}
               role="menuitem"
+              className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
             >
               高品質 (1080p)
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => onDownload('super')}
               role="menuitem"
+              className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
             >
               超高品質 (4K)
             </DropdownMenuItem>
