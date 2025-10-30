@@ -145,12 +145,16 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
       />
       
       {/* プレビューエリア */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[#1A1A1A] relative">
+      <div 
+        className="flex-1 overflow-y-auto overflow-x-auto bg-[#1A1A1A] relative custom-scrollbar" 
+        style={{ minHeight: 0 }}
+        data-preview-container="true"
+      >
         <div 
-          className="flex items-start justify-center min-h-full p-4 lg:p-8"
-          data-preview-container="true"
+          className="flex items-start justify-center p-4 lg:p-8"
+          style={{ minHeight: '100%' }}
         >
-          <div className="w-full max-w-4xl">
+          <div className="w-full">
             {/* メインコンテンツエリア */}
             <div
               id="thumbnail-preview"
@@ -159,7 +163,6 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                 aspectRatio: aspectRatio === 'custom' 
                   ? `${customAspectRatio.width}/${customAspectRatio.height}` 
                   : (aspectRatio || '16:9').replace(':', '/'),
-                maxWidth: '100%',
                 margin: '0 auto',
                 transition: 'width 0.2s ease-in-out'
               }}

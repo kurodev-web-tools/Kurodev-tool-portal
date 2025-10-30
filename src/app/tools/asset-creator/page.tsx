@@ -147,28 +147,22 @@ function AssetCreatorPage() {
   // キーボードショートカット
   const { isShiftKeyDown, canUndo, canRedo } = useKeyboardShortcuts({ canvasOperations });
 
-  // アスペクト比に応じた動的安全マージン計算（拡張性重視 + ユーザーフィードバック反映）
+  // アスペクト比に応じた動的安全マージン計算（スクロールなしで確実に収める）
   const calculateSafetyMarginByAspectRatio = React.useCallback((aspectRatioValue: number): number => {
     // アスペクト比の値に基づいて自動的に安全マージンを計算
     // 将来のアスペクト比追加にも自動対応
     if (aspectRatioValue >= 2.0) {
-      // 超横長 (21:9, 32:9など)
-      return 0.95;
+      return 0.96; // 超横長
     } else if (aspectRatioValue >= 1.5) {
-      // 横長 (16:9, 16:10など) - 最大サイズで表示
-      return 1.00;
+      return 0.96; // 16:9（元に戻す）
     } else if (aspectRatioValue >= 1.2) {
-      // やや横長 (4:3, 5:4など) - 最大サイズで表示
-      return 1.00;
+      return 0.95; // 4:3（据え置き）
     } else if (aspectRatioValue >= 0.9) {
-      // ほぼ正方形 (1:1など) - 大きく表示
-      return 0.90;
+      return 0.80; // 1:1（要望）
     } else if (aspectRatioValue >= 0.6) {
-      // 縦長 (9:16, 3:4など) - フッター見切れ防止のため小さく（現状キープ）
-      return 0.55;
+      return 0.50; // 9:16（要望）
     } else {
-      // 超縦長 (1:2など将来の極端な縦長比率)
-      return 0.50;
+      return 0.45; // 超縦長（<0.6 はすべてここ：9:16含む）
     }
   }, []);
 
@@ -190,7 +184,7 @@ function AssetCreatorPage() {
       return baseSizeRef.current; // 前回の値を保持
     }
     
-    const padding = isDesktop ? 32 : 16;
+    const padding = 0; // スクロールコンテナにパディングは持たせない前提（内側に付与）
     
     // アスペクト比を計算
     let aspectRatioValue: number;
@@ -203,8 +197,9 @@ function AssetCreatorPage() {
     
     // アスペクト比に応じた動的安全マージンを適用
     const dynamicSafetyMargin = calculateSafetyMarginByAspectRatio(aspectRatioValue);
-    const availableWidth = Math.max((containerRect.width - (padding * 2)) * dynamicSafetyMargin, 200);
-    const availableHeight = Math.max((containerRect.height - (padding * 2)) * dynamicSafetyMargin, 150);
+    const SCROLLBAR_RESERVE = 12; // スクロールバー厚み分の余白
+    const availableWidth = Math.max((containerRect.width - SCROLLBAR_RESERVE) * dynamicSafetyMargin, 200);
+    const availableHeight = Math.max((containerRect.height - SCROLLBAR_RESERVE) * dynamicSafetyMargin, 150);
 
     // 【重要】利用可能領域に完全に収まる最大サイズを計算
     let optimalWidth: number;
@@ -278,7 +273,7 @@ function AssetCreatorPage() {
     };
   }, [calculateBaseSize, setZoom]);
 
-  // Ctrl+マウスホイールズーム（Adobe標準準拠 + 最小10%統一）
+  // Ctrl+マウスホイールズーム（Adobe標準準拠 + 最小10%統一 + マウス位置中心ズーム）
   React.useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       // Ctrl（Windows）またはCmd（Mac）が押されている場合のみ
@@ -303,7 +298,84 @@ function AssetCreatorPage() {
           }
         };
         
-        setZoom(prevZoom => getNextZoomLevel(prevZoom, direction));
+        // マウス位置中心ズームの実装
+        const previewContainer = document.querySelector('[data-preview-container="true"]') as HTMLElement;
+        const previewElement = document.getElementById('thumbnail-preview') as HTMLElement;
+        
+        if (previewContainer && previewElement && baseSizeRef.current > 0) {
+          // マウス位置中心ズーム（コールバック形式で最新のズーム値を取得）
+          setZoom(prevZoom => {
+            const newZoom = getNextZoomLevel(prevZoom, direction);
+            
+            // マウス位置を取得
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            
+            // スクロールコンテナの位置とサイズを取得
+            const containerRect = previewContainer.getBoundingClientRect();
+            const oldScrollLeft = previewContainer.scrollLeft;
+            const oldScrollTop = previewContainer.scrollTop;
+            
+            // コンテナ内でのマウス相対位置を計算（ビューポート基準）
+            const mouseXInContainer = mouseX - containerRect.left + oldScrollLeft;
+            const mouseYInContainer = mouseY - containerRect.top + oldScrollTop;
+            
+            // プレビュー要素の位置とサイズを取得（スクロール位置を考慮）
+            const previewRect = previewElement.getBoundingClientRect();
+            const previewXInContainer = previewRect.left - containerRect.left + oldScrollLeft;
+            const previewYInContainer = previewRect.top - containerRect.top + oldScrollTop;
+            
+            // マウス位置がプレビュー要素内のどの位置にあるかを計算
+            const relativeXInPreview = mouseXInContainer - previewXInContainer;
+            const relativeYInPreview = mouseYInContainer - previewYInContainer;
+            
+            // ズーム比率を計算
+            const zoomRatio = newZoom / prevZoom;
+            
+            // ズーム後のプレビュー要素の新しいサイズを計算
+            const oldPreviewWidth = baseSizeRef.current * prevZoom;
+            const newPreviewWidth = baseSizeRef.current * newZoom;
+            
+            // プレビュー要素の高さも計算（アスペクト比から）
+            let aspectRatioValue: number;
+            if (aspectRatio === 'custom') {
+              aspectRatioValue = customAspectRatio.width / customAspectRatio.height;
+            } else {
+              const [w, h] = aspectRatio.split(':').map(Number);
+              aspectRatioValue = w / h;
+            }
+            const oldPreviewHeight = oldPreviewWidth / aspectRatioValue;
+            const newPreviewHeight = newPreviewWidth / aspectRatioValue;
+            
+            // ズーム後の新しいプレビュー要素の位置（中央配置を考慮）
+            // プレビュー要素は中央配置されているため、サイズ変化によって位置も変わる
+            const previewCenterOffsetX = (newPreviewWidth - oldPreviewWidth) / 2;
+            const previewCenterOffsetY = (newPreviewHeight - oldPreviewHeight) / 2;
+            const newPreviewXInContainer = previewXInContainer - previewCenterOffsetX;
+            const newPreviewYInContainer = previewYInContainer - previewCenterOffsetY;
+            
+            // マウス位置が視覚的に同じ位置に来るように新しいスクロール位置を計算
+            // マウス位置は (newPreviewXInContainer + relativeXInPreview * zoomRatio) に来る
+            // これをビューポートの (mouseX - containerRect.left) に合わせる
+            const newScrollLeft = newPreviewXInContainer + (relativeXInPreview * zoomRatio) - (mouseX - containerRect.left);
+            const newScrollTop = newPreviewYInContainer + (relativeYInPreview * zoomRatio) - (mouseY - containerRect.top);
+            
+            // 次のフレームでスクロール位置を調整（DOM更新を待つ）
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                if (previewContainer) {
+                  previewContainer.scrollLeft = Math.max(0, newScrollLeft);
+                  previewContainer.scrollTop = Math.max(0, newScrollTop);
+                }
+              });
+            });
+            
+            return newZoom;
+          });
+        } else {
+          // フォールバック: 通常のズーム（マウス位置中心なし）
+          setZoom(prevZoom => getNextZoomLevel(prevZoom, direction));
+        }
       }
     };
 
@@ -315,7 +387,7 @@ function AssetCreatorPage() {
         previewElement.removeEventListener('wheel', handleWheel);
       };
     }
-  }, [setZoom]);
+  }, [setZoom, aspectRatio, customAspectRatio]);
 
   // レイヤーの変更を監視して履歴を保存
   const prevLayersRef = React.useRef(layers);

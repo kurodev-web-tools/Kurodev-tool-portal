@@ -553,6 +553,30 @@ button:active {
   background: #1A9B94; /* ウォームシアン ホバー */
 }
 
+/* プレビューエリア専用スクロールバー（より目立つスタイル） */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1A1A1A;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4A4A4A;
+  border-radius: 6px;
+  border: 2px solid #1A1A1A;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #5A5A5A;
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: #1A1A1A;
+}
+
 
 /* Warm Cyber Minimalism 背景設定 */
 html, body {
