@@ -281,8 +281,8 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                     <div 
                       className="border-2 border-dashed border-emerald-400/85 bg-emerald-400/10 rounded shadow-lg"
                       style={{
-                        width: '80%',
-                        height: '80%',
+                        width: '95%',
+                        height: '95%',
                         aspectRatio: aspectRatio === 'custom' 
                           ? `${customAspectRatio.width}/${customAspectRatio.height}`
                           : (aspectRatio || '16:9'),
