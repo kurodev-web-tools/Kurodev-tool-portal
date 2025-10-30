@@ -1821,26 +1821,28 @@ function AssetCreatorPage() {
 
       <div className="flex flex-col lg:flex-row lg:h-full lg:overflow-hidden">
         {/* 左サイドバー (20%) - テンプレート・レイヤー管理 */}
-        <LeftSidebar
-          isDesktop={isDesktop}
-          isSidebarOpen={isLeftSidebarOpen}
-          setIsSidebarOpen={setIsLeftSidebarOpen}
-          layers={layers}
-          updateLayer={updateLayer}
-          removeLayer={removeLayer}
-          selectedLayerId={selectedLayerId}
-          setSelectedLayerId={setSelectedLayerId}
-          reorderLayers={reorderLayers}
-          duplicateLayer={duplicateLayer}
-          addLayer={addLayer}
-          moveLayerUp={moveLayerUp}
-          moveLayerDown={moveLayerDown}
-          selectedTemplate={selectedTemplate}
-          setSelectedTemplate={setSelectedTemplate}
-        />
+        {!isPreviewDedicatedMode && (
+          <LeftSidebar
+            isDesktop={isDesktop}
+            isSidebarOpen={isLeftSidebarOpen}
+            setIsSidebarOpen={setIsLeftSidebarOpen}
+            layers={layers}
+            updateLayer={updateLayer}
+            removeLayer={removeLayer}
+            selectedLayerId={selectedLayerId}
+            setSelectedLayerId={setSelectedLayerId}
+            reorderLayers={reorderLayers}
+            duplicateLayer={duplicateLayer}
+            addLayer={addLayer}
+            moveLayerUp={moveLayerUp}
+            moveLayerDown={moveLayerDown}
+            selectedTemplate={selectedTemplate}
+            setSelectedTemplate={setSelectedTemplate}
+          />
+        )}
 
-        {/* 中央プレビューエリア (60%) */}
-        <main className="w-3/5 flex flex-col min-w-0 overflow-hidden">
+        {/* 中央プレビューエリア (60% or 100% in preview mode) */}
+        <main className={isPreviewDedicatedMode ? "w-full flex flex-col min-w-0 overflow-hidden" : "w-3/5 flex flex-col min-w-0 overflow-hidden"}>
           <div className={`flex-1 flex flex-col min-h-0 ${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
             <div className="flex-1 flex flex-col min-h-0">
               <PreviewSection
@@ -1894,34 +1896,40 @@ function AssetCreatorPage() {
           {!isDesktop && !isPreviewDedicatedMode && (
             <div className="border-t bg-background/95 backdrop-blur-sm">
               <div className="p-2 flex justify-between items-center">
-                <button
-                  onClick={() => setIsLeftSidebarOpen(true)}
-                  className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
-                >
-                  📁 テンプレート・レイヤー
-                </button>
-                <button
-                  onClick={() => setIsRightSidebarOpen(true)}
-                  className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
-                >
-                  🛠️ ツール・エクスポート
-                </button>
+                {!isPreviewDedicatedMode && (
+                  <>
+                    <button
+                      onClick={() => setIsLeftSidebarOpen(true)}
+                      className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
+                    >
+                      📁 テンプレート・レイヤー
+                    </button>
+                    <button
+                      onClick={() => setIsRightSidebarOpen(true)}
+                      className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
+                    >
+                      🛠️ ツール・エクスポート
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
         </main>
 
         {/* 右ツールバー (20%) - ツール設定・エクスポート */}
-        <RightToolbar
-          isDesktop={isDesktop}
-          isSidebarOpen={isRightSidebarOpen}
-          setIsSidebarOpen={setIsRightSidebarOpen}
-          isExporting={isExporting}
-          renderToolsPanel={renderToolsPanel}
-          handleBatchExport={handleBatchExport}
-          handleAdvancedExport={handleAdvancedExport}
-          handleAddShape={handleAddShape}
-        />
+        {!isPreviewDedicatedMode && (
+          <RightToolbar
+            isDesktop={isDesktop}
+            isSidebarOpen={isRightSidebarOpen}
+            setIsSidebarOpen={setIsRightSidebarOpen}
+            isExporting={isExporting}
+            renderToolsPanel={renderToolsPanel}
+            handleBatchExport={handleBatchExport}
+            handleAdvancedExport={handleAdvancedExport}
+            handleAddShape={handleAddShape}
+          />
+        )}
       </div>
     </div>
   );
