@@ -4,6 +4,8 @@ import { Rnd, ResizableDelta, RndDragCallback, Position } from 'react-rnd';
 import { cn } from '@/lib/utils';
 import { RotateCw } from 'lucide-react';
 import { Layer } from '@/types/layers';
+import { buildFilterString } from '@/utils/imageFilters';
+import type { ImageFilters } from '@/utils/imageFilters';
 
 interface ThumbnailImageProps {
   id: string;
@@ -30,6 +32,7 @@ interface ThumbnailImageProps {
   onRotate?: () => void;
   onRotateStop?: () => void;
   updateLayer?: (id: string, updates: Partial<Layer>) => void;
+  imageFilters?: ImageFilters;
 }
 
 export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
@@ -57,6 +60,7 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   onRotate,
   onRotateStop,
   updateLayer,
+  imageFilters,
 }) => {
   const [position, setPosition] = useState({ x: x as number, y: y as number });
   const [isRotating, setIsRotating] = useState(false);
@@ -155,6 +159,7 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
+    filter: buildFilterString(imageFilters),
   };
 
   // 背景画像の場合は絶対配置の通常divとして表示

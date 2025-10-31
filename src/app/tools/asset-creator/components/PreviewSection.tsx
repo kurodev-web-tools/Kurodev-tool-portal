@@ -216,6 +216,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                         isBackground={layer.isBackground}
                         zIndex={layer.zIndex}
                         updateLayer={updateLayer}
+                        imageFilters={layer.imageFilters}
                       />
                     );
                   } else if (layer.type === 'text') {

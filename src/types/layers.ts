@@ -71,6 +71,7 @@ export interface ImageLayer extends BaseLayer {
   type: 'image';
   src: string | null;
   isBackground?: boolean; // 背景画像として扱うフラグ（100%表示）
+  imageFilters?: import('../utils/imageFilters').ImageFilters;
 }
 
 /**
