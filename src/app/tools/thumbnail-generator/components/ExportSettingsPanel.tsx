@@ -10,6 +10,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { 
   Download, 
   Settings, 
@@ -21,7 +30,10 @@ import {
   Tablet,
   Zap,
   FileImage,
-  Palette
+  Palette,
+  Twitter,
+  Youtube,
+  Instagram
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -129,6 +141,8 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
   const [settings, setSettings] = useState<ExportSettings>(EXPORT_PRESETS['youtube-standard']);
   const [savedPresets, setSavedPresets] = useState<Record<string, ExportSettings>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [presetDialogOpen, setPresetDialogOpen] = useState(false);
+  const [presetName, setPresetName] = useState('');
   const isMobile = !useMediaQuery("(min-width: 768px)");
 
   // プリセットの読み込み
@@ -155,13 +169,16 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
 
   // カスタムプリセットの保存
   const savePreset = () => {
-    const presetName = prompt('プリセット名を入力してください:');
-    if (presetName && presetName.trim()) {
-      const newPresets = { ...savedPresets, [presetName]: settings };
-      setSavedPresets(newPresets);
-      localStorage.setItem('thumbnailExportPresets', JSON.stringify(newPresets));
-      toast.success(`プリセット「${presetName}」を保存しました`);
+    if (!presetName.trim()) {
+      toast.error('プリセット名を入力してください');
+      return;
     }
+    const newPresets = { ...savedPresets, [presetName.trim()]: settings };
+    setSavedPresets(newPresets);
+    localStorage.setItem('thumbnailExportPresets', JSON.stringify(newPresets));
+    toast.success(`プリセット「${presetName.trim()}」を保存しました`);
+    setPresetName('');
+    setPresetDialogOpen(false);
   };
 
   // エクスポート実行
@@ -187,19 +204,117 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
   const currentResolution = getCurrentResolution();
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Download className="h-5 w-5" />
-          エクスポート設定
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
-        {/* プリセット選択 */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">プリセット</Label>
+    <div className="space-y-4">
+      {/* よく使う設定 */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            よく使う設定
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-[#A0A0A0] mb-2">
+            ワンクリックで主要プラットフォーム向けにエクスポート
+          </p>
           <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              size={isMobile ? 'sm' : 'default'}
+              onClick={async () => {
+                await onExport({
+                  ...settings,
+                  resolution: 'custom',
+                  customWidth: 1200,
+                  customHeight: 675,
+                  quality: 'high',
+                  pixelRatio: 2,
+                  format: 'png',
+                  optimizeForPlatform: 'twitter',
+                });
+              }}
+              className="flex items-center gap-2"
+            >
+              <Twitter className="h-4 w-4" />
+              <span className="text-xs">Twitter投稿</span>
+            </Button>
+            <Button
+              variant="outline"
+              size={isMobile ? 'sm' : 'default'}
+              onClick={async () => {
+                await onExport({
+                  ...settings,
+                  resolution: 'custom',
+                  customWidth: 1280,
+                  customHeight: 720,
+                  quality: 'high',
+                  pixelRatio: 2,
+                  format: 'png',
+                  optimizeForPlatform: 'youtube',
+                });
+              }}
+              className="flex items-center gap-2"
+            >
+              <Youtube className="h-4 w-4" />
+              <span className="text-xs">YouTubeサムネ</span>
+            </Button>
+            <Button
+              variant="outline"
+              size={isMobile ? 'sm' : 'default'}
+              onClick={async () => {
+                await onExport({
+                  ...settings,
+                  resolution: 'custom',
+                  customWidth: 1920,
+                  customHeight: 1080,
+                  quality: 'high',
+                  pixelRatio: 2,
+                  format: 'png',
+                  optimizeForPlatform: 'youtube',
+                });
+              }}
+              className="flex items-center gap-2"
+            >
+              <Youtube className="h-4 w-4" />
+              <span className="text-xs">YouTube HD</span>
+            </Button>
+            <Button
+              variant="outline"
+              size={isMobile ? 'sm' : 'default'}
+              onClick={async () => {
+                await onExport({
+                  ...settings,
+                  resolution: 'custom',
+                  customWidth: 1080,
+                  customHeight: 1080,
+                  quality: 'high',
+                  pixelRatio: 2,
+                  format: 'png',
+                  optimizeForPlatform: 'instagram',
+                });
+              }}
+              className="flex items-center gap-2"
+            >
+              <Instagram className="h-4 w-4" />
+              <span className="text-xs">Instagram</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            エクスポート設定
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          {/* プリセット選択 */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">プリセット</Label>
+            <div className="grid grid-cols-2 gap-2">
             <Button
               variant={settings.resolution === 'fhd' && !settings.batchExport ? 'default' : 'outline'}
               size={isMobile ? "default" : "sm"}
@@ -469,17 +584,68 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
               </>
             )}
           </Button>
-          <Button
-            variant="outline"
-            onClick={savePreset}
-            disabled={isExporting}
-            className={isMobile ? "h-11 px-3" : ""}
-          >
-            <Save className="h-4 w-4 mr-1" />
-            {isMobile ? "" : "保存"}
-          </Button>
+          <Dialog open={presetDialogOpen} onOpenChange={setPresetDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={isExporting}
+                className={isMobile ? "h-11 px-3" : ""}
+              >
+                <Save className="h-4 w-4 mr-1" />
+                {isMobile ? "" : "保存"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+              <DialogHeader>
+                <DialogTitle className="text-[#E0E0E0]">プリセットを保存</DialogTitle>
+                <DialogDescription className="text-[#A0A0A0]">
+                  現在の設定をプリセットとして保存します
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="preset-name" className="text-sm text-[#E0E0E0]">
+                    プリセット名
+                  </Label>
+                  <Input
+                    id="preset-name"
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                    placeholder="プリセット名を入力"
+                    className="mt-2 bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && presetName.trim()) {
+                        savePreset();
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setPresetDialogOpen(false);
+                    setPresetName('');
+                  }}
+                  className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  onClick={savePreset}
+                  disabled={!presetName.trim()}
+                  className="bg-[#20B2AA] hover:bg-[#20B2AA]/90 text-white"
+                >
+                  保存
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };

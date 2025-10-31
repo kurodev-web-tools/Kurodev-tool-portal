@@ -712,6 +712,65 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
     }
   }, [editorState.handleRedo]);
 
+  // クイックエクスポート処理（プラットフォーム別）
+  const handleQuickExport = React.useCallback(async (platform: 'twitter-post' | 'twitter-header' | 'youtube-thumbnail' | 'youtube-thumbnail-hd' | 'instagram-post' | 'instagram-story') => {
+    const element = document.getElementById('thumbnail-preview');
+    if (!element) {
+      toast.error('プレビューエリアが見つかりません');
+      return;
+    }
+
+    try {
+      const platformSettings: Record<typeof platform, { width: number; height: number; pixelRatio: number; format: 'png' | 'jpeg' }> = {
+        'twitter-post': { width: 1200, height: 675, pixelRatio: 2, format: 'png' },
+        'twitter-header': { width: 1500, height: 500, pixelRatio: 2, format: 'png' },
+        'youtube-thumbnail': { width: 1280, height: 720, pixelRatio: 2, format: 'png' },
+        'youtube-thumbnail-hd': { width: 1920, height: 1080, pixelRatio: 2, format: 'png' },
+        'instagram-post': { width: 1080, height: 1080, pixelRatio: 2, format: 'png' },
+        'instagram-story': { width: 1080, height: 1920, pixelRatio: 2, format: 'png' },
+      };
+
+      const config = platformSettings[platform];
+      const settings: ExportSettings = {
+        resolution: 'custom',
+        customWidth: config.width,
+        customHeight: config.height,
+        quality: 'high',
+        format: config.format,
+        pixelRatio: config.pixelRatio,
+        backgroundColor: '#ffffff',
+        includeTransparency: false,
+        optimizeForPlatform: platform.startsWith('twitter') ? 'twitter' : platform.startsWith('youtube') ? 'youtube' : 'instagram',
+        batchExport: false,
+        batchSizes: []
+      };
+      
+      await exportHandlers.handleAdvancedExport(settings);
+      toast.success(`${platform === 'twitter-post' ? 'Twitter投稿' : 
+                     platform === 'twitter-header' ? 'Twitterヘッダー' :
+                     platform === 'youtube-thumbnail' ? 'YouTubeサムネイル' :
+                     platform === 'youtube-thumbnail-hd' ? 'YouTubeサムネイルHD' :
+                     platform === 'instagram-post' ? 'Instagram投稿' : 'Instagramストーリー'}形式でエクスポートしました`);
+    } catch (error) {
+      logger.error('Quick export failed', error, 'ThumbnailGenerator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, [exportHandlers]);
+
+  // 詳細設定を開く
+  const handleOpenExportSettings = React.useCallback(() => {
+    // 右サイドバーのエクスポートタブを開く
+    uiState.setSelectedTab('export');
+    setIsRightSidebarOpen(true);
+    // エクスポートタブにスクロール
+    setTimeout(() => {
+      const exportTab = document.querySelector('[value="export"]');
+      if (exportTab) {
+        (exportTab as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  }, [uiState, setIsRightSidebarOpen]);
+
   // レンダリング関数を実装
   const renderToolsPanel = () => (
     <div className="space-y-6">
@@ -1290,6 +1349,8 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
           onRedo={handleRedo}
           onSave={handleSave}
           onDownload={exportHandlers.handleDownloadThumbnail}
+          onQuickExport={handleQuickExport}
+          onOpenExportSettings={handleOpenExportSettings}
           canUndo={editorState.canUndo}
           canRedo={editorState.canRedo}
           isPreviewDedicatedMode={uiState.isPreviewDedicatedMode}
@@ -1652,6 +1713,8 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
             renderToolsPanel={renderToolsPanel}
             handleAdvancedExport={exportHandlers.handleAdvancedExport}
             handleAddShape={handleAddShape}
+            selectedTab={uiState.selectedTab}
+            setSelectedTab={uiState.setSelectedTab}
           />
         )}
       </div>

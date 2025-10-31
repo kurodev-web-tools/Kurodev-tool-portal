@@ -48,7 +48,7 @@ export interface UIState {
  */
 export const useUIState = (): UIState => {
   // タブ選択
-  const [selectedTab, setSelectedTab] = useState("settings");
+  const [selectedTab, setSelectedTab] = useState("tools");
 
   // キーボード状態
   const [isShiftKeyDown, setIsShiftKeyDown] = useState(false);
