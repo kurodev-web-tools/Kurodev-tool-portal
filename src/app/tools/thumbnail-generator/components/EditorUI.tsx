@@ -1363,6 +1363,9 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
           setShowSafeArea={uiState.setShowSafeArea}
           showCenterLines={uiState.showCenterLines}
           setShowCenterLines={uiState.setShowCenterLines}
+          history={editorState.history}
+          historyIndex={editorState.historyIndex}
+          onJumpToHistory={editorState.jumpToHistory}
         />
       )}
       

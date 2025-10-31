@@ -4,11 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTemplate, ShapeType } from '../contexts/TemplateContext';
 import { Layer } from '@/types/layers';
 import { useMediaQuery } from '@/hooks/use-media-query';
-
-interface HistoryState {
-  layers: Layer[];
-  selectedLayerId: string | null;
-}
+import { HistoryEntry, detectActionType } from '@/utils/historyUtils';
 
 export interface EditorState {
   // テンプレート関連
@@ -46,8 +42,11 @@ export interface EditorState {
   addToHistory: (layers: Layer[], selectedLayerId: string | null) => void;
   canUndo: boolean;
   canRedo: boolean;
-  handleUndo: () => HistoryState | null;
-  handleRedo: () => HistoryState | null;
+  handleUndo: () => HistoryEntry | null;
+  handleRedo: () => HistoryEntry | null;
+  history: HistoryEntry[];
+  historyIndex: number;
+  jumpToHistory: (index: number) => void;
 }
 
 /**
@@ -65,11 +64,21 @@ export const useEditorState = (): EditorState => {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   
   // 履歴管理
-  const [history, setHistory] = useState<HistoryState[]>([{
+  const prevHistoryRef = useRef<{ layers: Layer[]; selectedLayerId: string | null }>({
+    layers: templateContext.layers,
+    selectedLayerId: templateContext.selectedLayerId
+  });
+
+  const [history, setHistory] = useState<HistoryEntry[]>([{
+    id: `initial-${Date.now()}`,
+    timestamp: Date.now(),
+    actionType: 'initial',
+    description: '初期状態',
     layers: templateContext.layers,
     selectedLayerId: templateContext.selectedLayerId
   }]);
   const historyIndexRef = useRef(0); // 最初の履歴のインデックス
+  const [historyIndex, setHistoryIndex] = useState(0);
   const [canUndo, setCanUndo] = useState(false); // 初期状態ではUndoできない
   const [canRedo, setCanRedo] = useState(false);
   const isUpdatingFromHistory = useRef(false);
@@ -95,12 +104,24 @@ export const useEditorState = (): EditorState => {
       clearTimeout(historyTimeoutRef.current);
     }
     
-    // 即座に履歴を保存
-    const newState: HistoryState = { layers: [...layers], selectedLayerId };
+    // 操作タイプを自動判定
+    const prevLayers = prevHistoryRef.current.layers;
+    const prevSelectedId = prevHistoryRef.current.selectedLayerId;
+    const { type, description } = detectActionType(prevLayers, layers, prevSelectedId, selectedLayerId);
+    
+    // HistoryEntryを作成
+    const newEntry: HistoryEntry = {
+      id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      actionType: type,
+      description,
+      layers: [...layers],
+      selectedLayerId
+    };
     
     setHistory(prevHistory => {
       const newHistory = prevHistory.slice(0, historyIndexRef.current + 1);
-      newHistory.push(newState);
+      newHistory.push(newEntry);
       
       // 履歴の最大数を制限（50個まで）
       if (newHistory.length > 50) {
@@ -111,6 +132,8 @@ export const useEditorState = (): EditorState => {
         historyIndexRef.current += 1;
       }
       
+      setHistoryIndex(historyIndexRef.current);
+      
       // canUndoとcanRedoの状態を更新
       setCanUndo(historyIndexRef.current > 0);
       setCanRedo(false); // 新しい履歴を追加した後はredoできない
@@ -119,26 +142,50 @@ export const useEditorState = (): EditorState => {
         totalHistory: newHistory.length, 
         currentIndex: historyIndexRef.current,
         canUndo: historyIndexRef.current > 0,
-        canRedo: false
+        canRedo: false,
+        description
       });
+      
+      // 前の状態を更新
+      prevHistoryRef.current = { layers, selectedLayerId };
       
       return newHistory;
     });
   }, []);
 
-  // レイヤーの変更を監視して履歴を保存（フック内で直接監視）
-  useEffect(() => {
-    console.log('useEditorState layers effect triggered:', {
-      layers: templateContext.layers.length,
-      selectedLayerId: templateContext.selectedLayerId
-    });
-    
-    // レイヤーが存在する場合は履歴を保存
-    if (templateContext.layers.length > 0) {
-      console.log('Saving initial layers to history from useEditorState');
-      addToHistory(templateContext.layers, templateContext.selectedLayerId);
+  // 履歴ジャンプ機能
+  const jumpToHistory = useCallback((targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= history.length) {
+      console.error('Invalid history index:', targetIndex, 'history length:', history.length);
+      return;
     }
-  }, [templateContext.layers.length, templateContext.selectedLayerId, addToHistory]);
+
+    const historyEntry = history[targetIndex];
+    if (!historyEntry) {
+      console.error('History entry not found at index:', targetIndex);
+      return;
+    }
+
+    historyIndexRef.current = targetIndex;
+    setHistoryIndex(targetIndex);
+    isUpdatingFromHistory.current = true;
+
+    // canUndoとcanRedoの状態を更新
+    setCanUndo(targetIndex > 0);
+    setCanRedo(targetIndex < history.length - 1);
+
+    console.log('Jumping to history index:', targetIndex, 'layers:', historyEntry.layers.length);
+
+    // テンプレートコンテキストの状態を復元
+    templateContext.restoreState(historyEntry.layers, historyEntry.selectedLayerId);
+
+    // 前の状態を更新
+    prevHistoryRef.current = { layers: historyEntry.layers, selectedLayerId: historyEntry.selectedLayerId };
+
+    setTimeout(() => {
+      isUpdatingFromHistory.current = false;
+    }, 100);
+  }, [history, templateContext]);
 
   // アンドゥ
   const handleUndo = useCallback(() => {
@@ -172,6 +219,7 @@ export const useEditorState = (): EditorState => {
         }
         
         historyIndexRef.current = newIndex;
+        setHistoryIndex(newIndex);
         isUpdatingFromHistory.current = true;
         
         // canUndoとcanRedoの状態を更新
@@ -182,6 +230,9 @@ export const useEditorState = (): EditorState => {
         
         // テンプレートコンテキストの状態を復元
         templateContext.restoreState(historyState.layers, historyState.selectedLayerId);
+        
+        // 前の状態を更新
+        prevHistoryRef.current = { layers: historyState.layers, selectedLayerId: historyState.selectedLayerId };
         
         setTimeout(() => {
           isUpdatingFromHistory.current = false;
@@ -228,6 +279,7 @@ export const useEditorState = (): EditorState => {
         }
         
         historyIndexRef.current = newIndex;
+        setHistoryIndex(newIndex);
         isUpdatingFromHistory.current = true;
         
         // canUndoとcanRedoの状態を更新
@@ -238,6 +290,9 @@ export const useEditorState = (): EditorState => {
         
         // テンプレートコンテキストの状態を復元
         templateContext.restoreState(historyState.layers, historyState.selectedLayerId);
+        
+        // 前の状態を更新
+        prevHistoryRef.current = { layers: historyState.layers, selectedLayerId: historyState.selectedLayerId };
         
         setTimeout(() => {
           isUpdatingFromHistory.current = false;
@@ -323,5 +378,8 @@ export const useEditorState = (): EditorState => {
     canRedo,
     handleUndo,
     handleRedo,
+    history,
+    historyIndex,
+    jumpToHistory,
   };
 };
