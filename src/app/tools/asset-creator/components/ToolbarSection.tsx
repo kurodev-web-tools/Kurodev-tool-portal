@@ -4,6 +4,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Minimize2 } from "lucide-react";
 import { Toolbar } from './Toolbar';
+import type { HistoryEntry } from '@/utils/historyUtils';
 
 interface ToolbarSectionProps {
   isDesktop: boolean;
@@ -26,6 +27,9 @@ interface ToolbarSectionProps {
   handleToolbarRedo: () => void;
   handleSave: () => void;
   handleDownloadThumbnail: (qualityLevel: 'normal' | 'high' | 'super') => Promise<void>;
+  history?: HistoryEntry[];
+  historyIndex?: number;
+  onJumpToHistory?: (index: number) => void;
 }
 
 export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
@@ -49,6 +53,9 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
   handleToolbarRedo,
   handleSave,
   handleDownloadThumbnail,
+  history,
+  historyIndex,
+  onJumpToHistory,
 }) => {
   return (
     <>
@@ -74,6 +81,9 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
           setShowSafeArea={setShowSafeArea}
           showCenterLines={showCenterLines}
           setShowCenterLines={setShowCenterLines}
+          history={history}
+          historyIndex={historyIndex}
+          onJumpToHistory={onJumpToHistory}
         />
       )}
       

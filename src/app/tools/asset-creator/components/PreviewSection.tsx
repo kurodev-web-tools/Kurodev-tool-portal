@@ -13,6 +13,7 @@ import { MobileControls } from '@/components/shared/MobileControls';
 import { MobileDisplaySettings } from '@/components/shared/MobileDisplaySettings';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { ShapeType, Layer } from '../contexts/TemplateContext';
+import type { HistoryEntry } from '@/utils/historyUtils';
 
 interface PreviewSectionProps {
   // UI状態
@@ -84,6 +85,11 @@ interface PreviewSectionProps {
   
   // ツールパネル
   renderToolsPanel: () => React.ReactNode;
+  
+  // 履歴機能
+  history?: HistoryEntry[];
+  historyIndex?: number;
+  onJumpToHistory?: (index: number) => void;
 }
 
 export const PreviewSection: React.FC<PreviewSectionProps> = ({
@@ -141,6 +147,9 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
   canRedo,
   handleAddShape,
   renderToolsPanel,
+  history,
+  historyIndex,
+  onJumpToHistory,
 }) => {
   // プレビューのレンダリング
   const renderPreview = () => (
@@ -166,6 +175,9 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
         handleToolbarRedo={handleToolbarRedo}
         handleSave={handleSave}
         handleDownloadThumbnail={handleDownloadThumbnail}
+        history={history}
+        historyIndex={historyIndex}
+        onJumpToHistory={onJumpToHistory}
       />
       
       {/* プレビューエリア */}

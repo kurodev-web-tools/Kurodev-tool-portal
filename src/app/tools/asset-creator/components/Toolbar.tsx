@@ -23,7 +23,11 @@ import {
   Grid3X3,
   Ruler,
   Target,
+  History,
 } from "lucide-react";
+import { cn } from '@/lib/utils';
+import type { HistoryEntry } from '@/utils/historyUtils';
+import { getActionIcon } from '@/utils/historyUtils';
 
 interface ToolbarProps {
   zoom: number;
@@ -46,6 +50,10 @@ interface ToolbarProps {
   setShowSafeArea?: (show: boolean) => void;
   showCenterLines?: boolean;
   setShowCenterLines?: (show: boolean) => void;
+  // 履歴機能
+  history?: HistoryEntry[];
+  historyIndex?: number;
+  onJumpToHistory?: (index: number) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -58,6 +66,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onDownload,
   canUndo = false,
   canRedo = false,
+  history = [],
+  historyIndex = 0,
+  onJumpToHistory,
   isPreviewDedicatedMode = false,
   onTogglePreviewMode,
   showGrid = false,
@@ -151,6 +162,72 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         >
           <Redo className="h-4 w-4" aria-hidden="true" />
         </Button>
+        
+        {/* 履歴ドロップダウン */}
+        {history.length > 0 && onJumpToHistory && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                title={`操作履歴 (${historyIndex + 1}/${history.length})`}
+                aria-label="操作履歴"
+              >
+                <History className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto bg-[#2D2D2D] border border-[#4A4A4A]">
+              <div className="p-2">
+                <div className="text-xs font-semibold text-[#A0A0A0] mb-2 px-2">
+                  操作履歴 ({historyIndex + 1}/{history.length})
+                </div>
+                <div className="space-y-1">
+                  {history.map((entry, index) => {
+                    const isCurrent = index === historyIndex;
+                    const icon = getActionIcon(entry.actionType);
+                    const timeStr = new Date(entry.timestamp).toLocaleTimeString('ja-JP', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    });
+
+                    return (
+                      <DropdownMenuItem
+                        key={entry.id}
+                        onClick={() => onJumpToHistory(index)}
+                        className={cn(
+                          "flex items-start gap-2 p-2 rounded cursor-pointer",
+                          isCurrent
+                            ? "bg-[#20B2AA]/20 border border-[#20B2AA]"
+                            : "hover:bg-[#3A3A3A]"
+                        )}
+                      >
+                        <span className="text-base flex-shrink-0" aria-hidden="true">{icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className={cn(
+                            "text-xs",
+                            isCurrent ? "text-[#E0E0E0] font-medium" : "text-[#A0A0A0]"
+                          )}>
+                            {entry.description}
+                          </div>
+                          <div className="text-xs text-[#808080] mt-0.5">
+                            {timeStr}
+                          </div>
+                        </div>
+                        {isCurrent && (
+                          <span className="text-[#20B2AA] text-xs flex-shrink-0" aria-label="現在位置">
+                            ←
+                          </span>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        
         <Separator orientation="vertical" className="h-6" />
         <Button 
           variant="outline" 

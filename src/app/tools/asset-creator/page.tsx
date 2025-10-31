@@ -216,6 +216,9 @@ function AssetCreatorPage() {
     addToHistory,
     saveToLocalStorage,
     loadFromLocalStorage,
+    history,
+    historyIndex,
+    jumpToHistory,
   } = canvasOperations;
 
   // キーボードショートカット
@@ -2599,6 +2602,9 @@ function AssetCreatorPage() {
                 canRedo={canRedo}
                 handleAddShape={handleAddShape}
                 renderToolsPanel={renderToolsPanel}
+                history={history}
+                historyIndex={historyIndex}
+                onJumpToHistory={jumpToHistory}
               />
             </div>
           </div>
