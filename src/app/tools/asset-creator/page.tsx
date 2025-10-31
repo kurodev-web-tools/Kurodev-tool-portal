@@ -756,8 +756,22 @@ function AssetCreatorPage() {
     switch (shapeType) {
       case 'rectangle': name = `四角 ${shapeCount}`; break;
       case 'circle': name = `円 ${shapeCount}`; break;
+      case 'triangle': name = `三角 ${shapeCount}`; break;
       case 'line': name = `線 ${shapeCount}`; break;
       case 'arrow': name = `矢印 ${shapeCount}`; break;
+      case 'star': name = `星 ${shapeCount}`; break;
+      case 'polygon': name = `多角形 ${shapeCount}`; break;
+      case 'heart': name = `ハート ${shapeCount}`; break;
+      case 'diamond': name = `ダイヤ ${shapeCount}`; break;
+      case 'dashed-line': name = `点線 ${shapeCount}`; break;
+      case 'dotted-line': name = `点線 ${shapeCount}`; break;
+      case 'wavy-line': name = `波線 ${shapeCount}`; break;
+      case 'speech-bubble-round': name = `吹き出し ${shapeCount}`; break;
+      case 'speech-bubble-square': name = `吹き出し(角) ${shapeCount}`; break;
+      case 'thought-bubble': name = `思考バブル ${shapeCount}`; break;
+      case 'badge': name = `バッジ ${shapeCount}`; break;
+      case 'ribbon': name = `リボン ${shapeCount}`; break;
+      default: name = `図形 ${shapeCount}`; break;
     }
 
     addLayer({
@@ -768,8 +782,8 @@ function AssetCreatorPage() {
       locked: false,
       x: initialX + offset,
       y: initialY + offset,
-      width: (shapeType === 'line' || shapeType === 'arrow') ? lineArrowWidth : initialWidth,
-      height: (shapeType === 'line' || shapeType === 'arrow') ? lineArrowHeight : initialHeight,
+      width: (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'dashed-line' || shapeType === 'dotted-line' || shapeType === 'wavy-line') ? lineArrowWidth : initialWidth,
+      height: (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'dashed-line' || shapeType === 'dotted-line' || shapeType === 'wavy-line') ? lineArrowHeight : initialHeight,
       backgroundColor: '#cccccc',
       borderColor: '#000000',
       borderWidth: initialBorderWidth,
@@ -2540,6 +2554,7 @@ function AssetCreatorPage() {
             moveLayerDown={moveLayerDown}
             selectedTemplate={selectedTemplate}
             setSelectedTemplate={setSelectedTemplate}
+            onShapeSelect={(shapeType) => handleAddShape(shapeType as ShapeType)}
           />
         )}
 

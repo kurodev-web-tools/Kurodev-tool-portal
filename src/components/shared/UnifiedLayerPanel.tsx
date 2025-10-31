@@ -18,10 +18,20 @@ import {
   Plus,
   ArrowUp,
   ArrowDown,
+  ChevronDown,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Layer, ShapeType, isTextLayer, isImageLayer, isShapeLayer } from '@/types/layers';
+import { ALL_SHAPE_OPTIONS, SHAPE_OPTIONS_BY_CATEGORY } from '@/utils/shapeUtils';
 
 // 後方互換性のためのエイリアス
 export type UnifiedLayer = Layer;
@@ -256,10 +266,8 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
         input.click();
         return;
       case 'shape':
-        if (showShapeSelector && onShapeSelect) {
-          setShowShapeSelectorModal(true);
-          return;
-        }
+        // 図形追加はドロップダウンから選択されるため、ここには来ない
+        // フォールバックとしてrectangleを追加
         name = `図形${layerCount}`;
         initialProps = {
           ...initialProps,
@@ -309,15 +317,98 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
         >
           <Image className="h-4 w-4" aria-hidden="true" />
         </Button>
-        <Button 
-          size="sm" 
-          variant="outline" 
-          onClick={() => handleAddLayer('shape')}
-          title="図形レイヤーを追加"
-          aria-label="図形レイヤーを追加"
-        >
-          <Square className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              title="図形レイヤーを追加"
+              aria-label="図形レイヤーを追加"
+            >
+              <Square className="h-4 w-4" aria-hidden="true" />
+              <ChevronDown className="h-3 w-3 ml-0.5" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64 bg-[#2D2D2D] border border-[#4A4A4A] max-h-96 overflow-y-auto">
+            {/* 基本図形 */}
+            <DropdownMenuLabel className="text-xs text-[#A0A0A0] px-2 py-1.5">基本図形</DropdownMenuLabel>
+            <div className="grid grid-cols-3 gap-1 p-2">
+              {SHAPE_OPTIONS_BY_CATEGORY.basic.map((option) => (
+                <DropdownMenuItem
+                  key={option.type}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    onShapeSelect?.(option.type);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 h-16 cursor-pointer hover:bg-[#3A3A3A] rounded"
+                >
+                  <option.icon className="h-5 w-5 mb-1 pointer-events-none" aria-hidden="true" />
+                  <span className="text-xs text-[#E0E0E0] pointer-events-none">{option.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </div>
+            
+            <DropdownMenuSeparator className="bg-[#4A4A4A]" />
+            
+            {/* 装飾線 */}
+            <DropdownMenuLabel className="text-xs text-[#A0A0A0] px-2 py-1.5">装飾線</DropdownMenuLabel>
+            <div className="grid grid-cols-3 gap-1 p-2">
+              {SHAPE_OPTIONS_BY_CATEGORY.decorative.map((option) => (
+                <DropdownMenuItem
+                  key={option.type}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    onShapeSelect?.(option.type);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 h-16 cursor-pointer hover:bg-[#3A3A3A] rounded"
+                >
+                  <option.icon className="h-5 w-5 mb-1 pointer-events-none" aria-hidden="true" />
+                  <span className="text-xs text-[#E0E0E0] pointer-events-none">{option.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </div>
+            
+            <DropdownMenuSeparator className="bg-[#4A4A4A]" />
+            
+            {/* 吹き出し */}
+            <DropdownMenuLabel className="text-xs text-[#A0A0A0] px-2 py-1.5">吹き出し</DropdownMenuLabel>
+            <div className="grid grid-cols-3 gap-1 p-2">
+              {SHAPE_OPTIONS_BY_CATEGORY.bubble.map((option) => (
+                <DropdownMenuItem
+                  key={option.type}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    onShapeSelect?.(option.type);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 h-16 cursor-pointer hover:bg-[#3A3A3A] rounded"
+                >
+                  <option.icon className="h-5 w-5 mb-1 pointer-events-none" aria-hidden="true" />
+                  <span className="text-xs text-[#E0E0E0] pointer-events-none">{option.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </div>
+            
+            <DropdownMenuSeparator className="bg-[#4A4A4A]" />
+            
+            {/* バッジ・リボン */}
+            <DropdownMenuLabel className="text-xs text-[#A0A0A0] px-2 py-1.5">バッジ・リボン</DropdownMenuLabel>
+            <div className="grid grid-cols-3 gap-1 p-2">
+              {SHAPE_OPTIONS_BY_CATEGORY.badge.map((option) => (
+                <DropdownMenuItem
+                  key={option.type}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    onShapeSelect?.(option.type);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 h-16 cursor-pointer hover:bg-[#3A3A3A] rounded"
+                >
+                  <option.icon className="h-5 w-5 mb-1 pointer-events-none" aria-hidden="true" />
+                  <span className="text-xs text-[#E0E0E0] pointer-events-none">{option.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button 
           size="sm" 
           variant="outline" 

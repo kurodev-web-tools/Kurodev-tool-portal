@@ -30,6 +30,9 @@ interface LeftSidebarProps {
   // テンプレート関連
   selectedTemplate: any;
   setSelectedTemplate: (template: any) => void;
+  
+  // 図形選択
+  onShapeSelect?: (shapeType: string) => void;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -48,6 +51,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   moveLayerDown,
   selectedTemplate,
   setSelectedTemplate,
+  onShapeSelect,
 }) => {
   const [selectedTab, setSelectedTab] = React.useState("templates");
 
@@ -94,6 +98,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 moveLayerUp,
                 moveLayerDown,
               }}
+              onShapeSelect={onShapeSelect}
+              showShapeSelector={true}
             />
           </div>
         </TabsContent>

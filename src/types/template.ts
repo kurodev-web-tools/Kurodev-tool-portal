@@ -118,7 +118,7 @@ export interface ThumbnailTemplate {
         borderRadius?: number;
         padding?: number;
         // 図形関連
-        shapeType?: 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star' | 'polygon' | 'heart' | 'diamond';
+        shapeType?: string; // ShapeType (layers.tsから動的にインポートするか、文字列として扱う)
         // メディア関連
         imageSrc?: string;
         iconName?: string;

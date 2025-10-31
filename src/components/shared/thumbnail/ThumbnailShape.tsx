@@ -256,6 +256,109 @@ const ThumbnailShape: React.FC<ThumbnailShapeProps> = ({
             />
           </svg>
         );
+      // 装飾線
+      case 'dashed-line':
+        return (
+          <svg {...commonSvgProps}>
+            <line
+              x1={0}
+              y1={heightNum / 2}
+              x2={widthNum}
+              y2={heightNum / 2}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+              strokeDasharray="10,5"
+            />
+          </svg>
+        );
+      case 'dotted-line':
+        return (
+          <svg {...commonSvgProps}>
+            <line
+              x1={0}
+              y1={heightNum / 2}
+              x2={widthNum}
+              y2={heightNum / 2}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+              strokeDasharray="2,4"
+            />
+          </svg>
+        );
+      case 'wavy-line':
+        return (
+          <svg {...commonSvgProps}>
+            <path
+              d={`M 0,${heightNum / 2} Q ${widthNum * 0.25},${heightNum * 0.2} ${widthNum * 0.5},${heightNum / 2} T ${widthNum},${heightNum / 2}`}
+              fill="none"
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      // 吹き出し
+      case 'speech-bubble-round':
+        return (
+          <svg {...commonSvgProps}>
+            <path
+              d={`M ${widthNum * 0.15},${heightNum * 0.1} Q ${widthNum * 0.1},${heightNum * 0.1} ${widthNum * 0.1},${heightNum * 0.15} L ${widthNum * 0.1},${heightNum * 0.7} Q ${widthNum * 0.1},${heightNum * 0.8} ${widthNum * 0.2},${heightNum * 0.8} L ${widthNum * 0.7},${heightNum * 0.8} Q ${widthNum * 0.8},${heightNum * 0.8} ${widthNum * 0.8},${heightNum * 0.7} L ${widthNum * 0.8},${heightNum * 0.15} Q ${widthNum * 0.8},${heightNum * 0.1} ${widthNum * 0.75},${heightNum * 0.1} L ${widthNum * 0.25},${heightNum * 0.1} Q ${widthNum * 0.15},${heightNum * 0.1} ${widthNum * 0.15},${heightNum * 0.1} Z M ${widthNum * 0.2},${heightNum * 0.8} L ${widthNum * 0.3},${heightNum} L ${widthNum * 0.4},${heightNum * 0.8} Z`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'speech-bubble-square':
+        return (
+          <svg {...commonSvgProps}>
+            <path
+              d={`M ${widthNum * 0.1},${heightNum * 0.1} L ${widthNum * 0.9},${heightNum * 0.1} L ${widthNum * 0.9},${heightNum * 0.7} L ${widthNum * 0.7},${heightNum * 0.7} L ${widthNum * 0.3},${heightNum} L ${widthNum * 0.4},${heightNum * 0.7} L ${widthNum * 0.1},${heightNum * 0.7} Z`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'thought-bubble':
+        return (
+          <svg {...commonSvgProps}>
+            <ellipse
+              cx={widthNum * 0.5}
+              cy={heightNum * 0.4}
+              rx={widthNum * 0.4}
+              ry={heightNum * 0.25}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+            <circle cx={widthNum * 0.3} cy={heightNum * 0.65} r={widthNum * 0.08} fill={backgroundColor} stroke={borderColor} strokeWidth={borderWidth} />
+            <circle cx={widthNum * 0.25} cy={heightNum * 0.75} r={widthNum * 0.06} fill={backgroundColor} stroke={borderColor} strokeWidth={borderWidth} />
+            <circle cx={widthNum * 0.22} cy={heightNum * 0.85} r={widthNum * 0.04} fill={backgroundColor} stroke={borderColor} strokeWidth={borderWidth} />
+          </svg>
+        );
+      // バッジ・リボン
+      case 'badge':
+        return (
+          <svg {...commonSvgProps}>
+            <path
+              d={`M ${widthNum * 0.2},${heightNum * 0.1} L ${widthNum * 0.5},0 L ${widthNum * 0.8},${heightNum * 0.1} L ${widthNum * 0.9},${heightNum * 0.4} L ${widthNum * 0.8},${heightNum * 0.7} L ${widthNum * 0.5},${heightNum} L ${widthNum * 0.2},${heightNum * 0.7} L ${widthNum * 0.1},${heightNum * 0.4} Z`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
+      case 'ribbon':
+        return (
+          <svg {...commonSvgProps}>
+            <path
+              d={`M ${widthNum * 0.15},${heightNum * 0.1} L ${widthNum * 0.5},${heightNum * 0.05} L ${widthNum * 0.85},${heightNum * 0.1} L ${widthNum * 0.9},${heightNum * 0.5} L ${widthNum * 0.5},${heightNum * 0.95} L ${widthNum * 0.1},${heightNum * 0.5} Z M ${widthNum * 0.2},${heightNum * 0.85} L ${widthNum * 0.15},${heightNum} L ${widthNum * 0.1},${heightNum * 0.85} Z M ${widthNum * 0.8},${heightNum * 0.85} L ${widthNum * 0.85},${heightNum} L ${widthNum * 0.9},${heightNum * 0.85} Z`}
+              fill={backgroundColor}
+              stroke={borderColor}
+              strokeWidth={borderWidth}
+            />
+          </svg>
+        );
       case 'rectangle':
       case 'circle':
       default:

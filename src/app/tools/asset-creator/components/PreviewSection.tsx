@@ -422,7 +422,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                 moveLayerUp,
                 moveLayerDown,
               }}
-              onShapeSelect={(shapeType) => handleAddShape(shapeType as ShapeType)}
+              onShapeSelect={!isDesktop ? (shapeType) => handleAddShape(shapeType as ShapeType) : undefined}
               showShapeSelector={true}
             />
           </TabsContent>

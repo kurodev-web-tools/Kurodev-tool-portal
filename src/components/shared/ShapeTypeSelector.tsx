@@ -4,8 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Square, Circle, Triangle, Minus, ArrowRight, Star, Hexagon, Heart, Diamond } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'arrow' | 'star' | 'polygon' | 'heart' | 'diamond';
+import type { ShapeType } from '@/types/layers';
 
 interface ShapeTypeSelectorProps {
   value: ShapeType;
@@ -28,6 +27,7 @@ export const ShapeTypeSelector: React.FC<ShapeTypeSelectorProps> = ({
   onChange,
   className 
 }) => {
+  // 基本図形のみ（編集時は基本図形から選択）
   const shapeOptions = [
     { type: 'rectangle' as const, label: '四角形', icon: Square },
     { type: 'circle' as const, label: '円', icon: Circle },
@@ -38,6 +38,15 @@ export const ShapeTypeSelector: React.FC<ShapeTypeSelectorProps> = ({
     { type: 'polygon' as const, label: '多角形', icon: Hexagon },
     { type: 'heart' as const, label: 'ハート', icon: Heart },
     { type: 'diamond' as const, label: 'ダイヤ', icon: Diamond },
+    // 新しい図形タイプは表示するが、アイコンは適宜対応
+    { type: 'dashed-line' as const, label: '点線', icon: Minus },
+    { type: 'dotted-line' as const, label: '点線', icon: Minus },
+    { type: 'wavy-line' as const, label: '波線', icon: Minus },
+    { type: 'speech-bubble-round' as const, label: '吹き出し', icon: Square },
+    { type: 'speech-bubble-square' as const, label: '吹き出し(角)', icon: Square },
+    { type: 'thought-bubble' as const, label: '思考バブル', icon: Square },
+    { type: 'badge' as const, label: 'バッジ', icon: Star },
+    { type: 'ribbon' as const, label: 'リボン', icon: Heart },
   ];
 
   return (

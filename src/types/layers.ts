@@ -17,6 +17,7 @@ export type LayerType = 'image' | 'text' | 'shape';
  * 図形の種類
  */
 export type ShapeType = 
+  // 基本図形
   | 'rectangle' 
   | 'circle' 
   | 'triangle' 
@@ -25,7 +26,18 @@ export type ShapeType =
   | 'star' 
   | 'polygon' 
   | 'heart' 
-  | 'diamond';
+  | 'diamond'
+  // 装飾線
+  | 'dashed-line'
+  | 'dotted-line'
+  | 'wavy-line'
+  // 吹き出し
+  | 'speech-bubble-round'
+  | 'speech-bubble-square'
+  | 'thought-bubble'
+  // バッジ・リボン
+  | 'badge'
+  | 'ribbon';
 
 /**
  * レイヤーの共通インターフェース
