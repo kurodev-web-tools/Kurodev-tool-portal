@@ -34,6 +34,7 @@ import { LeftSidebar } from './LeftSidebar';
 import { RightToolbar } from './RightToolbar';
 import { useCanvasOperations } from '../../asset-creator/hooks/useCanvasOperations';
 import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
+import { FILTER_PRESETS, applyPreset, type ImageFilters } from '@/utils/imageFilters';
 import { FontSelector } from '@/components/shared/FontSelector';
 import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
 import { logger } from '@/lib/logger';
@@ -1428,6 +1429,247 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
               </div>
             </div>
           </div>
+
+          {/* 画像フィルター・エフェクト */}
+          <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">フィルター・エフェクト</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-[#A0A0A0] hover:text-[#E0E0E0]"
+                onClick={() => {
+                  const currentFilters = selectedLayer.imageFilters;
+                  if (currentFilters?.enabled) {
+                    editorState.updateLayer(selectedLayer.id, {
+                      imageFilters: { ...currentFilters, enabled: false },
+                    });
+                  } else {
+                    const defaultFilters: ImageFilters = {
+                      brightness: 100,
+                      contrast: 100,
+                      saturate: 100,
+                      hueRotate: 0,
+                      sepia: 0,
+                      grayscale: 0,
+                      blur: 0,
+                      enabled: true,
+                    };
+                    editorState.updateLayer(selectedLayer.id, {
+                      imageFilters: currentFilters ? { ...currentFilters, enabled: true } : defaultFilters,
+                    });
+                  }
+                }}
+              >
+                {selectedLayer.imageFilters?.enabled ? 'OFF' : 'ON'}
+              </Button>
+            </div>
+            
+            {selectedLayer.imageFilters?.enabled && (
+              <div className="space-y-3">
+                {/* プリセット */}
+                <div>
+                  <Label className="text-xs text-[#A0A0A0] mb-2 block">雰囲気プリセット</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.keys(FILTER_PRESETS).filter(key => key !== 'none').map((presetName) => {
+                      const preset = FILTER_PRESETS[presetName];
+                      const isActive = selectedLayer.imageFilters?.preset === presetName;
+                      return (
+                        <button
+                          key={presetName}
+                          type="button"
+                          onClick={() => {
+                            const applied = applyPreset(presetName);
+                            editorState.updateLayer(selectedLayer.id, { imageFilters: applied });
+                          }}
+                          className={cn(
+                            "px-2 py-1.5 text-xs rounded border transition-colors",
+                            isActive
+                              ? "bg-[#20B2AA]/20 border-[#20B2AA] text-[#E0E0E0]"
+                              : "bg-[#2D2D2D] border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#3A3A3A]"
+                          )}
+                          title={presetName === 'soft' ? 'ソフト' : presetName === 'cool' ? 'クール' : presetName === 'pop' ? 'ポップ' : presetName === 'monochrome' ? 'モノクロ' : presetName === 'sepia' ? 'セピア' : presetName}
+                        >
+                          {presetName === 'soft' ? 'ソフト' : presetName === 'cool' ? 'クール' : presetName === 'pop' ? 'ポップ' : presetName === 'monochrome' ? 'モノクロ' : presetName === 'sepia' ? 'セピア' : presetName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* 基本調整 */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-[#A0A0A0]">基本調整</Label>
+                  
+                  {/* 明るさ */}
+                  <div>
+                    <Label className="text-xs text-[#A0A0A0]">明るさ</Label>
+                    <Slider
+                      value={[selectedLayer.imageFilters?.brightness ?? 100]}
+                      onValueChange={([value]) => {
+                        const current = selectedLayer.imageFilters || {};
+                        editorState.updateLayer(selectedLayer.id, {
+                          imageFilters: { ...current, brightness: value, enabled: true, preset: 'custom' },
+                        });
+                      }}
+                      min={0}
+                      max={200}
+                      step={1}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                      {selectedLayer.imageFilters?.brightness ?? 100}%
+                    </div>
+                  </div>
+                  
+                  {/* コントラスト */}
+                  <div>
+                    <Label className="text-xs text-[#A0A0A0]">コントラスト</Label>
+                    <Slider
+                      value={[selectedLayer.imageFilters?.contrast ?? 100]}
+                      onValueChange={([value]) => {
+                        const current = selectedLayer.imageFilters || {};
+                        editorState.updateLayer(selectedLayer.id, {
+                          imageFilters: { ...current, contrast: value, enabled: true, preset: 'custom' },
+                        });
+                      }}
+                      min={0}
+                      max={200}
+                      step={1}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                      {selectedLayer.imageFilters?.contrast ?? 100}%
+                    </div>
+                  </div>
+                  
+                  {/* 彩度 */}
+                  <div>
+                    <Label className="text-xs text-[#A0A0A0]">彩度</Label>
+                    <Slider
+                      value={[selectedLayer.imageFilters?.saturate ?? 100]}
+                      onValueChange={([value]) => {
+                        const current = selectedLayer.imageFilters || {};
+                        editorState.updateLayer(selectedLayer.id, {
+                          imageFilters: { ...current, saturate: value, enabled: true, preset: 'custom' },
+                        });
+                      }}
+                      min={0}
+                      max={200}
+                      step={1}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                      {selectedLayer.imageFilters?.saturate ?? 100}%
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 雰囲気調整 */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-[#A0A0A0]">雰囲気調整</Label>
+                  
+                  {/* 色相回転 */}
+                  <div>
+                    <Label className="text-xs text-[#A0A0A0]">色相</Label>
+                    <Slider
+                      value={[selectedLayer.imageFilters?.hueRotate ?? 0]}
+                      onValueChange={([value]) => {
+                        const current = selectedLayer.imageFilters || {};
+                        editorState.updateLayer(selectedLayer.id, {
+                          imageFilters: { ...current, hueRotate: value, enabled: true, preset: 'custom' },
+                        });
+                      }}
+                      min={0}
+                      max={360}
+                      step={1}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                      {selectedLayer.imageFilters?.hueRotate ?? 0}°
+                    </div>
+                  </div>
+                  
+                  {/* セピア */}
+                  <div>
+                    <Label className="text-xs text-[#A0A0A0]">セピア</Label>
+                    <Slider
+                      value={[selectedLayer.imageFilters?.sepia ?? 0]}
+                      onValueChange={([value]) => {
+                        const current = selectedLayer.imageFilters || {};
+                        editorState.updateLayer(selectedLayer.id, {
+                          imageFilters: { ...current, sepia: value, enabled: true, preset: 'custom' },
+                        });
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                      {selectedLayer.imageFilters?.sepia ?? 0}%
+                    </div>
+                  </div>
+                  
+                  {/* モノクロ */}
+                  <div>
+                    <Label className="text-xs text-[#A0A0A0]">モノクロ</Label>
+                    <Slider
+                      value={[selectedLayer.imageFilters?.grayscale ?? 0]}
+                      onValueChange={([value]) => {
+                        const current = selectedLayer.imageFilters || {};
+                        editorState.updateLayer(selectedLayer.id, {
+                          imageFilters: { ...current, grayscale: value, enabled: true, preset: 'custom' },
+                        });
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                      {selectedLayer.imageFilters?.grayscale ?? 0}%
+                    </div>
+                  </div>
+                  
+                  {/* ぼかし（軽め） */}
+                  <div>
+                    <Label className="text-xs text-[#A0A0A0]">ぼかし</Label>
+                    <Slider
+                      value={[selectedLayer.imageFilters?.blur ?? 0]}
+                      onValueChange={([value]) => {
+                        const current = selectedLayer.imageFilters || {};
+                        editorState.updateLayer(selectedLayer.id, {
+                          imageFilters: { ...current, blur: value, enabled: true, preset: 'custom' },
+                        });
+                      }}
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                      {selectedLayer.imageFilters?.blur ? selectedLayer.imageFilters.blur.toFixed(1) : '0.0'}px
+                    </div>
+                  </div>
+                </div>
+                
+                {/* リセットボタン */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-8 text-xs"
+                  onClick={() => {
+                    editorState.updateLayer(selectedLayer.id, {
+                      imageFilters: FILTER_PRESETS.none,
+                    });
+                  }}
+                >
+                  リセット
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1732,6 +1974,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                         onRotate={() => {}}
                         onRotateStop={() => {}}
                         updateLayer={editorState.updateLayer}
+                        imageFilters={layer.imageFilters}
                       />
                     );
                   } else if (layer.type === 'text') {
