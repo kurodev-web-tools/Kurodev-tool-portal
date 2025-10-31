@@ -124,16 +124,52 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
     console.log('=== END LAYERS EFFECT ===');
   }, [editorState.layers, editorState.selectedLayerId, editorState.addToHistory, editorState.canUndo, editorState.canRedo]);
 
-  // シャドウの有効/無効状態を同期
+  // グラデーション・アウトライン・シャドウの有効/無効状態を同期
+  const [gradientEnabled, setGradientEnabled] = React.useState(false);
+  const [outlineEnabled, setOutlineEnabled] = React.useState(false);
+  const [customColor1, setCustomColor1] = React.useState('#ff0000');
+  const [customColor2, setCustomColor2] = React.useState('#0000ff');
+  const [customAngle, setCustomAngle] = React.useState(90);
+  const [showCustom, setShowCustom] = React.useState(false);
+
   React.useEffect(() => {
     if (selectedLayer && isTextLayer(selectedLayer)) {
+      // シャドウ
       if (selectedLayer.textShadow && selectedLayer.textShadow !== 'none') {
         uiState.setShadowEnabled(true);
       } else {
         uiState.setShadowEnabled(false);
       }
+      
+      // アウトライン
+      if (selectedLayer.textStrokeWidth && selectedLayer.textStrokeWidth !== '0px') {
+        setOutlineEnabled(true);
+      } else {
+        setOutlineEnabled(false);
+      }
+      
+      // グラデーション
+      if (selectedLayer.textGradient) {
+        setGradientEnabled(true);
+        // グラデーションが設定されている場合、カスタム値を更新
+        const parseGradient = (gradient: string) => {
+          const match = gradient.match(/linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]+),\s*(#[0-9a-fA-F]+)\)/);
+          if (match) {
+            return { angle: parseInt(match[1]), color1: match[2], color2: match[3] };
+          }
+          return { angle: 90, color1: '#ff0000', color2: '#0000ff' };
+        };
+        const parsed = parseGradient(selectedLayer.textGradient);
+        setCustomColor1(parsed.color1);
+        setCustomColor2(parsed.color2);
+        setCustomAngle(parsed.angle);
+      } else {
+        setGradientEnabled(false);
+      }
     } else {
       uiState.setShadowEnabled(false);
+      setOutlineEnabled(false);
+      setGradientEnabled(false);
     }
   }, [selectedLayer, uiState]);
 
@@ -849,36 +885,18 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                 placeholder="テキストを入力してください"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm font-medium">フォントサイズ</Label>
-                <Slider
-                  value={[parseFloat(selectedLayer.fontSize?.replace('rem', '') || '2')]}
-                  onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { fontSize: `${value}rem` })}
-                  min={0.5}
-                  max={8}
-                  step={0.1}
-                  className="mt-2"
-                />
-                <div className="text-xs text-[#A0A0A0] text-center mt-1">
-                  {selectedLayer.fontSize || '2rem'}
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">色</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="color"
-                    value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="w-8 h-8 rounded border border-[#4A4A4A]"
-                  />
-                  <Input
-                    value={selectedLayer.color || '#ffffff'}
-                    onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
-                    className="flex-1"
-                  />
-                </div>
+            <div>
+              <Label className="text-sm font-medium">フォントサイズ</Label>
+              <Slider
+                value={[parseFloat(selectedLayer.fontSize?.replace('rem', '') || '2')]}
+                onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { fontSize: `${value}rem` })}
+                min={0.5}
+                max={8}
+                step={0.1}
+                className="mt-2"
+              />
+              <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                {selectedLayer.fontSize || '2rem'}
               </div>
             </div>
 
@@ -953,10 +971,297 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                   </Select>
                 </div>
               </div>
-              {/* 文字シャドウ - ビジュアルエディタ */}
-              <div className="space-y-3 pt-2">
+            </div>
+            
+            {/* 文字間隔 */}
+            <div>
+              <Label className="text-xs text-[#A0A0A0]">文字間隔</Label>
+              <Slider
+                value={[parseFloat(selectedLayer.letterSpacing?.replace('px', '') || '0')]}
+                onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { letterSpacing: `${value}px` })}
+                min={-10}
+                max={20}
+                step={0.5}
+                className="mt-2"
+              />
+              <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                {selectedLayer.letterSpacing || '0px'}
+              </div>
+            </div>
+          </div>
+
+          {/* 色・効果 */}
+          <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
+              <h5 className="text-sm font-medium text-[#E0E0E0]">色・効果</h5>
+              
+              {/* グラデーション */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-[#A0A0A0]">文字シャドウ</Label>
+                  <Label className="text-xs text-[#A0A0A0]">グラデーション</Label>
+                  <Button
+                    size="sm"
+                    variant={gradientEnabled ? "default" : "outline"}
+                    onClick={() => {
+                      const newEnabled = !gradientEnabled;
+                      setGradientEnabled(newEnabled);
+                      if (!newEnabled) {
+                        editorState.updateLayer(selectedLayer.id, { textGradient: undefined });
+                      } else {
+                        editorState.updateLayer(selectedLayer.id, { textGradient: 'linear-gradient(90deg, #ff0000, #0000ff)' });
+                      }
+                    }}
+                    className="h-6 px-3 text-xs"
+                  >
+                    {gradientEnabled ? 'ON' : 'OFF'}
+                  </Button>
+                </div>
+                
+                {gradientEnabled && (() => {
+                  // よく使うグラデーションプリセット
+                  const gradientPresets = [
+                    { name: '虹', gradient: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)' },
+                    { name: '金', gradient: 'linear-gradient(135deg, #ffd700, #ffed4e)' },
+                    { name: '銀', gradient: 'linear-gradient(135deg, #c0c0c0, #ffffff)' },
+                    { name: '紅白', gradient: 'linear-gradient(90deg, #ff6b9d, #ffffff)' },
+                    { name: '青→白', gradient: 'linear-gradient(90deg, #4169e1, #87ceeb)' },
+                    { name: '紫→ピンク', gradient: 'linear-gradient(90deg, #9b59b6, #e91e63)' },
+                    { name: 'オレンジ→ピンク', gradient: 'linear-gradient(90deg, #ff8c00, #ff69b4)' },
+                    { name: '緑→青', gradient: 'linear-gradient(90deg, #00ff7f, #00ced1)' },
+                  ];
+
+                  const applyCustomGradient = () => {
+                    editorState.updateLayer(selectedLayer.id, { 
+                      textGradient: `linear-gradient(${customAngle}deg, ${customColor1}, ${customColor2})` 
+                    });
+                  };
+
+                  return (
+                    <div className="pl-2 border-l-2 border-[#4A4A4A] space-y-3">
+                      {/* プリセット */}
+                      <div>
+                        <Label className="text-xs text-[#A0A0A0]">プリセット</Label>
+                        <div className="grid grid-cols-4 gap-2 mt-2">
+                          {gradientPresets.map((preset) => (
+                            <button
+                              key={preset.name}
+                              onClick={() => {
+                                editorState.updateLayer(selectedLayer.id, { textGradient: preset.gradient });
+                                setShowCustom(false);
+                              }}
+                              className="h-8 rounded border border-[#4A4A4A] hover:border-[#808080] transition-colors text-[10px] relative overflow-hidden group"
+                              style={{
+                                background: preset.gradient,
+                              }}
+                              title={preset.name}
+                            >
+                              <span className="relative z-10 text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                                {preset.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* カスタム */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-xs text-[#A0A0A0]">カスタム</Label>
+                          <Button
+                            size="sm"
+                            variant={showCustom ? "default" : "outline"}
+                            onClick={() => setShowCustom(!showCustom)}
+                            className="h-6 px-3 text-xs"
+                          >
+                            {showCustom ? '閉じる' : '開く'}
+                          </Button>
+                        </div>
+                        
+                        {showCustom && (
+                          <div className="space-y-2">
+                            <div>
+                              <Label className="text-xs text-[#A0A0A0]">開始色</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <input
+                                  type="color"
+                                  value={customColor1}
+                                  onChange={(e) => {
+                                    setCustomColor1(e.target.value);
+                                    editorState.updateLayer(selectedLayer.id, { 
+                                      textGradient: `linear-gradient(${customAngle}deg, ${e.target.value}, ${customColor2})` 
+                                    });
+                                  }}
+                                  className="w-8 h-7 rounded border border-[#4A4A4A]"
+                                />
+                                <Input
+                                  value={customColor1}
+                                  onChange={(e) => {
+                                    setCustomColor1(e.target.value);
+                                    editorState.updateLayer(selectedLayer.id, { 
+                                      textGradient: `linear-gradient(${customAngle}deg, ${e.target.value}, ${customColor2})` 
+                                    });
+                                  }}
+                                  className="flex-1 h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-[#A0A0A0]">終了色</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <input
+                                  type="color"
+                                  value={customColor2}
+                                  onChange={(e) => {
+                                    setCustomColor2(e.target.value);
+                                    editorState.updateLayer(selectedLayer.id, { 
+                                      textGradient: `linear-gradient(${customAngle}deg, ${customColor1}, ${e.target.value})` 
+                                    });
+                                  }}
+                                  className="w-8 h-7 rounded border border-[#4A4A4A]"
+                                />
+                                <Input
+                                  value={customColor2}
+                                  onChange={(e) => {
+                                    setCustomColor2(e.target.value);
+                                    editorState.updateLayer(selectedLayer.id, { 
+                                      textGradient: `linear-gradient(${customAngle}deg, ${customColor1}, ${e.target.value})` 
+                                    });
+                                  }}
+                                  className="flex-1 h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-[#A0A0A0]">方向</Label>
+                              <Select
+                                value={customAngle.toString()}
+                                onValueChange={(value) => {
+                                  const newAngle = parseInt(value);
+                                  setCustomAngle(newAngle);
+                                  editorState.updateLayer(selectedLayer.id, { 
+                                    textGradient: `linear-gradient(${newAngle}deg, ${customColor1}, ${customColor2})` 
+                                  });
+                                }}
+                              >
+                                <SelectTrigger className="h-7 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">→ 横</SelectItem>
+                                  <SelectItem value="90">↓ 縦</SelectItem>
+                                  <SelectItem value="135">↘ 斜め右下</SelectItem>
+                                  <SelectItem value="45">↗ 斜め右上</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 詳細設定（CSS手入力） */}
+                      <details className="text-xs">
+                        <summary className="text-[#A0A0A0] cursor-pointer hover:text-[#E0E0E0]">
+                          詳細設定（CSS手入力）
+                        </summary>
+                        <div className="mt-2">
+                          <Input
+                            value={selectedLayer.textGradient || ''}
+                            onChange={(e) => editorState.updateLayer(selectedLayer.id, { textGradient: e.target.value })}
+                            className="h-7 text-xs"
+                            placeholder="linear-gradient(90deg, #ff0000, #0000ff)"
+                          />
+                          <div className="text-[10px] text-[#808080] mt-1">
+                            例: linear-gradient(90deg, #ff0000, #0000ff)
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* 通常の色（グラデーション無効時のみ表示） */}
+              {!gradientEnabled && (
+                <div>
+                  <Label className="text-xs text-[#A0A0A0]">色</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="color"
+                      value={selectedLayer.color || '#ffffff'}
+                      onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
+                      className="w-8 h-8 rounded border border-[#4A4A4A]"
+                    />
+                    <Input
+                      value={selectedLayer.color || '#ffffff'}
+                      onChange={(e) => editorState.updateLayer(selectedLayer.id, { color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* アウトライン */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-[#A0A0A0]">アウトライン</Label>
+                  <Button
+                    size="sm"
+                    variant={outlineEnabled ? "default" : "outline"}
+                    onClick={() => {
+                      const newEnabled = !outlineEnabled;
+                      setOutlineEnabled(newEnabled);
+                      if (!newEnabled) {
+                        editorState.updateLayer(selectedLayer.id, { textStrokeWidth: '0px' });
+                      } else {
+                        editorState.updateLayer(selectedLayer.id, { textStrokeWidth: '2px', textStrokeColor: '#000000' });
+                      }
+                    }}
+                    className="h-6 px-3 text-xs"
+                  >
+                    {outlineEnabled ? 'ON' : 'OFF'}
+                  </Button>
+                </div>
+                
+                {outlineEnabled && (
+                  <div className="space-y-2 pl-2 border-l-2 border-[#4A4A4A]">
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">太さ</Label>
+                      <Slider
+                        value={[parseFloat(selectedLayer.textStrokeWidth?.replace('px', '') || '2')]}
+                        onValueChange={([value]) => editorState.updateLayer(selectedLayer.id, { textStrokeWidth: `${value}px` })}
+                        min={0.5}
+                        max={20}
+                        step={0.5}
+                        className="mt-2"
+                      />
+                      <div className="text-xs text-[#A0A0A0] text-center mt-1">
+                        {selectedLayer.textStrokeWidth || '2px'}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-[#A0A0A0]">色</Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="color"
+                          value={selectedLayer.textStrokeColor || '#000000'}
+                          onChange={(e) => editorState.updateLayer(selectedLayer.id, { textStrokeColor: e.target.value })}
+                          className="w-8 h-7 rounded border border-[#4A4A4A]"
+                        />
+                        <Input
+                          value={selectedLayer.textStrokeColor || '#000000'}
+                          onChange={(e) => editorState.updateLayer(selectedLayer.id, { textStrokeColor: e.target.value })}
+                          className="flex-1 h-7 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+          </div>
+
+          {/* 文字シャドウ - ビジュアルエディタ */}
+          <div className="space-y-3 pt-2 border-t border-[#4A4A4A]">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-[#A0A0A0]">文字シャドウ</Label>
                   <Button
                     size="sm"
                     variant={uiState.shadowEnabled ? "default" : "outline"}
@@ -1071,9 +1376,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                   );
                 })()}
               </div>
-            </div>
           </div>
-        </div>
       )}
 
       {/* 画像レイヤーの設定 */}
@@ -1437,6 +1740,10 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                         key={layer.id} id={layer.id} isSelected={isSelected} text={layer.text || ''} color={layer.color}
                         fontSize={layer.fontSize} fontFamily={layer.fontFamily} fontWeight={layer.fontWeight}
                         fontStyle={layer.fontStyle} textDecoration={layer.textDecoration} textShadow={layer.textShadow}
+                        letterSpacing={layer.letterSpacing}
+                        textStrokeWidth={layer.textStrokeWidth}
+                        textStrokeColor={layer.textStrokeColor}
+                        textGradient={layer.textGradient}
                         x={layer.x} y={layer.y} width={layer.width} height={layer.height}
                         rotation={layer.rotation} zIndex={layer.zIndex}
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
