@@ -24,6 +24,12 @@ import {
   Ruler,
   Target,
   History,
+  Twitter,
+  Youtube,
+  Instagram,
+  Zap,
+  Settings,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/utils/historyUtils';
@@ -37,6 +43,8 @@ interface ToolbarProps {
   onRedo?: () => void;
   onSave?: () => void;
   onDownload: (quality: 'normal' | 'high' | 'super') => void;
+  onQuickExport?: (platform: 'twitter-post' | 'twitter-header' | 'youtube-thumbnail' | 'youtube-thumbnail-hd' | 'instagram-post' | 'instagram-story') => Promise<void>;
+  onOpenExportSettings?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
   isPreviewDedicatedMode?: boolean;
@@ -64,6 +72,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onRedo,
   onSave,
   onDownload,
+  onQuickExport,
+  onOpenExportSettings,
   canUndo = false,
   canRedo = false,
   history = [],
@@ -369,30 +379,131 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             role="menu" 
-            aria-label="エクスポート品質選択"
-            className="bg-[#2D2D2D] border-[#4A4A4A]"
+            aria-label="エクスポートメニュー"
+            className="bg-[#2D2D2D] border-[#4A4A4A] w-64"
           >
-            <DropdownMenuItem 
-              onClick={() => onDownload('normal')}
-              role="menuitem"
-              className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
-            >
-              標準品質 (720p)
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDownload('high')}
-              role="menuitem"
-              className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
-            >
-              高品質 (1080p)
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDownload('super')}
-              role="menuitem"
-              className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
-            >
-              超高品質 (4K)
-            </DropdownMenuItem>
+            {/* クイックエクスポートセクション */}
+            <div className="px-2 py-1.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#A0A0A0] mb-2">
+                <Zap className="h-3 w-3" />
+                クイックエクスポート
+              </div>
+              <div className="space-y-1">
+                {onQuickExport && (
+                  <>
+                    <DropdownMenuItem 
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onQuickExport('twitter-post');
+                      }}
+                      className="text-[#E0E0E0] hover:bg-[#3A3A3A] flex items-center gap-2"
+                    >
+                      <Twitter className="h-4 w-4" />
+                      <span>Twitter 投稿 (1200×675)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onQuickExport('twitter-header');
+                      }}
+                      className="text-[#E0E0E0] hover:bg-[#3A3A3A] flex items-center gap-2"
+                    >
+                      <Twitter className="h-4 w-4" />
+                      <span>Twitter ヘッダー (1500×500)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onQuickExport('youtube-thumbnail');
+                      }}
+                      className="text-[#E0E0E0] hover:bg-[#3A3A3A] flex items-center gap-2"
+                    >
+                      <Youtube className="h-4 w-4" />
+                      <span>YouTube サムネイル (1280×720)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onQuickExport('youtube-thumbnail-hd');
+                      }}
+                      className="text-[#E0E0E0] hover:bg-[#3A3A3A] flex items-center gap-2"
+                    >
+                      <Youtube className="h-4 w-4" />
+                      <span>YouTube サムネイルHD (1920×1080)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onQuickExport('instagram-post');
+                      }}
+                      className="text-[#E0E0E0] hover:bg-[#3A3A3A] flex items-center gap-2"
+                    >
+                      <Instagram className="h-4 w-4" />
+                      <span>Instagram 投稿 (1080×1080)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onQuickExport('instagram-story');
+                      }}
+                      className="text-[#E0E0E0] hover:bg-[#3A3A3A] flex items-center gap-2"
+                    >
+                      <Instagram className="h-4 w-4" />
+                      <span>Instagram ストーリー (1080×1920)</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <Separator className="bg-[#4A4A4A] my-1" />
+
+            {/* 品質別エクスポートセクション */}
+            <div className="px-2 py-1.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#A0A0A0] mb-2">
+                <Download className="h-3 w-3" />
+                品質別エクスポート
+              </div>
+              <div className="space-y-1">
+                <DropdownMenuItem 
+                  onClick={() => onDownload('normal')}
+                  className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                >
+                  標準品質 (720p)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onDownload('high')}
+                  className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                >
+                  高品質 (1080p)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onDownload('super')}
+                  className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                >
+                  超高品質 (4K)
+                </DropdownMenuItem>
+              </div>
+            </div>
+
+            <Separator className="bg-[#4A4A4A] my-1" />
+
+            {/* 詳細設定へのリンク */}
+            {onOpenExportSettings && (
+              <DropdownMenuItem 
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onOpenExportSettings();
+                }}
+                className="text-[#E0E0E0] hover:bg-[#3A3A3A] flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>詳細設定を開く</span>
+                </div>
+                <ChevronRight className="h-4 w-4" />
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

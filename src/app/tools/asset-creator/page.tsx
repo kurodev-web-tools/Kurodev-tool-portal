@@ -683,6 +683,46 @@ function AssetCreatorPage() {
     }
   }, [handleAdvancedExport]);
 
+  // クイックエクスポート処理（プラットフォーム別）
+  const handleQuickExport = React.useCallback(async (platform: 'twitter-post' | 'twitter-header' | 'youtube-thumbnail' | 'youtube-thumbnail-hd' | 'instagram-post' | 'instagram-story') => {
+    const element = document.getElementById('download-target');
+    if (!element) {
+      toast.error('プレビューエリアが見つかりません');
+      return;
+    }
+
+    try {
+      const platformSettings: Record<typeof platform, { width: number; height: number; pixelRatio: number; format: 'png' | 'jpeg' }> = {
+        'twitter-post': { width: 1200, height: 675, pixelRatio: 2, format: 'png' },
+        'twitter-header': { width: 1500, height: 500, pixelRatio: 2, format: 'png' },
+        'youtube-thumbnail': { width: 1280, height: 720, pixelRatio: 2, format: 'png' },
+        'youtube-thumbnail-hd': { width: 1920, height: 1080, pixelRatio: 2, format: 'png' },
+        'instagram-post': { width: 1080, height: 1080, pixelRatio: 2, format: 'png' },
+        'instagram-story': { width: 1080, height: 1920, pixelRatio: 2, format: 'png' },
+      };
+
+      const config = platformSettings[platform];
+      const settings: AssetExportSettings = {
+        resolution: 'custom',
+        customWidth: config.width,
+        customHeight: config.height,
+        quality: 'high',
+        format: config.format,
+        pixelRatio: config.pixelRatio,
+        backgroundColor: '#ffffff',
+        includeTransparency: false,
+        optimizeForPlatform: platform.startsWith('twitter') ? 'social' : platform.startsWith('youtube') ? 'social' : 'social',
+        batchExport: false,
+        batchSizes: []
+      };
+      
+      await handleAdvancedExport(element, settings);
+    } catch (error) {
+      logger.error('Quick export failed', error, 'AssetCreator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, [handleAdvancedExport]);
+
   // レイヤーのドラッグ＆リサイズハンドラー
   const handleLayerDragStop = React.useCallback((id: string, _: unknown, d: Position) => {
     let x = d.x;
@@ -2613,6 +2653,11 @@ function AssetCreatorPage() {
                 handleToolbarRedo={handleToolbarRedo}
                 handleSave={handleSave}
                 handleDownloadThumbnail={handleDownloadThumbnail}
+                handleQuickExport={handleQuickExport}
+                onOpenExportSettings={() => {
+                  setIsRightSidebarOpen(true);
+                  setSelectedTab('export');
+                }}
                 canUndo={canUndo}
                 canRedo={canRedo}
                 handleAddShape={handleAddShape}
@@ -2660,6 +2705,8 @@ function AssetCreatorPage() {
             handleBatchExport={handleBatchExport}
             handleAdvancedExport={handleAdvancedExport}
             handleAddShape={handleAddShape}
+            selectedTab={selectedTab}
+            setSelectedTab={setSelectedTab}
           />
         )}
       </div>

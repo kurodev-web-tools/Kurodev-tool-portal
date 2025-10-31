@@ -22,6 +22,10 @@ interface RightToolbarProps {
   handleBatchExport: (element: HTMLElement, settings: AssetExportSettings) => Promise<void>;
   handleAdvancedExport: (element: HTMLElement, settings: AssetExportSettings) => Promise<void>;
   handleAddShape: (shapeType: ShapeType) => void;
+  
+  // タブ制御（外部から制御可能）
+  selectedTab?: string;
+  setSelectedTab?: (tab: string) => void;
 }
 
 export const RightToolbar: React.FC<RightToolbarProps> = ({
@@ -33,8 +37,12 @@ export const RightToolbar: React.FC<RightToolbarProps> = ({
   handleBatchExport,
   handleAdvancedExport,
   handleAddShape,
+  selectedTab: externalSelectedTab,
+  setSelectedTab: externalSetSelectedTab,
 }) => {
-  const [selectedTab, setSelectedTab] = React.useState("tools");
+  const [internalSelectedTab, setInternalSelectedTab] = React.useState("tools");
+  const selectedTab = externalSelectedTab ?? internalSelectedTab;
+  const setSelectedTab = externalSetSelectedTab ?? setInternalSelectedTab;
 
   // ツールバーコンテンツ
   const toolbarContent = (

@@ -27,6 +27,8 @@ interface ToolbarSectionProps {
   handleToolbarRedo: () => void;
   handleSave: () => void;
   handleDownloadThumbnail: (qualityLevel: 'normal' | 'high' | 'super') => Promise<void>;
+  handleQuickExport?: (platform: 'twitter-post' | 'twitter-header' | 'youtube-thumbnail' | 'youtube-thumbnail-hd' | 'instagram-post' | 'instagram-story') => Promise<void>;
+  onOpenExportSettings?: () => void;
   history?: HistoryEntry[];
   historyIndex?: number;
   onJumpToHistory?: (index: number) => void;
@@ -53,6 +55,8 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
   handleToolbarRedo,
   handleSave,
   handleDownloadThumbnail,
+  handleQuickExport,
+  onOpenExportSettings,
   history,
   historyIndex,
   onJumpToHistory,
@@ -69,6 +73,8 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
           onRedo={handleToolbarRedo}
           onSave={handleSave}
           onDownload={handleDownloadThumbnail}
+          onQuickExport={handleQuickExport}
+          onOpenExportSettings={onOpenExportSettings}
           canUndo={canUndo}
           canRedo={canRedo}
           isPreviewDedicatedMode={isPreviewDedicatedMode}

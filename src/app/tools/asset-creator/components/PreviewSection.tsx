@@ -79,6 +79,8 @@ interface PreviewSectionProps {
   handleToolbarRedo: () => void;
   handleSave: () => void;
   handleDownloadThumbnail: (qualityLevel: 'normal' | 'high' | 'super') => Promise<void>;
+  handleQuickExport?: (platform: 'twitter-post' | 'twitter-header' | 'youtube-thumbnail' | 'youtube-thumbnail-hd' | 'instagram-post' | 'instagram-story') => Promise<void>;
+  onOpenExportSettings?: () => void;
   canUndo: boolean;
   canRedo: boolean;
   handleAddShape: (shapeType: ShapeType) => void;
@@ -143,6 +145,8 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
   handleToolbarRedo,
   handleSave,
   handleDownloadThumbnail,
+  handleQuickExport,
+  onOpenExportSettings,
   canUndo,
   canRedo,
   handleAddShape,
@@ -175,6 +179,8 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
         handleToolbarRedo={handleToolbarRedo}
         handleSave={handleSave}
         handleDownloadThumbnail={handleDownloadThumbnail}
+        handleQuickExport={handleQuickExport}
+        onOpenExportSettings={onOpenExportSettings}
         history={history}
         historyIndex={historyIndex}
         onJumpToHistory={onJumpToHistory}
