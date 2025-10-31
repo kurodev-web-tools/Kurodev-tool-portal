@@ -24,6 +24,18 @@ export interface UIState {
   setShowCenterLines: (show: boolean) => void;
   gridSize: number;
   setGridSize: (size: number) => void;
+  gridColor: string;
+  setGridColor: (color: string) => void;
+  gridOpacity: number;
+  setGridOpacity: (o: number) => void;
+  showMajorLines: boolean;
+  setShowMajorLines: (s: boolean) => void;
+  majorInterval: number;
+  setMajorInterval: (n: number) => void;
+  snapToGrid: boolean;
+  setSnapToGrid: (s: boolean) => void;
+  snapStrength: number;
+  setSnapStrength: (n: number) => void;
 
   // シャドウエディタの状態
   shadowEnabled: boolean;
@@ -50,6 +62,12 @@ export const useUIState = (): UIState => {
   const [showSafeArea, setShowSafeArea] = useState(false);
   const [showCenterLines, setShowCenterLines] = useState(false);
   const [gridSize, setGridSize] = useState(20);
+  const [gridColor, setGridColor] = useState('rgba(136, 218, 255, 0.25)');
+  const [gridOpacity, setGridOpacity] = useState(0.6);
+  const [showMajorLines, setShowMajorLines] = useState(true);
+  const [majorInterval, setMajorInterval] = useState(5);
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [snapStrength, setSnapStrength] = useState(8);
 
   // シャドウエディタの状態
   const [shadowEnabled, setShadowEnabled] = useState(false);
@@ -78,6 +96,18 @@ export const useUIState = (): UIState => {
     setShowCenterLines,
     gridSize,
     setGridSize,
+    gridColor,
+    setGridColor,
+    gridOpacity,
+    setGridOpacity,
+    showMajorLines,
+    setShowMajorLines,
+    majorInterval,
+    setMajorInterval,
+    snapToGrid,
+    setSnapToGrid,
+    snapStrength,
+    setSnapStrength,
 
     // シャドウエディタの状態
     shadowEnabled,

@@ -40,7 +40,7 @@ export interface EditorState {
   
   // ズーム
   zoom: number;
-  setZoom: (zoom: number) => void;
+  setZoom: (zoom: number | ((prevZoom: number) => number)) => void;
   
   // 履歴管理
   addToHistory: (layers: Layer[], selectedLayerId: string | null) => void;

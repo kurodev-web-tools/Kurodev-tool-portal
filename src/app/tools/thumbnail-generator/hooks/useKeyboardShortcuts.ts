@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useEditorState } from './useEditorState';
+import { useUIState } from './useUIState';
 import { toast } from 'sonner';
 
 /**
@@ -38,6 +39,9 @@ export const useKeyboardShortcuts = () => {
     editorStateCanUndo: editorState.canUndo,
     editorStateCanRedo: editorState.canRedo
   });
+
+  // UI状態を取得（グリッド・ガイド設定用）
+  const uiState = useUIState();
 
   // キーボードイベントハンドラー
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -129,6 +133,42 @@ export const useKeyboardShortcuts = () => {
           setSelectedLayerId(null);
         }
         break;
+      case 'g':
+      case 'G':
+        // G: グリッド表示のトグル
+        if (uiState?.setShowGrid) {
+          const gridButton = document.querySelector('[aria-label*="グリッド"]') as HTMLElement;
+          if (gridButton) {
+            gridButton.click();
+          } else {
+            uiState.setShowGrid(!uiState.showGrid);
+          }
+        }
+        break;
+      case 's':
+      case 'S':
+        // S: セーフエリア表示のトグル（Ctrl+Sと競合しないように、Ctrlが押されていない場合のみ）
+        if (!e.ctrlKey && !e.metaKey && uiState?.setShowSafeArea) {
+          const safeAreaButton = document.querySelector('[aria-label*="セーフエリア"]') as HTMLElement;
+          if (safeAreaButton) {
+            safeAreaButton.click();
+          } else {
+            uiState.setShowSafeArea(!uiState.showSafeArea);
+          }
+        }
+        break;
+      case 'c':
+      case 'C':
+        // C: 中央線表示のトグル（Ctrl+Cと競合しないように、Ctrlが押されていない場合のみ）
+        if (!e.ctrlKey && !e.metaKey && uiState?.setShowCenterLines) {
+          const centerLinesButton = document.querySelector('[aria-label*="中央線"]') as HTMLElement;
+          if (centerLinesButton) {
+            centerLinesButton.click();
+          } else {
+            uiState.setShowCenterLines(!uiState.showCenterLines);
+          }
+        }
+        break;
     }
   }, [
     editorState,
@@ -139,6 +179,7 @@ export const useKeyboardShortcuts = () => {
     handleUndo,
     handleRedo,
     setIsShiftKeyDown,
+    uiState,
   ]);
 
   // キーアップイベントハンドラー

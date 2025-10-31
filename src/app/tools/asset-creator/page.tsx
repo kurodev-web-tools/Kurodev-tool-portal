@@ -222,7 +222,17 @@ function AssetCreatorPage() {
   } = canvasOperations;
 
   // キーボードショートカット
-  const { isShiftKeyDown, canUndo, canRedo } = useKeyboardShortcuts({ canvasOperations });
+  const { isShiftKeyDown, canUndo, canRedo } = useKeyboardShortcuts({ 
+    canvasOperations,
+    guideSettings: {
+      showGrid,
+      setShowGrid,
+      showSafeArea,
+      setShowSafeArea,
+      showCenterLines,
+      setShowCenterLines,
+    },
+  });
 
   // スクロール実装後のフィット最適化用マージン（将来の微調整を容易にするため定数化）
   const SAFETY = {
@@ -318,6 +328,53 @@ function AssetCreatorPage() {
     // 基準サイズが変わったので、ズームも100%に戻す
     setZoom(1.0);
   }, [aspectRatio, customAspectRatio, calculateBaseSize, setZoom]);
+
+  // 初期マウント時およびコンテナレンダリング後の基準サイズ更新
+  React.useEffect(() => {
+    let retryCount = 0;
+    const MAX_RETRIES = 20; // 最大20回まで再試行（約1秒）
+    
+    // コンテナが存在し、有効なサイズを持つまで待機
+    const updateBaseSizeWhenReady = () => {
+      if (retryCount >= MAX_RETRIES) {
+        logger.warn('基準サイズの計算がタイムアウトしました', {}, 'updateBaseSizeWhenReady');
+        return;
+      }
+
+      const previewContainer = document.querySelector('[data-preview-container="true"]');
+      
+      if (!previewContainer) {
+        retryCount++;
+        setTimeout(updateBaseSizeWhenReady, 50);
+        return;
+      }
+
+      const containerRect = previewContainer.getBoundingClientRect();
+      
+      // コンテナサイズが有効な値になるまで待機
+      if (containerRect.width <= 0 || containerRect.height <= 0) {
+        retryCount++;
+        setTimeout(updateBaseSizeWhenReady, 50);
+        return;
+      }
+
+      // コンテナが準備できたら基準サイズを計算
+      const newBaseSize = calculateBaseSize();
+      // 計算結果がフォールバック値（400）より大きい場合、または前回の値と異なる場合は更新
+      if (newBaseSize > 400 || (newBaseSize !== baseSizeRef.current && baseSizeRef.current === 400)) {
+        baseSizeRef.current = newBaseSize;
+        setZoom(1.0);
+        logger.info('初期基準サイズを更新しました', { baseSize: newBaseSize }, 'updateBaseSizeWhenReady');
+      }
+    };
+
+    // 初期レンダリング後に実行
+    const timeoutId = setTimeout(updateBaseSizeWhenReady, 100);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [calculateBaseSize, setZoom, isLeftSidebarOpen, isRightSidebarOpen, isPreviewDedicatedMode]);
 
   // 画面フィットボタンのハンドラー
   const handleFitToScreen = React.useCallback(() => {

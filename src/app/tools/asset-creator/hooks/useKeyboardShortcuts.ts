@@ -12,13 +12,21 @@ interface UseKeyboardShortcutsParams {
     canRedo: boolean;
     saveToLocalStorage: (layers: any[], selectedLayerId: string | null) => boolean;
   };
+  guideSettings?: {
+    showGrid?: boolean;
+    setShowGrid?: (show: boolean) => void;
+    showSafeArea?: boolean;
+    setShowSafeArea?: (show: boolean) => void;
+    showCenterLines?: boolean;
+    setShowCenterLines?: (show: boolean) => void;
+  };
 }
 
 /**
  * キーボードショートカットを管理するフック
  * 既存の機能を保持しながら、キーボードイベントを管理
  */
-export const useKeyboardShortcuts = ({ canvasOperations }: UseKeyboardShortcutsParams) => {
+export const useKeyboardShortcuts = ({ canvasOperations, guideSettings }: UseKeyboardShortcutsParams) => {
   console.log('useKeyboardShortcuts hook called');
   
   const templateContext = useTemplate();
@@ -160,6 +168,27 @@ export const useKeyboardShortcuts = ({ canvasOperations }: UseKeyboardShortcutsP
           setSelectedLayerId(null);
         }
         break;
+      case 'g':
+      case 'G':
+        // G: グリッド表示のトグル
+        if (guideSettings?.setShowGrid && guideSettings?.showGrid !== undefined) {
+          guideSettings.setShowGrid(!guideSettings.showGrid);
+        }
+        break;
+      case 's':
+      case 'S':
+        // S: セーフエリア表示のトグル（Ctrl+Sと競合しないように、Ctrlが押されていない場合のみ）
+        if (!e.ctrlKey && !e.metaKey && guideSettings?.setShowSafeArea && guideSettings?.showSafeArea !== undefined) {
+          guideSettings.setShowSafeArea(!guideSettings.showSafeArea);
+        }
+        break;
+      case 'c':
+      case 'C':
+        // C: 中央線表示のトグル（Ctrl+Cと競合しないように、Ctrlが押されていない場合のみ）
+        if (!e.ctrlKey && !e.metaKey && guideSettings?.setShowCenterLines && guideSettings?.showCenterLines !== undefined) {
+          guideSettings.setShowCenterLines(!guideSettings.showCenterLines);
+        }
+        break;
     }
   }, [
     canvasOperations,
@@ -171,6 +200,7 @@ export const useKeyboardShortcuts = ({ canvasOperations }: UseKeyboardShortcutsP
     undo,
     redo,
     setIsShiftKeyDown,
+    guideSettings,
   ]);
 
   // キーアップイベントハンドラー
