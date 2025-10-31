@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,23 +6,27 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Eye, Star, Upload, Save, X, Grid3X3, Settings, Sparkles } from 'lucide-react';
+import { Search, Plus, Eye, Star, Upload, Save, X, Grid3X3, Grid2x2, ZoomIn, Heart, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { generatePreviewFromTemplate, fileToDataURL } from '@/utils/imageUtils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTemplate } from '../contexts/TemplateContext';
 import { TemplateManager } from './TemplateManager';
 import { AutoGenerationPanel } from './AutoGenerationPanel';
 import { ThumbnailTemplate, aspectRatios } from '@/types/template';
 import { templates } from '@/data/template-definitions';
 import { logger } from '@/lib/logger';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface TemplateSelectorProps {
   onSelectTemplate: (template: ThumbnailTemplate) => void;
   selectedTemplateId: string | null;
 }
+
+const FAVORITES_KEY = 'thumbnail-generator-favorites';
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, selectedTemplateId }) => {
   const { 
@@ -32,6 +36,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
     setCustomAspectRatio 
   } = useTemplate();
   
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [styleFilter, setStyleFilter] = useState<string>('all');
@@ -40,6 +46,17 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
   const [customTemplates, setCustomTemplates] = useState<ThumbnailTemplate[]>([]);
   const [allTemplates, setAllTemplates] = useState<ThumbnailTemplate[]>(templates);
   const [activeTab, setActiveTab] = useState<'browse' | 'manage' | 'auto-generate'>('browse');
+  
+  // お気に入り・プレビューサイズの状態
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(FAVORITES_KEY);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    }
+    return new Set();
+  });
+  const [previewSize, setPreviewSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [templateTab, setTemplateTab] = useState<'all' | 'favorites'>('all');
 
   // カスタムテンプレートの読み込み
   useEffect(() => {
@@ -61,17 +78,62 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
   };
 
   // フィルタリング
-  const filteredTemplates = allTemplates.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         template.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         template.metadata.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = categoryFilter === 'all' || template.category === categoryFilter;
-    const matchesStyle = styleFilter === 'all' || template.style === styleFilter;
-    const matchesDifficulty = difficultyFilter === 'all' || template.metadata.difficulty === difficultyFilter;
-    const matchesAspectRatio = aspectRatio === 'custom' || template.supportedAspectRatios.includes(aspectRatio);
+  const filteredTemplates = useMemo(() => {
+    return allTemplates.filter(template => {
+      const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           template.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           template.metadata.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesCategory = categoryFilter === 'all' || template.category === categoryFilter;
+      const matchesStyle = styleFilter === 'all' || template.style === styleFilter;
+      const matchesDifficulty = difficultyFilter === 'all' || template.metadata.difficulty === difficultyFilter;
+      const matchesAspectRatio = aspectRatio === 'custom' || template.supportedAspectRatios.includes(aspectRatio);
+      
+      return matchesSearch && matchesCategory && matchesStyle && matchesDifficulty && matchesAspectRatio;
+    });
+  }, [allTemplates, searchQuery, categoryFilter, styleFilter, difficultyFilter, aspectRatio]);
+  
+  // 表示用テンプレート（お気に入りフィルター適用）
+  const displayTemplates = useMemo(() => {
+    let templates = filteredTemplates;
     
-    return matchesSearch && matchesCategory && matchesStyle && matchesDifficulty && matchesAspectRatio;
-  });
+    // お気に入りフィルター
+    if (templateTab === 'favorites') {
+      templates = templates.filter(template => favorites.has(template.id));
+    }
+    
+    return templates;
+  }, [filteredTemplates, templateTab, favorites]);
+  
+  // グリッド列数の決定
+  const gridCols = useMemo(() => {
+    if (!isDesktop) return 'grid-cols-2';
+    
+    switch (previewSize) {
+      case 'small':
+        return 'grid-cols-3';
+      case 'medium':
+        return 'grid-cols-2';
+      case 'large':
+        return 'grid-cols-1'; // 大きいプレビューは1列表示
+      default:
+        return 'grid-cols-2';
+    }
+  }, [isDesktop, previewSize]);
+  
+  // お気に入りの切り替え
+  const toggleFavorite = (templateId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(templateId)) {
+      newFavorites.delete(templateId);
+    } else {
+      newFavorites.add(templateId);
+    }
+    setFavorites(newFavorites);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(newFavorites)));
+    }
+  };
 
   // カスタムテンプレート作成
   const handleCreateCustomTemplate = (templateData: Partial<ThumbnailTemplate>) => {
@@ -305,6 +367,67 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
           />
         </div>
         
+        {/* タブとプレビューサイズ切り替え */}
+        <div className="flex items-center justify-between gap-2">
+          <Tabs 
+            value={templateTab} 
+            onValueChange={(v) => setTemplateTab(v as 'all' | 'favorites')}
+            className="flex-1"
+          >
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="all" className="text-xs">
+                すべて ({displayTemplates.length})
+              </TabsTrigger>
+              <TabsTrigger value="favorites" className="text-xs flex items-center gap-1">
+                <Heart className={cn("h-3 w-3", favorites.size > 0 && "fill-current")} />
+                お気に入り ({favorites.size})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          {/* プレビューサイズ切り替え（デスクトップのみ） */}
+          {isDesktop && (
+            <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 px-2 transition-colors",
+                  previewSize === 'small' && "bg-[#20B2AA]/20 text-[#20B2AA] hover:bg-[#20B2AA]/30"
+                )}
+                onClick={() => setPreviewSize('small')}
+                title="小さいプレビュー（3列表示）"
+              >
+                <Grid3X3 className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 px-2 transition-colors",
+                  previewSize === 'medium' && "bg-[#20B2AA]/20 text-[#20B2AA] hover:bg-[#20B2AA]/30"
+                )}
+                onClick={() => setPreviewSize('medium')}
+                title="中サイズプレビュー（2列表示）"
+              >
+                <Grid2x2 className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 px-2 transition-colors",
+                  previewSize === 'large' && "bg-[#20B2AA]/20 text-[#20B2AA] hover:bg-[#20B2AA]/30"
+                )}
+                onClick={() => setPreviewSize('large')}
+                title="大きいプレビュー（1列表示）"
+              >
+                <ZoomIn className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+        
         {/* フィルター */}
         <div className="flex flex-col md:flex-row gap-2">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -351,165 +474,30 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
       </div>
 
       {/* テンプレートグリッド */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-3">
-        {filteredTemplates.map((template) => (
-          <div
-            key={template.id}
-            className={cn(
-              "relative group cursor-pointer transition-all hover:scale-[1.02] md:hover:scale-105 p-1",
-              selectedTemplateId === template.id && "ring-2 ring-[#20B2AA] ring-inset"
-            )}
-            onClick={() => onSelectTemplate(template)}
-          >
-            {/* モバイル用横長レイアウト */}
-            <Card className="overflow-hidden md:block">
-              <div className="flex md:block">
-                {/* プレビュー画像部分 */}
-                <div className="w-24 h-16 md:w-full md:aspect-video bg-[#2D2D2D] relative flex-shrink-0">
-                  {template.preview ? (
-                    <img
-                      src={template.preview}
-                      alt={template.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div 
-                      className="w-full h-full flex items-center justify-center text-xs md:text-sm relative overflow-hidden"
-                      style={{
-                        background: template.layout.background.type === 'color' 
-                          ? template.layout.background.value
-                          : template.layout.background.type === 'gradient'
-                          ? template.layout.background.value
-                          : '#f8f9fa'
-                      }}
-                    >
-                      {/* テンプレートオブジェクトのプレビュー */}
-                      {template.layout.objects.map((obj) => {
-                        if (obj.type === 'text' && obj.content?.text) {
-                          return (
-                            <div
-                              key={obj.id}
-                              className="absolute"
-                              style={{
-                                left: `${(obj.position.x / 1200) * 100}%`,
-                                top: `${(obj.position.y / 675) * 100}%`,
-                                width: `${(obj.position.width / 1200) * 100}%`,
-                                height: `${(obj.position.height / 675) * 100}%`,
-                                fontSize: '0.5rem',
-                                color: obj.content.color || template.colorPalette.text,
-                                fontFamily: obj.content.fontFamily || template.fontSettings.family,
-                                fontWeight: obj.content.fontSize?.includes('bold') ? 'bold' : 'normal',
-                                textAlign: obj.content.textAlign || template.fontSettings.textAlign,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transform: `scale(${Math.min(1, 100 / (obj.content.text.length || 1))})`,
-                              }}
-                            >
-                              {obj.content.text}
-                            </div>
-                          );
-                        }
-                        return null;
-                      })}
-                      
-                      {/* フォールバック: レガシーサポート */}
-                      {template.layout.objects.length === 0 && template.initialText && (
-                        <p 
-                          className="font-bold text-center px-1" 
-                          style={{ 
-                            color: template.initialTextColor || template.colorPalette.text,
-                            fontSize: '0.5rem'
-                          }}
-                        >
-                          {template.initialText}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* デスクトップ用ホバーオーバーレイ */}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 md:group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2">
-                    <Button size="sm" variant="secondary">
-                      <Eye className="h-4 w-4 mr-1" />
-                      プレビュー
-                    </Button>
-                    {template.isCustom && (
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCustomTemplate(template.id);
-                        }}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        削除
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                
-                {/* コンテンツ部分 */}
-                <div className="flex-1 p-3 md:p-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm md:text-sm truncate">{template.name}</h4>
-                      <p className="text-xs text-[#A0A0A0] mt-1 line-clamp-1 md:line-clamp-2">{template.description}</p>
-                    </div>
-                    {/* モバイル用削除ボタン */}
-                    {template.isCustom && (
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        className="md:hidden ml-2 h-6 w-6 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCustomTemplate(template.id);
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {template.category === 'gaming' ? 'ゲーム' :
-                         template.category === 'talk' ? '雑談' :
-                         template.category === 'singing' ? '歌枠' :
-                         template.category === 'collaboration' ? 'コラボ' :
-                         template.category === 'event' ? 'イベント' : 'カスタム'}
-                      </Badge>
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs"
-                        style={{
-                          color: template.metadata.difficulty === 'beginner' ? '#22c55e' :
-                                 template.metadata.difficulty === 'intermediate' ? '#f59e0b' : '#ef4444'
-                        }}
-                      >
-                        {template.metadata.difficulty === 'beginner' ? '初級' :
-                         template.metadata.difficulty === 'intermediate' ? '中級' : '上級'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-yellow-500" />
-                      <span className="text-xs">{template.rating}</span>
-                    </div>
-                  </div>
-                  
-                  {/* メタデータ情報 */}
-                  <div className="flex items-center justify-between mt-1 text-xs text-[#A0A0A0]">
-                    <span>{template.metadata.estimatedTime}分</span>
-                    <span>{template.layout.objects.length}オブジェクト</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        ))}
-      </div>
+      {displayTemplates.length > 0 ? (
+        <div className={cn("grid gap-3", gridCols)}>
+          {displayTemplates.map((template) => (
+            <TemplateCard
+              key={template.id}
+              template={template}
+              isSelected={selectedTemplateId === template.id}
+              isFavorite={favorites.has(template.id)}
+              onSelect={onSelectTemplate}
+              onToggleFavorite={toggleFavorite}
+              onDelete={template.isCustom ? handleDeleteCustomTemplate : undefined}
+              previewSize={previewSize}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center text-sm text-muted-foreground py-8">
+          {searchQuery.trim() 
+            ? '検索結果が見つかりませんでした'
+            : templateTab === 'favorites'
+            ? 'お気に入りに登録されたテンプレートはありません'
+            : 'この条件に一致するテンプレートはありません'}
+        </div>
+      )}
 
             {/* カスタムテンプレート作成モーダル */}
             {showCustomCreator && (
@@ -539,6 +527,229 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
         />
       )}
     </div>
+  );
+};
+
+// テンプレートカードコンポーネント
+interface TemplateCardProps {
+  template: ThumbnailTemplate;
+  isSelected: boolean;
+  isFavorite: boolean;
+  onSelect: (template: ThumbnailTemplate) => void;
+  onToggleFavorite: (templateId: string, e: React.MouseEvent) => void;
+  onDelete?: (templateId: string) => void;
+  previewSize: 'small' | 'medium' | 'large';
+}
+
+const TemplateCard: React.FC<TemplateCardProps> = ({
+  template,
+  isSelected,
+  isFavorite,
+  onSelect,
+  onToggleFavorite,
+  onDelete,
+  previewSize,
+}) => {
+  // プレビューサイズに応じた画像サイズの計算
+  const imageSize = useMemo(() => {
+    switch (previewSize) {
+      case 'small':
+        return { height: '120px' };
+      case 'medium':
+        return { height: '160px' };
+      case 'large':
+        return { height: '240px' };
+      default:
+        return { height: '160px' };
+    }
+  }, [previewSize]);
+
+  return (
+    <Card
+      className={cn(
+        "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group relative overflow-hidden",
+        isSelected && "border-2 border-[#20B2AA] ring-2 ring-[#20B2AA] ring-offset-2",
+        !isSelected && "hover:shadow-lg"
+      )}
+      onClick={() => onSelect(template)}
+    >
+      <CardContent className="p-0 relative">
+        {/* プレビュー画像部分 */}
+        <div 
+          className={cn(
+            "w-full bg-[#2D2D2D] relative overflow-hidden",
+            previewSize === 'large' ? 'aspect-video' : 'aspect-video'
+          )}
+          style={imageSize}
+        >
+          {template.preview ? (
+            <img
+              src={template.preview}
+              alt={template.name}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            />
+          ) : (
+            <div 
+              className="w-full h-full flex items-center justify-center text-xs md:text-sm relative overflow-hidden"
+              style={{
+                background: template.layout.background.type === 'color' 
+                  ? template.layout.background.value
+                  : template.layout.background.type === 'gradient'
+                  ? template.layout.background.value
+                  : '#f8f9fa'
+              }}
+            >
+              {/* テンプレートオブジェクトのプレビュー */}
+              {template.layout.objects.map((obj) => {
+                if (obj.type === 'text' && obj.content?.text) {
+                  return (
+                    <div
+                      key={obj.id}
+                      className="absolute"
+                      style={{
+                        left: `${(obj.position.x / 1200) * 100}%`,
+                        top: `${(obj.position.y / 675) * 100}%`,
+                        width: `${(obj.position.width / 1200) * 100}%`,
+                        height: `${(obj.position.height / 675) * 100}%`,
+                        fontSize: previewSize === 'large' ? '0.75rem' : '0.5rem',
+                        color: obj.content.color || template.colorPalette.text,
+                        fontFamily: obj.content.fontFamily || template.fontSettings.family,
+                        fontWeight: obj.content.fontSize?.includes('bold') ? 'bold' : 'normal',
+                        textAlign: obj.content.textAlign || template.fontSettings.textAlign,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transform: `scale(${Math.min(1, 100 / (obj.content.text.length || 1))})`,
+                      }}
+                    >
+                      {obj.content.text}
+                    </div>
+                  );
+                }
+                return null;
+              })}
+              
+              {/* フォールバック: レガシーサポート */}
+              {template.layout.objects.length === 0 && template.initialText && (
+                <p 
+                  className="font-bold text-center px-1" 
+                  style={{ 
+                    color: template.initialTextColor || template.colorPalette.text,
+                    fontSize: previewSize === 'large' ? '0.75rem' : '0.5rem'
+                  }}
+                >
+                  {template.initialText}
+                </p>
+              )}
+            </div>
+          )}
+          
+          {/* お気に入りボタン */}
+          <button
+            onClick={(e) => onToggleFavorite(template.id, e)}
+            className={cn(
+              "absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm transition-all duration-200 z-10",
+              "hover:bg-black/70 hover:scale-110",
+              isFavorite && "bg-[#20B2AA]/80 hover:bg-[#20B2AA]"
+            )}
+            aria-label={isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
+            title={isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
+          >
+            <Heart 
+              className={cn(
+                "h-4 w-4 transition-colors",
+                isFavorite ? "fill-[#20B2AA] text-[#20B2AA]" : "text-white"
+              )} 
+            />
+          </button>
+
+          {/* 選択時のオーバーレイ */}
+          {isSelected && (
+            <div className="absolute inset-0 bg-[#20B2AA]/10 border-2 border-[#20B2AA] rounded-md" />
+          )}
+
+          {/* ホバー時のテンプレート名表示 */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <p className="text-xs text-white font-medium truncate">{template.name}</p>
+          </div>
+          
+          {/* デスクトップ用ホバーオーバーレイ */}
+          {onDelete && (
+            <div className="absolute inset-0 bg-black/50 opacity-0 md:group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2">
+              <Button 
+                size="sm" 
+                variant="destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(template.id);
+                }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                削除
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        {/* コンテンツ部分 */}
+        <div className="p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm truncate">{template.name}</h4>
+              {template.description && (
+                <p className="text-xs text-[#A0A0A0] mt-1 line-clamp-2">{template.description}</p>
+              )}
+            </div>
+            {/* モバイル用削除ボタン */}
+            {onDelete && (
+              <Button 
+                size="sm" 
+                variant="ghost"
+                className="md:hidden ml-2 h-6 w-6 p-0 flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(template.id);
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center gap-1 flex-wrap">
+              <Badge variant="secondary" className="text-xs">
+                {template.category === 'gaming' ? 'ゲーム' :
+                 template.category === 'talk' ? '雑談' :
+                 template.category === 'singing' ? '歌枠' :
+                 template.category === 'collaboration' ? 'コラボ' :
+                 template.category === 'event' ? 'イベント' : 'カスタム'}
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className="text-xs"
+                style={{
+                  color: template.metadata.difficulty === 'beginner' ? '#22c55e' :
+                         template.metadata.difficulty === 'intermediate' ? '#f59e0b' : '#ef4444'
+                }}
+              >
+                {template.metadata.difficulty === 'beginner' ? '初級' :
+                 template.metadata.difficulty === 'intermediate' ? '中級' : '上級'}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Star className="h-3 w-3 text-yellow-500" />
+              <span className="text-xs">{template.rating}</span>
+            </div>
+          </div>
+          
+          {/* メタデータ情報 */}
+          <div className="flex items-center justify-between mt-1 text-xs text-[#A0A0A0]">
+            <span>{template.metadata.estimatedTime}分</span>
+            <span>{template.layout.objects.length}オブジェクト</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
