@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,9 @@ export default function TitleGeneratorPage() {
   // ローカルストレージキー
   const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
   const HISTORY_STORAGE_KEY = 'title-generator-history';
+  const INPUT_STORAGE_KEY = 'title-generator-input-draft'; // 入力内容の一時保存（5.4対応）
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
+  const AUTO_SAVE_DELAY = 1000; // 自動保存の遅延時間（ミリ秒）
   
   // 入力フォームのstate管理（5.4対応）
   const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
@@ -77,6 +79,80 @@ export default function TitleGeneratorPage() {
   const [videoMood, setVideoMood] = useState(""); // 動画の雰囲気
   
   const { handleAsyncError } = useErrorHandler();
+
+  // 自動保存用のタイマーref（5.4対応）
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialLoadRef = useRef(true); // 初回読み込みフラグ
+
+  // 入力内容の保存（5.4対応）
+  const saveInputDraft = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const draftData = {
+        videoTheme,
+        keywords,
+        targetAudience,
+        videoMood,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(INPUT_STORAGE_KEY, JSON.stringify(draftData));
+    } catch (err) {
+      console.error('入力内容保存失敗', err);
+    }
+  }, [videoTheme, keywords, targetAudience, videoMood]);
+
+  // 入力内容の読み込み（初回マウント時）（5.4対応）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(INPUT_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object') {
+          // 古いデータ（7日以上前）は削除
+          const daysSinceSave = (Date.now() - (parsed.timestamp || 0)) / (1000 * 60 * 60 * 24);
+          if (daysSinceSave < 7) {
+            if (parsed.videoTheme) setVideoTheme(parsed.videoTheme);
+            if (parsed.keywords) setKeywords(parsed.keywords);
+            if (parsed.targetAudience) setTargetAudience(parsed.targetAudience);
+            if (parsed.videoMood) setVideoMood(parsed.videoMood);
+          } else {
+            // 古いデータを削除
+            localStorage.removeItem(INPUT_STORAGE_KEY);
+          }
+        }
+      }
+      isInitialLoadRef.current = false;
+    } catch (err) {
+      console.error('入力内容読み込み失敗', err);
+      isInitialLoadRef.current = false;
+    }
+  }, []); // 初回のみ実行
+
+  // 自動保存（入力値変更時、debounce付き）（5.4対応）
+  useEffect(() => {
+    // 初回読み込み時は自動保存をスキップ
+    if (isInitialLoadRef.current) return;
+    
+    // 既存のタイマーをクリア
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    
+    // 新しいタイマーをセット（1秒後に保存）
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveInputDraft();
+    }, AUTO_SAVE_DELAY);
+    
+    // クリーンアップ
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [videoTheme, keywords, targetAudience, videoMood, saveInputDraft]);
 
   // 履歴の読み込み（初回マウント時）
   useEffect(() => {
@@ -249,6 +325,16 @@ Instagram: @your_instagram`;
         },
       };
       saveHistory(historyEntry);
+      
+      // 生成成功時は入力内容の一時保存をクリア（5.4対応）
+      // 履歴に保存されたので、一時保存は不要
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(INPUT_STORAGE_KEY);
+        } catch (err) {
+          console.error('一時保存クリア失敗', err);
+        }
+      }
       
       if (!isDesktop) {
         setActiveTab("results"); // モバイルでは結果タブに切り替える
