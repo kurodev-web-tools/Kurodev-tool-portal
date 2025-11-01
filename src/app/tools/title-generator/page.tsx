@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -35,9 +37,20 @@ export default function TitleGeneratorPage() {
   const [isLoading, setIsLoading] = useState(false); // ローディング状態
   const [finalTitle, setFinalTitle] = useState(""); // 最終タイトル
   const [finalDescription, setFinalDescription] = useState(""); // 最終概要欄
-  const [aiTitles, setAiTitles] = useState<string[]>([]); // AI提案タイトル案
+  
+  // タイトル案のデータ構造（お気に入り機能対応）
+  interface TitleOption {
+    id: string;
+    text: string;
+    isFavorite: boolean;
+  }
+  
+  const [aiTitles, setAiTitles] = useState<TitleOption[]>([]); // AI提案タイトル案
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
   const [copiedItem, setCopiedItem] = useState<string | null>(null); // コピー状態
+  
+  // お気に入りのローカルストレージキー
+  const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
   
   // 入力フォームのstate管理（5.4対応）
   const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
@@ -64,11 +77,37 @@ export default function TitleGeneratorPage() {
       // ここに生成ロジックを呼び出す処理が入る（今回はモック）
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const generatedTitles = [
+      const generatedTitleTexts = [
         "【初見】超絶高難易度ゲームに挑戦！絶叫必至の展開が...",
         "【実況】新作ゲームを完全攻略！隠し要素も全部見つけた",
         "【コラボ】人気VTuberと一緒にゲーム！予想外の展開に..."
       ];
+      
+      // 既存のお気に入り状態を読み込み
+      const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
+      const savedFavorites = (() => {
+        if (typeof window === 'undefined') return new Set<string>();
+        try {
+          const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
+          return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+        } catch {
+          return new Set<string>();
+        }
+      })();
+      
+      // タイトル案をオブジェクト配列に変換
+      const newTitles: TitleOption[] = generatedTitleTexts.map((text, index) => ({
+        id: `title-${Date.now()}-${index}`,
+        text,
+        isFavorite: savedFavorites.has(text),
+      }));
+      
+      // お気に入りを先頭に、その後にソート
+      const sortedTitles = [
+        ...newTitles.filter(t => t.isFavorite),
+        ...newTitles.filter(t => !t.isFavorite),
+      ];
+      
       const generatedDescription = `【動画の概要】
 この動画では、${videoTheme}について詳しく解説しています。
 
@@ -88,11 +127,11 @@ export default function TitleGeneratorPage() {
 Twitter: @your_twitter
 Instagram: @your_instagram`;
 
-      setAiTitles(generatedTitles);
+      setAiTitles(sortedTitles);
       setAiDescription(generatedDescription);
       // 最初のタイトル案を自動選択
-      if (generatedTitles.length > 0) {
-        setFinalTitle(generatedTitles[0]);
+      if (sortedTitles.length > 0) {
+        setFinalTitle(sortedTitles[0].text);
       }
       setFinalDescription(generatedDescription);
       
@@ -113,9 +152,79 @@ Instagram: @your_instagram`;
       await navigator.clipboard.writeText(text);
       setCopiedItem(type);
       setTimeout(() => setCopiedItem(null), 2000);
+      toast.success('コピーしました');
     } catch (err) {
       logger.error('コピー失敗', err, 'TitleGenerator');
+      toast.error('コピーに失敗しました');
     }
+  }, []);
+
+  // お気に入り状態を切り替え
+  const handleToggleFavorite = useCallback((titleId: string, titleText: string) => {
+    const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
+    
+    setAiTitles(prev => {
+      // 現在の状態を確認
+      const currentTitle = prev.find(t => t.id === titleId);
+      const willBeFavorite = !currentTitle?.isFavorite;
+      
+      const updated = prev.map(title => 
+        title.id === titleId 
+          ? { ...title, isFavorite: !title.isFavorite }
+          : title
+      );
+      
+      // お気に入りを先頭にソート
+      const sorted = [
+        ...updated.filter(t => t.isFavorite),
+        ...updated.filter(t => !t.isFavorite),
+      ];
+      
+      // ローカルストレージに保存
+      if (typeof window !== 'undefined') {
+        try {
+          const favorites = new Set<string>();
+          sorted.forEach(t => {
+            if (t.isFavorite) {
+              favorites.add(t.text);
+            }
+          });
+          localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favorites)));
+        } catch (err) {
+          logger.error('お気に入り保存失敗', err, 'TitleGenerator');
+        }
+      }
+      
+      // トースト通知
+      toast.success(willBeFavorite ? 'お気に入りに追加しました' : 'お気に入りを解除しました');
+      
+      return sorted;
+    });
+  }, []);
+
+  // ドラッグ&ドロップの並び替え
+  const onDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) {
+      return;
+    }
+
+    setAiTitles(prev => {
+      const reordered = Array.from(prev);
+      const [removed] = reordered.splice(sourceIndex, 1);
+      reordered.splice(destinationIndex, 0, removed);
+      
+      // お気に入りは先頭に固定（再ソート）
+      const favorites = reordered.filter(t => t.isFavorite);
+      const nonFavorites = reordered.filter(t => !t.isFavorite);
+      return [...favorites, ...nonFavorites];
+    });
   }, []);
 
   const controlPanelContent = (
@@ -253,36 +362,124 @@ Instagram: @your_instagram`;
           <>
             <Card>
               <CardHeader>
-                <CardTitle>タイトル案</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>タイトル案</span>
+                  {aiTitles.length > 0 && (
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {aiTitles.filter(t => t.isFavorite).length > 0 && (
+                        <Badge variant="outline" className="ml-2">
+                          {aiTitles.filter(t => t.isFavorite).length}件お気に入り
+                        </Badge>
+                      )}
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {aiTitles.map((title, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-md hover:bg-accent/50 transition-colors">
-                    <span className="flex-1 text-sm">{title}</span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleTitleSelect(title)}
-                        aria-label={`タイトル案${index + 1}を選択`}
-                      >
-                        選択
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopy(title, `title-${index}`)}
-                        aria-label={`タイトル案${index + 1}をコピー`}
-                      >
-                        {copiedItem === `title-${index}` ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
+                {aiTitles.length === 0 ? (
+                  <div className="text-center text-sm text-muted-foreground py-8">
+                    タイトル案がありません
                   </div>
-                ))}
+                ) : (
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="title-options">
+                      {(provided) => (
+                        <div 
+                          {...provided.droppableProps} 
+                          ref={provided.innerRef} 
+                          className="space-y-2"
+                        >
+                          {aiTitles.map((titleOption, index) => (
+                            <Draggable 
+                              key={titleOption.id} 
+                              draggableId={titleOption.id} 
+                              index={index}
+                              isDragDisabled={titleOption.isFavorite} // お気に入りは固定
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={cn(
+                                    "flex items-center gap-2 p-3 border rounded-md transition-all",
+                                    titleOption.isFavorite 
+                                      ? "bg-[#2D2D2D] border-[#20B2AA]/50" 
+                                      : "hover:bg-accent/50",
+                                    snapshot.isDragging && "shadow-lg opacity-90 bg-[#3A3A3A]",
+                                    titleOption.isFavorite && "border-l-4 border-l-[#20B2AA]"
+                                  )}
+                                >
+                                  {/* ドラッグハンドル */}
+                                  {!titleOption.isFavorite && (
+                                    <div
+                                      {...provided.dragHandleProps}
+                                      className="flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                                      aria-label="ドラッグして並び替え"
+                                    >
+                                      <GripVertical className="h-4 w-4" />
+                                    </div>
+                                  )}
+                                  
+                                  {/* お気に入りボタン */}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn(
+                                      "flex-shrink-0 h-8 w-8 p-0",
+                                      titleOption.isFavorite && "text-[#20B2AA]"
+                                    )}
+                                    onClick={() => handleToggleFavorite(titleOption.id, titleOption.text)}
+                                    aria-label={titleOption.isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
+                                  >
+                                    <Star 
+                                      className={cn(
+                                        "h-4 w-4",
+                                        titleOption.isFavorite ? "fill-[#20B2AA] text-[#20B2AA]" : ""
+                                      )} 
+                                    />
+                                  </Button>
+                                  
+                                  {/* タイトルテキスト */}
+                                  <span className={cn(
+                                    "flex-1 text-sm",
+                                    titleOption.isFavorite && "font-medium"
+                                  )}>
+                                    {titleOption.text}
+                                  </span>
+                                  
+                                  {/* アクションボタン */}
+                                  <div className="flex gap-2 flex-shrink-0">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleTitleSelect(titleOption.text)}
+                                      aria-label={`タイトル案${index + 1}を選択`}
+                                    >
+                                      選択
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCopy(titleOption.text, titleOption.id)}
+                                      aria-label={`タイトル案${index + 1}をコピー`}
+                                    >
+                                      {copiedItem === titleOption.id ? (
+                                        <Check className="h-4 w-4 text-[#20B2AA]" />
+                                      ) : (
+                                        <Copy className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                )}
               </CardContent>
             </Card>
             <Card>
