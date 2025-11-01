@@ -18,7 +18,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useErrorHandler } from "@/hooks/use-error-handler";
-import { validateTitle, validateDescription } from "@/lib/validation";
 import { logger } from "@/lib/logger";
 import {
   Tabs,
@@ -27,10 +26,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sidebar, SidebarToggle } from "@/components/layouts/Sidebar";
-
 export default function TitleGeneratorPage() {
-  const { isOpen: isRightPanelOpen, setIsOpen: setIsRightPanelOpen, isDesktop } = useSidebar({
+  const { isDesktop } = useSidebar({
     defaultOpen: true,
     desktopDefaultOpen: true,
   });
@@ -41,19 +38,21 @@ export default function TitleGeneratorPage() {
   const [aiTitles, setAiTitles] = useState<string[]>([]); // AI提案タイトル案
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
   const [copiedItem, setCopiedItem] = useState<string | null>(null); // コピー状態
+  
+  // 入力フォームのstate管理（5.4対応）
+  const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
+  const [keywords, setKeywords] = useState(""); // 主要キーワード
+  const [targetAudience, setTargetAudience] = useState(""); // ターゲット層
+  const [videoMood, setVideoMood] = useState(""); // 動画の雰囲気
+  
   const { handleAsyncError } = useErrorHandler();
 
   // T-04: フロントエンド内でのUIロジック実装
   const handleGenerateClick = useCallback(async () => {
-    // バリデーション
-    const titleError = validateTitle(finalTitle);
-    const descriptionError = validateDescription(finalDescription);
-    
-    if (titleError || descriptionError) {
-      const errorMsg = titleError || descriptionError;
-      logger.error('バリデーションエラー', { error: errorMsg }, 'TitleGenerator');
+    // 入力フォームのバリデーション（最低限のチェック）
+    if (!videoTheme.trim()) {
       toast.error('入力エラー', {
-        description: errorMsg
+        description: '動画のテーマ・内容を入力してください'
       });
       return;
     }
@@ -71,7 +70,7 @@ export default function TitleGeneratorPage() {
         "【コラボ】人気VTuberと一緒にゲーム！予想外の展開に..."
       ];
       const generatedDescription = `【動画の概要】
-この動画では、${finalTitle}について詳しく解説しています。
+この動画では、${videoTheme}について詳しく解説しています。
 
 【タイムスタンプ】
 00:00 オープニング
@@ -91,6 +90,10 @@ Instagram: @your_instagram`;
 
       setAiTitles(generatedTitles);
       setAiDescription(generatedDescription);
+      // 最初のタイトル案を自動選択
+      if (generatedTitles.length > 0) {
+        setFinalTitle(generatedTitles[0]);
+      }
       setFinalDescription(generatedDescription);
       
       if (!isDesktop) {
@@ -99,7 +102,7 @@ Instagram: @your_instagram`;
     }, "生成中にエラーが発生しました");
     
     setIsLoading(false);
-  }, [finalTitle, finalDescription, handleAsyncError, isDesktop]);
+  }, [videoTheme, handleAsyncError, isDesktop]);
 
   const handleTitleSelect = useCallback((title: string) => {
     setFinalTitle(title);
@@ -125,24 +128,49 @@ Instagram: @your_instagram`;
             <CardTitle>動画情報入力</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* 動画のテーマ・内容は全幅 */}
             <div>
               <Label htmlFor="video-theme">動画のテーマ・内容</Label>
               <Textarea
                 id="video-theme"
                 placeholder="動画の台本や要約などを入力..."
+                value={videoTheme}
+                onChange={(e) => setVideoTheme(e.target.value)}
+                rows={4}
+                className="resize-y"
               />
             </div>
-            <div>
-              <Label htmlFor="keywords">主要キーワード</Label>
-              <Input id="keywords" placeholder="例: ゲーム名, キャラクター名, 感想" />
+            
+            {/* 2カラムレイアウト（5.1対応） */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="keywords">主要キーワード</Label>
+                <Input 
+                  id="keywords" 
+                  placeholder="例: ゲーム名, キャラクター名, 感想"
+                  value={keywords}
+                  onChange={(e) => setKeywords(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="target-audience">ターゲット層</Label>
+                <Input 
+                  id="target-audience" 
+                  placeholder="例: 10代男性, VTuberファン"
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="target-audience">ターゲット層</Label>
-              <Input id="target-audience" placeholder="例: 10代男性, VTuberファン" />
-            </div>
+            
             <div>
               <Label htmlFor="video-mood">動画の雰囲気</Label>
-              <Input id="video-mood" placeholder="例: 面白い, 感動, 解説" />
+              <Input 
+                id="video-mood" 
+                placeholder="例: 面白い, 感動, 解説"
+                value={videoMood}
+                onChange={(e) => setVideoMood(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
@@ -275,27 +303,15 @@ Instagram: @your_instagram`;
     <div className="h-full flex flex-col lg:flex-row lg:h-screen">
       {isDesktop ? (
         <>
-          <main className="flex-grow p-4 w-full lg:w-auto">
+          {/* 左側: 入力フォーム（50%） */}
+          <aside className="w-full lg:w-1/2 border-r border-[#4A4A4A] bg-[#1A1A1A] overflow-y-auto">
+            {controlPanelContent}
+          </aside>
+
+          {/* 右側: 生成結果（50%） */}
+          <main className="w-full lg:w-1/2 p-4 bg-[#1A1A1A] overflow-y-auto">
             {resultsDisplayContent}
           </main>
-
-          {/* サイドバーが閉じている場合の開くボタン */}
-          {!isRightPanelOpen && (
-            <SidebarToggle
-              onOpen={() => setIsRightPanelOpen(true)}
-              isDesktop={isDesktop}
-            />
-          )}
-
-          {/* サイドバー */}
-          <Sidebar
-            isOpen={isRightPanelOpen}
-            onClose={() => setIsRightPanelOpen(false)}
-            title=""
-            isDesktop={isDesktop}
-          >
-            {controlPanelContent}
-          </Sidebar>
         </>
       ) : (
         <div className="border-b bg-background p-4">
