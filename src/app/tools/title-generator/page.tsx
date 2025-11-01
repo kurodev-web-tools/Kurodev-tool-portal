@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -65,15 +65,19 @@ export default function TitleGeneratorPage() {
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
   const [copiedItem, setCopiedItem] = useState<string | null>(null); // コピー状態
   const [history, setHistory] = useState<GenerationHistory[]>([]); // 生成履歴
+  const [hashtags, setHashtags] = useState<string[]>([]); // ハッシュタグリスト（5.7対応）
+  const [newHashtagInput, setNewHashtagInput] = useState(""); // 新規ハッシュタグ入力（5.7対応）
   
   // ローカルストレージキー
   const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
   const HISTORY_STORAGE_KEY = 'title-generator-history';
   const INPUT_STORAGE_KEY = 'title-generator-input-draft'; // 入力内容の一時保存（5.4対応）
+  const HASHTAG_FAVORITES_STORAGE_KEY = 'title-generator-hashtag-favorites'; // ハッシュタグのお気に入り（5.7対応）
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const AUTO_SAVE_DELAY = 1000; // 自動保存の遅延時間（ミリ秒）
   const YOUTUBE_DESCRIPTION_LIMIT = 5000; // YouTube概要欄の文字数制限（5.5対応）
   const YOUTUBE_TITLE_RECOMMENDED_LENGTH = 60; // YouTubeタイトルの推奨文字数（5.6対応）
+  const YOUTUBE_HASHTAG_RECOMMENDED_COUNT = 15; // YouTubeハッシュタグの推奨数（5.7対応）
   
   // 入力フォームのstate管理（5.4対応）
   const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
@@ -300,11 +304,17 @@ export default function TitleGeneratorPage() {
 ・次回予告: [リンク]
 
 【ハッシュタグ】
-#VTuber #ゲーム実況 #新作ゲーム #実況 #エンタメ
+${hashtags.length > 0 ? hashtags.map(tag => `#${tag}`).join(' ') : '#VTuber #ゲーム実況 #新作ゲーム #実況 #エンタメ'}
 
 【SNS】
 Twitter: @your_twitter
 Instagram: @your_instagram`;
+
+      // ハッシュタグが未設定の場合はデフォルトを設定（5.7対応）
+      if (hashtags.length === 0) {
+        const defaultHashtags = ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
+        setHashtags(defaultHashtags);
+      }
 
       setAiTitles(sortedTitles);
       setAiDescription(generatedDescription);
@@ -483,6 +493,137 @@ Instagram: @your_instagram`;
       isOverRecommended: charCount > YOUTUBE_TITLE_RECOMMENDED_LENGTH,
     };
   }, []);
+
+  // ハッシュタグ管理用のユーティリティ関数（5.7対応）
+  const extractHashtagsFromDescription = useCallback((description: string): string[] => {
+    const hashtagSection = description.match(/【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/);
+    if (!hashtagSection) return [];
+    
+    const hashtagLine = hashtagSection[1].trim();
+    const matches = hashtagLine.match(/#([\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)/g);
+    if (!matches) return [];
+    
+    return matches.map(tag => tag.replace('#', ''));
+  }, []);
+
+  const updateDescriptionHashtags = useCallback((newHashtags: string[]) => {
+    const hashtagString = newHashtags.length > 0 
+      ? newHashtags.map(tag => `#${tag}`).join(' ') 
+      : '#VTuber #ゲーム実況 #新作ゲーム #実況 #エンタメ';
+    
+    // 概要欄の【ハッシュタグ】セクションを更新
+    setAiDescription(prev => {
+      if (prev.includes('【ハッシュタグ】')) {
+        return prev.replace(
+          /【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/,
+          `【ハッシュタグ】\n${hashtagString}`
+        );
+      } else {
+        // 【ハッシュタグ】セクションが存在しない場合は追加
+        return prev + (prev.endsWith('\n') ? '' : '\n') + `\n【ハッシュタグ】\n${hashtagString}`;
+      }
+    });
+    
+    // finalDescriptionも更新
+    setFinalDescription(prev => {
+      if (prev.includes('【ハッシュタグ】')) {
+        return prev.replace(
+          /【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/,
+          `【ハッシュタグ】\n${hashtagString}`
+        );
+      } else {
+        return prev + (prev.endsWith('\n') ? '' : '\n') + `\n【ハッシュタグ】\n${hashtagString}`;
+      }
+    });
+  }, []);
+
+  // ハッシュタグの追加
+  const handleAddHashtag = useCallback((tag: string) => {
+    const trimmedTag = tag.trim().replace(/^#/, ''); // #を削除
+    if (!trimmedTag || hashtags.includes(trimmedTag)) return;
+    
+    const newHashtags = [...hashtags, trimmedTag];
+    setHashtags(newHashtags);
+    updateDescriptionHashtags(newHashtags);
+    setNewHashtagInput("");
+  }, [hashtags, updateDescriptionHashtags]);
+
+  // ハッシュタグの削除
+  const handleRemoveHashtag = useCallback((tag: string) => {
+    const newHashtags = hashtags.filter(t => t !== tag);
+    setHashtags(newHashtags);
+    updateDescriptionHashtags(newHashtags);
+  }, [hashtags, updateDescriptionHashtags]);
+
+  // ハッシュタグのお気に入り保存
+  const handleSaveHashtagToFavorites = useCallback((tag: string) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(HASHTAG_FAVORITES_STORAGE_KEY);
+      const favorites = stored ? JSON.parse(stored) : [];
+      if (!favorites.includes(tag)) {
+        const updated = [...favorites, tag];
+        localStorage.setItem(HASHTAG_FAVORITES_STORAGE_KEY, JSON.stringify(updated));
+        toast.success('ハッシュタグをお気に入りに追加しました');
+      }
+    } catch (err) {
+      console.error('ハッシュタグお気に入り保存失敗', err);
+    }
+  }, []);
+
+  // ハッシュタグのお気に入り読み込み
+  const loadHashtagFavorites = useCallback(() => {
+    if (typeof window === 'undefined') return [];
+    
+    try {
+      const stored = localStorage.getItem(HASHTAG_FAVORITES_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (err) {
+      console.error('ハッシュタグお気に入り読み込み失敗', err);
+      return [];
+    }
+  }, []);
+
+  // ハッシュタグ候補の自動提案（簡易版）
+  const suggestHashtags = useCallback((keywords: string, videoTheme: string) => {
+    const suggestions: string[] = [];
+    
+    // キーワードから生成
+    const keywordList = keywords.split(/[,、，]/).map(k => k.trim()).filter(k => k.length > 0);
+    keywordList.forEach(keyword => {
+      if (keyword.length <= 10) {
+        suggestions.push(keyword);
+      }
+    });
+    
+    // 動画テーマから生成（簡易的なキーワード抽出）
+    if (videoTheme.includes('ゲーム') || videoTheme.includes('ゲーム実況')) {
+      suggestions.push('VTuber', 'ゲーム実況', '実況');
+    }
+    if (videoTheme.includes('歌') || videoTheme.includes('歌枠')) {
+      suggestions.push('VTuber', '歌枠', '歌ってみた');
+    }
+    if (videoTheme.includes('コラボ')) {
+      suggestions.push('VTuber', 'コラボ', 'コラボ配信');
+    }
+    
+    // 一般的なVTuberハッシュタグ
+    suggestions.push('VTuber', 'バーチャルYouTuber', 'エンタメ');
+    
+    // 重複を削除して返す
+    return Array.from(new Set(suggestions));
+  }, []);
+
+  // 概要欄からハッシュタグを抽出（初回読み込み時）
+  useEffect(() => {
+    if (aiDescription) {
+      const extracted = extractHashtagsFromDescription(aiDescription);
+      if (extracted.length > 0) {
+        setHashtags(extracted);
+      }
+    }
+  }, [aiDescription, extractHashtagsFromDescription]);
 
   // ドラッグ&ドロップの並び替え
   const onDragEnd = useCallback((result: DropResult) => {
@@ -761,6 +902,189 @@ Instagram: @your_instagram`;
                   navigator.clipboard.writeText(finalDescription);
                   toast.success('概要欄をコピーしました');
                 }} disabled={!finalDescription}>コピー</Button>
+              </div>
+            </div>
+            
+            {/* ハッシュタグ管理エリア（5.7対応） */}
+            <div>
+              <Label className="flex items-center justify-between mb-2">
+                <span className="flex items-center gap-2">
+                  <Hash className="h-4 w-4" />
+                  ハッシュタグ
+                </span>
+                <span className={cn(
+                  "text-xs font-normal",
+                  hashtags.length > YOUTUBE_HASHTAG_RECOMMENDED_COUNT
+                    ? "text-yellow-400"
+                    : hashtags.length >= 10 && hashtags.length <= YOUTUBE_HASHTAG_RECOMMENDED_COUNT
+                    ? "text-green-400"
+                    : "text-muted-foreground"
+                )}>
+                  {hashtags.length} / {YOUTUBE_HASHTAG_RECOMMENDED_COUNT}（推奨: 10-15個）
+                </span>
+              </Label>
+              
+              {/* ハッシュタグ一覧 */}
+              <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[60px] bg-muted/30 mb-2">
+                {hashtags.length === 0 ? (
+                  <div className="text-sm text-muted-foreground italic w-full text-center py-2">
+                    ハッシュタグがありません
+                  </div>
+                ) : (
+                  hashtags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="flex items-center gap-1.5 px-2 py-1 text-sm group/hashtag"
+                    >
+                      <Hash className="h-3 w-3" />
+                      {tag}
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 opacity-0 group-hover/hashtag:opacity-100 hover:bg-[#20B2AA]/20 hover:text-[#20B2AA] rounded-full transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveHashtagToFavorites(tag);
+                          }}
+                          aria-label={`${tag}をお気に入りに追加`}
+                        >
+                          <Star className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground rounded-full"
+                          onClick={() => handleRemoveHashtag(tag)}
+                          aria-label={`${tag}を削除`}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </Badge>
+                  ))
+                )}
+              </div>
+              
+              {/* ハッシュタグ追加・管理 */}
+              <div className="space-y-2">
+                {/* 新規ハッシュタグ入力 */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="ハッシュタグを入力（#は不要）"
+                    value={newHashtagInput}
+                    onChange={(e) => setNewHashtagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newHashtagInput.trim()) {
+                        handleAddHashtag(newHashtagInput);
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (newHashtagInput.trim()) {
+                        handleAddHashtag(newHashtagInput);
+                      }
+                    }}
+                    disabled={!newHashtagInput.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* 候補提案とお気に入り */}
+                <div className="flex gap-2 flex-wrap">
+                  {/* 候補提案ボタン */}
+                  {(() => {
+                    const suggestions = suggestHashtags(keywords, videoTheme);
+                    const availableSuggestions = suggestions.filter(s => !hashtags.includes(s));
+                    return availableSuggestions.length > 0 && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">候補:</span>
+                        {availableSuggestions.slice(0, 5).map((suggestion) => (
+                          <Button
+                            key={suggestion}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-7"
+                            onClick={() => handleAddHashtag(suggestion)}
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            {suggestion}
+                          </Button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* お気に入りハッシュタグ */}
+                  {(() => {
+                    const favorites = loadHashtagFavorites();
+                    const availableFavorites = (favorites as string[]).filter((f: string) => !hashtags.includes(f));
+                    return availableFavorites.length > 0 && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">お気に入り:</span>
+                        {availableFavorites.slice(0, 5).map((favorite) => (
+                          <Button
+                            key={favorite}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-7"
+                            onClick={() => handleAddHashtag(favorite)}
+                          >
+                            <Star className="h-3 w-3 mr-1 fill-[#20B2AA] text-[#20B2AA]" />
+                            {favorite}
+                          </Button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+                
+                {/* プリセット */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">プリセット:</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => {
+                      const preset = ['VTuber', 'ゲーム実況', '実況', 'エンタメ'];
+                      setHashtags(preset);
+                      updateDescriptionHashtags(preset);
+                    }}
+                  >
+                    ゲーム実況
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => {
+                      const preset = ['VTuber', '歌枠', '歌ってみた', 'エンタメ'];
+                      setHashtags(preset);
+                      updateDescriptionHashtags(preset);
+                    }}
+                  >
+                    歌枠
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => {
+                      const preset = ['VTuber', 'コラボ', 'コラボ配信', 'エンタメ'];
+                      setHashtags(preset);
+                      updateDescriptionHashtags(preset);
+                    }}
+                  >
+                    コラボ
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
