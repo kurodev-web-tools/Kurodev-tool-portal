@@ -3,11 +3,21 @@ import { useEditorState } from './useEditorState';
 import { useUIState } from './useUIState';
 import { toast } from 'sonner';
 
+interface UseKeyboardShortcutsParams {
+  onSave?: () => void;
+  onOpenShortcuts?: () => void;
+  zoom?: number;
+  setZoom?: (zoom: number) => void;
+  onFitToScreen?: () => void;
+  moveLayerUp?: (id: string) => void;
+  moveLayerDown?: (id: string) => void;
+}
+
 /**
  * キーボードショートカットを管理するフック
  * 既存の機能を保持しながら、キーボードイベントを管理
  */
-export const useKeyboardShortcuts = () => {
+export const useKeyboardShortcuts = (params?: UseKeyboardShortcutsParams) => {
   console.log('useKeyboardShortcuts hook called');
   const editorState = useEditorState();
   console.log('editorState updated:', {
@@ -42,6 +52,16 @@ export const useKeyboardShortcuts = () => {
 
   // UI状態を取得（グリッド・ガイド設定用）
   const uiState = useUIState();
+
+  const {
+    onSave,
+    onOpenShortcuts,
+    zoom = 1,
+    setZoom,
+    onFitToScreen,
+    moveLayerUp,
+    moveLayerDown,
+  } = params || {};
 
   // キーボードイベントハンドラー
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -114,6 +134,77 @@ export const useKeyboardShortcuts = () => {
             toast.success('レイヤーを削除しました');
           }
           break;
+        case 's':
+        case 'S':
+          e.preventDefault();
+          // Ctrl+S: 保存
+          if (onSave) {
+            onSave();
+          }
+          break;
+        case '0':
+          e.preventDefault();
+          // Ctrl+0: 画面にフィット
+          if (onFitToScreen) {
+            onFitToScreen();
+          } else if (setZoom) {
+            setZoom(1);
+          }
+          break;
+        case '=':
+        case '+':
+          e.preventDefault();
+          // Ctrl++: ズームイン
+          if (setZoom && zoom < 3.0) {
+            const newZoom = Math.min(zoom + 0.25, 3.0);
+            setZoom(newZoom);
+          }
+          break;
+        case '-':
+          e.preventDefault();
+          // Ctrl+-: ズームアウト
+          if (setZoom && zoom > 0.1) {
+            const newZoom = Math.max(zoom - 0.25, 0.1);
+            setZoom(newZoom);
+          }
+          break;
+        case ',':
+          e.preventDefault();
+          // Ctrl+,: ズームをリセット（100%）
+          if (setZoom) {
+            setZoom(1);
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          // Ctrl+↑: レイヤーを上に移動
+          if (selectedLayerId && moveLayerUp) {
+            moveLayerUp(selectedLayerId);
+          }
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          // Ctrl+↓: レイヤーを下に移動
+          if (selectedLayerId && moveLayerDown) {
+            moveLayerDown(selectedLayerId);
+          }
+          break;
+      }
+    }
+
+    // 単独キー（入力欄でない場合のみ）
+    const isInputFocused = document.activeElement?.tagName === 'INPUT' || 
+                          document.activeElement?.tagName === 'TEXTAREA';
+    
+    if (!isInputFocused) {
+      switch (e.key) {
+        case '?':
+          // ?: ショートカット一覧を表示
+          if (onOpenShortcuts) {
+            e.preventDefault();
+            onOpenShortcuts();
+          }
+          break;
       }
     }
 
@@ -180,6 +271,13 @@ export const useKeyboardShortcuts = () => {
     handleRedo,
     setIsShiftKeyDown,
     uiState,
+    onSave,
+    onOpenShortcuts,
+    zoom,
+    setZoom,
+    onFitToScreen,
+    moveLayerUp,
+    moveLayerDown,
   ]);
 
   // キーアップイベントハンドラー

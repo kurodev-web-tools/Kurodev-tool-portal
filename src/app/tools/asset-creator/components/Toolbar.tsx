@@ -30,6 +30,7 @@ import {
   Zap,
   Settings,
   ChevronRight,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/utils/historyUtils';
@@ -62,6 +63,8 @@ interface ToolbarProps {
   history?: HistoryEntry[];
   historyIndex?: number;
   onJumpToHistory?: (index: number) => void;
+  // ショートカット一覧
+  onOpenShortcuts?: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -89,6 +92,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   setShowSafeArea,
   showCenterLines = false,
   setShowCenterLines,
+  onOpenShortcuts,
 }) => {
   // 業界標準のズーム刻み (Adobe/Figma準拠) + 最小10%統一
   const MIN_ZOOM = 0.10; // 10%最小値
@@ -506,6 +510,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        {/* ヘルプボタン */}
+        {onOpenShortcuts && (
+          <>
+            <Separator orientation="vertical" className="h-6" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenShortcuts}
+              title="キーボードショートカット一覧 (?)"
+              aria-label="キーボードショートカット一覧を表示"
+              aria-keyshortcuts="?"
+            >
+              <HelpCircle className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </>
+        )}
       </div>
     </nav>
   );

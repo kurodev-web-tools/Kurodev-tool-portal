@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { ThumbnailProject } from '../types/project';
 import { saveProject as saveProjectUtil } from '../utils/projectUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ShortcutsDialog } from './ShortcutsDialog';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -80,8 +81,8 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
   const [savedProject, setSavedProject] = useState<ThumbnailProject | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // キーボードショートカット管理
-  const { isShiftKeyDown } = useKeyboardShortcuts();
+  // ショートカット一覧表示
+  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   
   // 左サイドバー状態管理
   const { isOpen: isLeftSidebarOpen, setIsOpen: setIsLeftSidebarOpen, isDesktop } = useSidebar({
@@ -837,6 +838,17 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
       }
     };
   }, [editorState.layers, editorState.selectedLayerId, currentProjectName, editorState.selectedTemplate]);
+
+  // キーボードショートカット管理（handleSaveの後に定義）
+  const { isShiftKeyDown } = useKeyboardShortcuts({
+    onSave: handleSave,
+    onOpenShortcuts: () => setShowShortcutsDialog(true),
+    zoom: editorState.zoom,
+    setZoom: editorState.setZoom,
+    onFitToScreen: handleFitToScreen,
+    moveLayerUp: editorState.moveLayerUp,
+    moveLayerDown: editorState.moveLayerDown,
+  });
 
   const handleUndo = React.useCallback(() => {
     console.log('Toolbar undo button clicked');
@@ -2020,6 +2032,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
           history={editorState.history}
           historyIndex={editorState.historyIndex}
           onJumpToHistory={editorState.jumpToHistory}
+          onOpenShortcuts={() => setShowShortcutsDialog(true)}
         />
       )}
       
@@ -2420,6 +2433,12 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ショートカット一覧ダイアログ */}
+      <ShortcutsDialog
+        open={showShortcutsDialog}
+        onOpenChange={setShowShortcutsDialog}
+      />
     </div>
   );
 };
