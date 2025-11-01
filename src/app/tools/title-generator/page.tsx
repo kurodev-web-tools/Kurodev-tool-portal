@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -73,6 +73,7 @@ export default function TitleGeneratorPage() {
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const AUTO_SAVE_DELAY = 1000; // 自動保存の遅延時間（ミリ秒）
   const YOUTUBE_DESCRIPTION_LIMIT = 5000; // YouTube概要欄の文字数制限（5.5対応）
+  const YOUTUBE_TITLE_RECOMMENDED_LENGTH = 60; // YouTubeタイトルの推奨文字数（5.6対応）
   
   // 入力フォームのstate管理（5.4対応）
   const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
@@ -403,6 +404,84 @@ Instagram: @your_instagram`;
       
       return sorted;
     });
+  }, []);
+
+  // タイトル分析用のユーティリティ関数（5.6対応）
+  const analyzeTitle = useCallback((title: string, inputKeywords: string) => {
+    const charCount = title.length;
+    const keywordList = inputKeywords.split(/[,、，]/).map(k => k.trim()).filter(k => k.length > 0);
+    
+    // キーワード含有率の計算
+    let keywordMatches = 0;
+    keywordList.forEach(keyword => {
+      if (title.toLowerCase().includes(keyword.toLowerCase())) {
+        keywordMatches++;
+      }
+    });
+    const keywordCoverage = keywordList.length > 0 
+      ? Math.round((keywordMatches / keywordList.length) * 100) 
+      : 0;
+    
+    // 特徴タグの検出
+    const features: string[] = [];
+    if (title.includes('【') && title.includes('】')) {
+      features.push('構造化');
+    }
+    if (title.includes('！') || title.includes('!')) {
+      features.push('キャッチー');
+    }
+    if (title.includes('？') || title.includes('?')) {
+      features.push('疑問形');
+    }
+    if (keywordCoverage >= 50) {
+      features.push('キーワード豊富');
+    }
+    if (charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH && charCount >= 30) {
+      features.push('最適長');
+    }
+    if (charCount > YOUTUBE_TITLE_RECOMMENDED_LENGTH) {
+      features.push('長文');
+    }
+    if (charCount < 30) {
+      features.push('短文');
+    }
+    
+    // 評価スコアの計算（0-100点）
+    let score = 0;
+    // 文字数スコア（30-60文字が最適: 40点満点）
+    if (charCount >= 30 && charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH) {
+      score += 40;
+    } else if (charCount > YOUTUBE_TITLE_RECOMMENDED_LENGTH && charCount <= 70) {
+      score += 30; // 少し長いが許容範囲
+    } else if (charCount > 70) {
+      score += 10; // 長すぎる
+    } else if (charCount >= 20 && charCount < 30) {
+      score += 25; // やや短い
+    } else {
+      score += 10; // 短すぎる
+    }
+    
+    // キーワード含有率スコア（30点満点）
+    score += Math.round((keywordCoverage / 100) * 30);
+    
+    // 特徴タグスコア（30点満点）
+    let featureScore = 0;
+    if (features.includes('構造化')) featureScore += 10;
+    if (features.includes('キャッチー')) featureScore += 10;
+    if (features.includes('最適長')) featureScore += 10;
+    score += Math.min(featureScore, 30);
+    
+    // クリック率予測スコア（簡易版、scoreをベースに計算）
+    const clickRateScore = Math.round(score * 0.8); // 簡易的な計算
+    
+    return {
+      charCount,
+      keywordCoverage,
+      features,
+      score: Math.min(score, 100),
+      clickRateScore,
+      isOverRecommended: charCount > YOUTUBE_TITLE_RECOMMENDED_LENGTH,
+    };
   }, []);
 
   // ドラッグ&ドロップの並び替え
@@ -783,13 +862,106 @@ Instagram: @your_instagram`;
                                     />
                                   </Button>
                                   
-                                  {/* タイトルテキスト */}
-                                  <span className={cn(
-                                    "flex-1 text-sm",
-                                    titleOption.isFavorite && "font-medium"
-                                  )}>
-                                    {titleOption.text}
-                                  </span>
+                                  {/* タイトルと分析情報 */}
+                                  <div className="flex-1 min-w-0">
+                                    {/* タイトルテキスト */}
+                                    <span className={cn(
+                                      "block text-sm mb-2",
+                                      titleOption.isFavorite && "font-medium"
+                                    )}>
+                                      {titleOption.text}
+                                    </span>
+                                    
+                                    {/* 分析情報（5.6対応） */}
+                                    {(() => {
+                                      const analysis = analyzeTitle(titleOption.text, keywords);
+                                      return (
+                                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                                          {/* 文字数表示 */}
+                                          <div className="flex items-center gap-1">
+                                            <span className={cn(
+                                              "font-medium",
+                                              analysis.isOverRecommended 
+                                                ? "text-yellow-400" 
+                                                : analysis.charCount >= 30 && analysis.charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH
+                                                ? "text-green-400"
+                                                : "text-muted-foreground"
+                                            )}>
+                                              {analysis.charCount}文字
+                                            </span>
+                                            {analysis.isOverRecommended && (
+                                              <AlertCircle className="h-3 w-3 text-yellow-400" />
+                                            )}
+                                            {analysis.charCount >= 30 && analysis.charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH && (
+                                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-green-400/50 text-green-400">
+                                                推奨
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          
+                                          {/* キーワード含有率 */}
+                                          {keywords.trim() && (
+                                            <div className="flex items-center gap-1">
+                                              <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                                              <span className="text-muted-foreground">
+                                                キーワード: {analysis.keywordCoverage}%
+                                              </span>
+                                              {analysis.keywordCoverage >= 50 && (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-blue-400/50 text-blue-400">
+                                                  高
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          )}
+                                          
+                                          {/* 特徴タグ */}
+                                          {analysis.features.length > 0 && (
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                              {analysis.features.map((feature, idx) => (
+                                                <Badge 
+                                                  key={idx}
+                                                  variant="secondary" 
+                                                  className="text-[10px] px-1.5 py-0 h-4"
+                                                >
+                                                  {feature}
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          )}
+                                          
+                                          {/* 評価スコア */}
+                                          <div className="flex items-center gap-1 ml-auto">
+                                            <span className="text-muted-foreground">スコア:</span>
+                                            <span className={cn(
+                                              "font-semibold",
+                                              analysis.score >= 80 
+                                                ? "text-green-400"
+                                                : analysis.score >= 60
+                                                ? "text-yellow-400"
+                                                : "text-red-400"
+                                            )}>
+                                              {analysis.score}
+                                            </span>
+                                            <span className="text-muted-foreground text-[10px]">/100</span>
+                                            {/* 星評価 */}
+                                            <div className="flex gap-0.5 ml-1">
+                                              {[...Array(5)].map((_, i) => (
+                                                <Star
+                                                  key={i}
+                                                  className={cn(
+                                                    "h-2.5 w-2.5",
+                                                    i < Math.round(analysis.score / 20)
+                                                      ? "fill-yellow-400 text-yellow-400"
+                                                      : "text-muted-foreground/30"
+                                                  )}
+                                                />
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
                                   
                                   {/* アクションボタン */}
                                   <div className="flex gap-2 flex-shrink-0">
