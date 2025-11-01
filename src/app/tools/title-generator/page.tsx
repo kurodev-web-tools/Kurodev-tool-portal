@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save, RefreshCw, Wand2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -84,6 +84,9 @@ export default function TitleGeneratorPage() {
   const [newHashtagInput, setNewHashtagInput] = useState(""); // 新規ハッシュタグ入力（5.7対応）
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default"); // 選択中のテンプレート（5.8対応）
   const [showTemplatePreview, setShowTemplatePreview] = useState(false); // テンプレートプレビュー表示（5.8対応）
+  const [isRegeneratingTitles, setIsRegeneratingTitles] = useState(false); // タイトルのみ再生成中（5.10対応）
+  const [isRegeneratingDescription, setIsRegeneratingDescription] = useState(false); // 概要欄のみ再生成中（5.10対応）
+  const [regeneratingTitleId, setRegeneratingTitleId] = useState<string | null>(null); // 個別タイトル再生成中（5.10対応）
   
   // 概要欄テンプレートのデータ構造（5.8対応）
   interface TemplateSection {
@@ -524,6 +527,193 @@ export default function TitleGeneratorPage() {
     return matches.map(tag => tag.replace('#', ''));
   }, []);
 
+  // タイトル生成用の共通関数（ダミーデータ、5.10対応）
+  const generateTitles = useCallback(async (baseTitle?: string): Promise<TitleOption[]> => {
+    // ダミーデータ生成（AI実装時はここを置き換え）
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    let generatedTitleTexts: string[];
+    if (baseTitle) {
+      // ベースタイトルから別パターンを生成（ダミーデータ）
+      const patterns = [
+        baseTitle.replace('【初見】', '【実況】').replace('挑戦', '攻略'),
+        baseTitle.replace('超絶高難易度', '新作').replace('絶叫', '完全'),
+        baseTitle.replace('【', '【コラボ】').replace('挑戦', '一緒にプレイ'),
+      ];
+      generatedTitleTexts = patterns;
+    } else {
+      // 通常生成（ダミーデータ）
+      generatedTitleTexts = [
+        "【初見】超絶高難易度ゲームに挑戦！絶叫必至の展開が...",
+        "【実況】新作ゲームを完全攻略！隠し要素も全部見つけた",
+        "【コラボ】人気VTuberと一緒にゲーム！予想外の展開に..."
+      ];
+    }
+    
+    // 既存のお気に入り状態を読み込み
+    const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
+    const savedFavorites = (() => {
+      if (typeof window === 'undefined') return new Set<string>();
+      try {
+        const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
+        return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+      } catch {
+        return new Set<string>();
+      }
+    })();
+    
+    // タイトル案をオブジェクト配列に変換
+    const newTitles: TitleOption[] = generatedTitleTexts.map((text, index) => ({
+      id: `title-${Date.now()}-${index}`,
+      text,
+      isFavorite: savedFavorites.has(text),
+    }));
+    
+    // お気に入りを先頭に、その後にソート
+    return [
+      ...newTitles.filter(t => t.isFavorite),
+      ...newTitles.filter(t => !t.isFavorite),
+    ];
+  }, []);
+
+  // 概要欄生成用の共通関数（5.10対応）
+  const generateDescription = useCallback((): string => {
+    // 選択中のテンプレートから概要欄を生成（5.8対応）
+    const selectedTemplate = allTemplates.find(t => t.id === selectedTemplateId) || presetTemplates[0];
+    
+    // ハッシュタグが未設定の場合はデフォルトを設定（5.7対応）
+    const currentHashtags = hashtags.length > 0 ? hashtags : ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
+    
+    // テンプレートから概要欄を生成
+    return generateDescriptionFromTemplate({
+      ...selectedTemplate,
+      sections: selectedTemplate.sections.map(s => 
+        s.type === 'hashtag' 
+          ? { ...s, content: currentHashtags.map(tag => `#${tag}`).join(' ') }
+          : s
+      ),
+    });
+  }, [allTemplates, selectedTemplateId, presetTemplates, hashtags, generateDescriptionFromTemplate]);
+
+  // タイトルのみ再生成（5.10対応）
+  const handleGenerateTitlesOnly = useCallback(async () => {
+    if (!videoTheme.trim()) {
+      toast.error('入力エラー', {
+        description: '動画のテーマ・内容を入力してください'
+      });
+      return;
+    }
+
+    setIsRegeneratingTitles(true);
+    
+    try {
+      const newTitles = await generateTitles();
+      setAiTitles(newTitles);
+      
+      // 最初のタイトル案を自動選択
+      if (newTitles.length > 0) {
+        setFinalTitle(newTitles[0].text);
+      }
+      
+      toast.success('タイトルを再生成しました');
+    } catch (err) {
+      logger.error('タイトル再生成失敗', err, 'TitleGenerator');
+      toast.error('タイトルの再生成に失敗しました');
+    } finally {
+      setIsRegeneratingTitles(false);
+    }
+  }, [videoTheme, generateTitles]);
+
+  // 概要欄のみ再生成（5.10対応）
+  const handleGenerateDescriptionOnly = useCallback(async () => {
+    if (!videoTheme.trim()) {
+      toast.error('入力エラー', {
+        description: '動画のテーマ・内容を入力してください'
+      });
+      return;
+    }
+
+    setIsRegeneratingDescription(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // ダミーの待機時間
+      
+      const newDescription = generateDescription();
+      setAiDescription(newDescription);
+      setFinalDescription(newDescription);
+      
+      // ハッシュタグを抽出して設定
+      const extracted = extractHashtagsFromDescription(newDescription);
+      if (extracted.length > 0) {
+        setHashtags(extracted);
+      }
+      
+      toast.success('概要欄を再生成しました');
+    } catch (err) {
+      logger.error('概要欄再生成失敗', err, 'TitleGenerator');
+      toast.error('概要欄の再生成に失敗しました');
+    } finally {
+      setIsRegeneratingDescription(false);
+    }
+  }, [videoTheme, generateDescription, extractHashtagsFromDescription]);
+
+  // 個別タイトル案の再生成（5.10対応）
+  const handleRegenerateSingleTitle = useCallback(async (titleId: string, currentText: string) => {
+    setRegeneratingTitleId(titleId);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800)); // ダミーの待機時間
+      
+      // 個別タイトル生成（ダミーデータ）
+      const variants = [
+        currentText.replace('【初見】', '【実況】'),
+        currentText.replace('挑戦', '攻略'),
+        currentText + '【衝撃の結末】',
+      ];
+      const newText = variants[Math.floor(Math.random() * variants.length)];
+      
+      setAiTitles(prev => prev.map(title => 
+        title.id === titleId 
+          ? { ...title, text: newText }
+          : title
+      ));
+      
+      toast.success('タイトル案を再生成しました');
+    } catch (err) {
+      logger.error('個別タイトル再生成失敗', err, 'TitleGenerator');
+      toast.error('タイトル案の再生成に失敗しました');
+    } finally {
+      setRegeneratingTitleId(null);
+    }
+  }, []);
+
+  // タイトル案ベースで別パターンを生成（5.10対応）
+  const handleGenerateVariantFromTitle = useCallback(async (baseTitleText: string) => {
+    setIsRegeneratingTitles(true);
+    
+    try {
+      const newTitles = await generateTitles(baseTitleText);
+      
+      // 既存のタイトルに追加（お気に入りを維持）
+      setAiTitles(prev => {
+        const existingTexts = new Set(prev.map(t => t.text));
+        const filteredNew = newTitles.filter(t => !existingTexts.has(t.text));
+        return [
+          ...prev.filter(t => t.isFavorite),
+          ...filteredNew,
+          ...prev.filter(t => !t.isFavorite && !existingTexts.has(t.text)),
+        ];
+      });
+      
+      toast.success('別パターンを生成しました');
+    } catch (err) {
+      logger.error('別パターン生成失敗', err, 'TitleGenerator');
+      toast.error('別パターンの生成に失敗しました');
+    } finally {
+      setIsRegeneratingTitles(false);
+    }
+  }, [generateTitles]);
+
   // T-04: フロントエンド内でのUIロジック実装
   const handleGenerateClick = useCallback(async () => {
     // 入力フォームのバリデーション（5.9対応: 全フィールドを検証）
@@ -560,59 +750,24 @@ export default function TitleGeneratorPage() {
     
     // 非同期処理をエラーハンドリングでラップ
     await handleAsyncError(async () => {
-      // ここに生成ロジックを呼び出す処理が入る（今回はモック）
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const generatedTitleTexts = [
-        "【初見】超絶高難易度ゲームに挑戦！絶叫必至の展開が...",
-        "【実況】新作ゲームを完全攻略！隠し要素も全部見つけた",
-        "【コラボ】人気VTuberと一緒にゲーム！予想外の展開に..."
-      ];
-      
-      // 既存のお気に入り状態を読み込み
-      const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
-      const savedFavorites = (() => {
-        if (typeof window === 'undefined') return new Set<string>();
-        try {
-          const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
-          return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
-        } catch {
-          return new Set<string>();
-        }
-      })();
-      
-      // タイトル案をオブジェクト配列に変換
-      const newTitles: TitleOption[] = generatedTitleTexts.map((text, index) => ({
-        id: `title-${Date.now()}-${index}`,
-        text,
-        isFavorite: savedFavorites.has(text),
-      }));
-      
-      // お気に入りを先頭に、その後にソート
-      const sortedTitles = [
-        ...newTitles.filter(t => t.isFavorite),
-        ...newTitles.filter(t => !t.isFavorite),
-      ];
-      
-      // 選択中のテンプレートから概要欄を生成（5.8対応）
-      const selectedTemplate = allTemplates.find(t => t.id === selectedTemplateId) || presetTemplates[0];
+      // タイトルと概要欄の両方を生成（共通関数を使用）
+      const sortedTitles = await generateTitles();
+      const generatedDescription = generateDescription();
       
       // ハッシュタグが未設定の場合はデフォルトを設定（5.7対応）
       if (hashtags.length === 0) {
         const defaultHashtags = ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
         setHashtags(defaultHashtags);
+        // テンプレートを再適用してハッシュタグを反映
+        const updatedDescription = generateDescription();
+        setAiTitles(sortedTitles);
+        setAiDescription(updatedDescription);
+        setFinalDescription(updatedDescription);
+      } else {
+        setAiTitles(sortedTitles);
+        setAiDescription(generatedDescription);
+        setFinalDescription(generatedDescription);
       }
-      
-      // テンプレートから概要欄を生成（現在のhashtags stateを使用）
-      const currentHashtags = hashtags.length > 0 ? hashtags : ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
-      const generatedDescription = generateDescriptionFromTemplate({
-        ...selectedTemplate,
-        sections: selectedTemplate.sections.map(s => 
-          s.type === 'hashtag' 
-            ? { ...s, content: currentHashtags.map(tag => `#${tag}`).join(' ') }
-            : s
-        ),
-      });
 
       setAiTitles(sortedTitles);
       setAiDescription(generatedDescription);
@@ -1266,7 +1421,54 @@ export default function TitleGeneratorPage() {
 
   const resultsDisplayContent = (
     <div className="flex flex-col h-full p-6 space-y-4 relative">
-      <h2 className="text-2xl font-semibold">生成結果</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-semibold">生成結果</h2>
+        {/* 再生成ボタンセクション（5.10対応） */}
+        {aiTitles.length > 0 || aiDescription ? (
+          <div className="flex gap-2">
+            {aiTitles.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateTitlesOnly}
+                disabled={isRegeneratingTitles || isLoading}
+              >
+                {isRegeneratingTitles ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    再生成中...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    タイトルのみ再生成
+                  </>
+                )}
+              </Button>
+            )}
+            {aiDescription && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateDescriptionOnly}
+                disabled={isRegeneratingDescription || isLoading}
+              >
+                {isRegeneratingDescription ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    再生成中...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    概要欄のみ再生成
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        ) : null}
+      </div>
       <Separator />
       <div className="flex-grow space-y-4 overflow-auto">
         {/* T-03: 結果表示エリアのUI作成 */}
@@ -1836,7 +2038,7 @@ export default function TitleGeneratorPage() {
                                     })()}
                                   </div>
                                   
-                                  {/* アクションボタン */}
+                                  {/* アクションボタン（5.10対応: 個別再生成ボタンを追加） */}
                                   <div className="flex gap-2 flex-shrink-0">
                                     <Button
                                       variant="outline"
@@ -1856,6 +2058,42 @@ export default function TitleGeneratorPage() {
                                         <Check className="h-4 w-4 text-[#20B2AA]" />
                                       ) : (
                                         <Copy className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                    {/* 個別タイトル案の再生成（5.10対応） */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRegenerateSingleTitle(titleOption.id, titleOption.text);
+                                      }}
+                                      disabled={regeneratingTitleId === titleOption.id}
+                                      aria-label={`タイトル案${index + 1}を再生成`}
+                                      title="このタイトル案を再生成"
+                                    >
+                                      {regeneratingTitleId === titleOption.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <RefreshCw className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                    {/* この案をもとに別パターンを生成（5.10対応） */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleGenerateVariantFromTitle(titleOption.text);
+                                      }}
+                                      disabled={isRegeneratingTitles}
+                                      aria-label={`タイトル案${index + 1}をもとに別パターンを生成`}
+                                      title="この案をもとに別パターンを生成"
+                                    >
+                                      {isRegeneratingTitles ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Wand2 className="h-4 w-4" />
                                       )}
                                     </Button>
                                   </div>
