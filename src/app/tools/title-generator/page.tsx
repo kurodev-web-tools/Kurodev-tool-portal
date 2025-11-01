@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -27,6 +27,21 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 export default function TitleGeneratorPage() {
   const { isDesktop } = useSidebar({
@@ -67,12 +82,32 @@ export default function TitleGeneratorPage() {
   const [history, setHistory] = useState<GenerationHistory[]>([]); // 生成履歴
   const [hashtags, setHashtags] = useState<string[]>([]); // ハッシュタグリスト（5.7対応）
   const [newHashtagInput, setNewHashtagInput] = useState(""); // 新規ハッシュタグ入力（5.7対応）
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default"); // 選択中のテンプレート（5.8対応）
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false); // テンプレートプレビュー表示（5.8対応）
+  
+  // 概要欄テンプレートのデータ構造（5.8対応）
+  interface TemplateSection {
+    type: 'summary' | 'timestamp' | 'related' | 'hashtag' | 'sns' | 'setlist' | 'guest' | 'custom';
+    title?: string;
+    content: string;
+    enabled: boolean;
+    order: number;
+  }
+  
+  interface DescriptionTemplate {
+    id: string;
+    name: string;
+    description: string;
+    sections: TemplateSection[];
+    isCustom?: boolean;
+  }
   
   // ローカルストレージキー
   const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
   const HISTORY_STORAGE_KEY = 'title-generator-history';
   const INPUT_STORAGE_KEY = 'title-generator-input-draft'; // 入力内容の一時保存（5.4対応）
   const HASHTAG_FAVORITES_STORAGE_KEY = 'title-generator-hashtag-favorites'; // ハッシュタグのお気に入り（5.7対応）
+  const DESCRIPTION_TEMPLATES_STORAGE_KEY = 'title-generator-description-templates'; // 概要欄テンプレート（5.8対応）
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const AUTO_SAVE_DELAY = 1000; // 自動保存の遅延時間（ミリ秒）
   const YOUTUBE_DESCRIPTION_LIMIT = 5000; // YouTube概要欄の文字数制限（5.5対応）
@@ -243,6 +278,150 @@ export default function TitleGeneratorPage() {
     toast.success('履歴から読み込みました');
   }, []);
 
+  // プリセットテンプレート定義（5.8対応）
+  const presetTemplates: DescriptionTemplate[] = [
+    {
+      id: 'default',
+      name: 'デフォルト',
+      description: '標準的な構成（概要、タイムスタンプ、関連動画、ハッシュタグ、SNS）',
+      sections: [
+        { type: 'summary', content: 'この動画では、{videoTheme}について詳しく解説しています。', enabled: true, order: 1 },
+        { type: 'timestamp', title: 'タイムスタンプ', content: '00:00 オープニング\n02:30 本編開始\n15:45 まとめ', enabled: true, order: 2 },
+        { type: 'related', title: '関連動画', content: '・前回の動画: [リンク]\n・次回予告: [リンク]', enabled: true, order: 3 },
+        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 4 },
+        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter\nInstagram: @your_instagram', enabled: true, order: 5 },
+      ],
+    },
+    {
+      id: 'game-streaming',
+      name: 'ゲーム実況用',
+      description: 'ゲーム実況向けの構成（概要、タイムスタンプ、ハッシュタグ）',
+      sections: [
+        { type: 'summary', content: 'この動画では、{videoTheme}を実況プレイしています。', enabled: true, order: 1 },
+        { type: 'timestamp', title: 'タイムスタンプ', content: '00:00 オープニング\n02:30 ゲーム開始\n20:00 ハイライト', enabled: true, order: 2 },
+        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 3 },
+        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter', enabled: true, order: 4 },
+      ],
+    },
+    {
+      id: 'singing-stream',
+      name: '歌枠用',
+      description: '歌枠向けの構成（概要、セットリスト、ハッシュタグ）',
+      sections: [
+        { type: 'summary', content: 'この動画では、{videoTheme}を歌わせていただきました！', enabled: true, order: 1 },
+        { type: 'setlist', title: 'セットリスト', content: '1. [曲名1]\n2. [曲名2]\n3. [曲名3]', enabled: true, order: 2 },
+        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 3 },
+        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter', enabled: true, order: 4 },
+      ],
+    },
+    {
+      id: 'collaboration',
+      name: 'コラボ用',
+      description: 'コラボ配信向けの構成（概要、ゲスト情報、タイムスタンプ、ハッシュタグ）',
+      sections: [
+        { type: 'summary', content: 'この動画では、{videoTheme}をコラボ配信しました！', enabled: true, order: 1 },
+        { type: 'guest', title: 'ゲスト', content: 'ゲスト: [ゲスト名]\nチャンネル: [チャンネルリンク]', enabled: true, order: 2 },
+        { type: 'timestamp', title: 'タイムスタンプ', content: '00:00 オープニング\n05:00 本編開始', enabled: true, order: 3 },
+        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 4 },
+        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter', enabled: true, order: 5 },
+      ],
+    },
+    {
+      id: 'simple',
+      name: 'シンプル',
+      description: 'シンプルな構成（概要、ハッシュタグのみ）',
+      sections: [
+        { type: 'summary', content: '{videoTheme}', enabled: true, order: 1 },
+        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 2 },
+      ],
+    },
+  ];
+
+  // カスタムテンプレートの読み込み（5.8対応）
+  const [customTemplates, setCustomTemplates] = useState<DescriptionTemplate[]>([]);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(DESCRIPTION_TEMPLATES_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setCustomTemplates(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch (err) {
+      console.error('カスタムテンプレート読み込み失敗', err);
+    }
+  }, []);
+
+  // テンプレート一覧（プリセット + カスタム）
+  const allTemplates = useMemo(() => [...presetTemplates, ...customTemplates], [customTemplates]);
+
+  // テンプレートから概要欄を生成（5.8対応）
+  const generateDescriptionFromTemplate = useCallback((template: DescriptionTemplate) => {
+    const sortedSections = [...template.sections]
+      .filter(s => s.enabled)
+      .sort((a, b) => a.order - b.order);
+    
+    let description = '';
+    
+    sortedSections.forEach((section, index) => {
+      let sectionContent = section.content;
+      
+      // プレースホルダーの置換
+      sectionContent = sectionContent.replace(/{videoTheme}/g, videoTheme || '[動画のテーマ]');
+      sectionContent = sectionContent.replace(/{hashtags}/g, hashtags.length > 0 
+        ? hashtags.map(tag => `#${tag}`).join(' ') 
+        : '#VTuber #エンタメ');
+      
+      if (section.type === 'hashtag') {
+        // ハッシュタグセクションは特別処理（ハッシュタグ管理と連携）
+        description += `【${section.title || 'ハッシュタグ'}】\n${sectionContent}\n`;
+      } else if (section.title) {
+        description += `【${section.title}】\n${sectionContent}\n`;
+      } else {
+        description += `${sectionContent}\n`;
+      }
+      
+      if (index < sortedSections.length - 1) {
+        description += '\n';
+      }
+    });
+    
+    return description.trim();
+  }, [videoTheme, hashtags]);
+
+  // テンプレートを適用（5.8対応）
+  const applyTemplate = useCallback((templateId: string) => {
+    const template = allTemplates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    const generated = generateDescriptionFromTemplate(template);
+    setAiDescription(generated);
+    setFinalDescription(generated);
+    setSelectedTemplateId(templateId);
+    
+    // ハッシュタグを抽出して設定
+    const extracted = extractHashtagsFromDescription(generated);
+    if (extracted.length > 0) {
+      setHashtags(extracted);
+    }
+    
+    toast.success(`「${template.name}」テンプレートを適用しました`);
+  }, [allTemplates, generateDescriptionFromTemplate]);
+
+  // ハッシュタグ管理用のユーティリティ関数（5.7対応）- テンプレート適用前に定義
+  const extractHashtagsFromDescription = useCallback((description: string): string[] => {
+    const hashtagSection = description.match(/【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/);
+    if (!hashtagSection) return [];
+    
+    const hashtagLine = hashtagSection[1].trim();
+    const matches = hashtagLine.match(/#([\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)/g);
+    if (!matches) return [];
+    
+    return matches.map(tag => tag.replace('#', ''));
+  }, []);
+
   // T-04: フロントエンド内でのUIロジック実装
   const handleGenerateClick = useCallback(async () => {
     // 入力フォームのバリデーション（最低限のチェック）
@@ -291,30 +470,25 @@ export default function TitleGeneratorPage() {
         ...newTitles.filter(t => !t.isFavorite),
       ];
       
-      const generatedDescription = `【動画の概要】
-この動画では、${videoTheme}について詳しく解説しています。
-
-【タイムスタンプ】
-00:00 オープニング
-02:30 本編開始
-15:45 まとめ
-
-【関連動画】
-・前回の動画: [リンク]
-・次回予告: [リンク]
-
-【ハッシュタグ】
-${hashtags.length > 0 ? hashtags.map(tag => `#${tag}`).join(' ') : '#VTuber #ゲーム実況 #新作ゲーム #実況 #エンタメ'}
-
-【SNS】
-Twitter: @your_twitter
-Instagram: @your_instagram`;
-
+      // 選択中のテンプレートから概要欄を生成（5.8対応）
+      const selectedTemplate = allTemplates.find(t => t.id === selectedTemplateId) || presetTemplates[0];
+      
       // ハッシュタグが未設定の場合はデフォルトを設定（5.7対応）
       if (hashtags.length === 0) {
         const defaultHashtags = ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
         setHashtags(defaultHashtags);
       }
+      
+      // テンプレートから概要欄を生成（現在のhashtags stateを使用）
+      const currentHashtags = hashtags.length > 0 ? hashtags : ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
+      const generatedDescription = generateDescriptionFromTemplate({
+        ...selectedTemplate,
+        sections: selectedTemplate.sections.map(s => 
+          s.type === 'hashtag' 
+            ? { ...s, content: currentHashtags.map(tag => `#${tag}`).join(' ') }
+            : s
+        ),
+      });
 
       setAiTitles(sortedTitles);
       setAiDescription(generatedDescription);
@@ -494,18 +668,7 @@ Instagram: @your_instagram`;
     };
   }, []);
 
-  // ハッシュタグ管理用のユーティリティ関数（5.7対応）
-  const extractHashtagsFromDescription = useCallback((description: string): string[] => {
-    const hashtagSection = description.match(/【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/);
-    if (!hashtagSection) return [];
-    
-    const hashtagLine = hashtagSection[1].trim();
-    const matches = hashtagLine.match(/#([\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)/g);
-    if (!matches) return [];
-    
-    return matches.map(tag => tag.replace('#', ''));
-  }, []);
-
+  // ハッシュタグの更新処理（5.7対応）
   const updateDescriptionHashtags = useCallback((newHashtags: string[]) => {
     const hashtagString = newHashtags.length > 0 
       ? newHashtags.map(tag => `#${tag}`).join(' ') 
@@ -903,6 +1066,135 @@ Instagram: @your_instagram`;
                   toast.success('概要欄をコピーしました');
                 }} disabled={!finalDescription}>コピー</Button>
               </div>
+            </div>
+            
+            {/* 概要欄テンプレート選択（5.8対応） */}
+            <div>
+              <Label className="flex items-center justify-between mb-2">
+                <span className="flex items-center gap-2">
+                  <FileCode className="h-4 w-4" />
+                  概要欄テンプレート
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setShowTemplatePreview(!showTemplatePreview)}
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  {showTemplatePreview ? 'プレビューを閉じる' : 'プレビュー'}
+                </Button>
+              </Label>
+              
+              <div className="flex gap-2 mb-2">
+                <Select value={selectedTemplateId} onValueChange={applyTemplate}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="テンプレートを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      プリセット
+                    </div>
+                    {presetTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div>
+                          <div className="font-medium">{template.name}</div>
+                          <div className="text-xs text-muted-foreground">{template.description}</div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                    {customTemplates.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">
+                          カスタム
+                        </div>
+                        {customTemplates.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            <div>
+                              <div className="font-medium">{template.name}</div>
+                              <div className="text-xs text-muted-foreground">{template.description}</div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-10">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>カスタムテンプレートを作成</DialogTitle>
+                      <DialogDescription>
+                        新しい概要欄テンプレートを作成します
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="template-name">テンプレート名</Label>
+                        <Input
+                          id="template-name"
+                          placeholder="例: ゲーム実況用（カスタム）"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="template-description">説明</Label>
+                        <Input
+                          id="template-description"
+                          placeholder="このテンプレートの説明"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>セクション構成</Label>
+                        <div className="mt-2 space-y-2 text-sm text-muted-foreground">
+                          <p>現在のテンプレート機能では、プリセットテンプレートの選択と適用が可能です。</p>
+                          <p>カスタムテンプレートの作成機能は次回実装予定です。</p>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              {/* テンプレートプレビュー（5.8対応） */}
+              {showTemplatePreview && (() => {
+                const template = allTemplates.find(t => t.id === selectedTemplateId) || presetTemplates[0];
+                return (
+                  <Card className="mb-2">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">テンプレート構造: {template.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {template.description}
+                      </div>
+                      {template.sections
+                        .filter(s => s.enabled)
+                        .sort((a, b) => a.order - b.order)
+                        .map((section, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-xs p-2 bg-muted/30 rounded">
+                            <Badge variant="outline" className="text-[10px]">
+                              {idx + 1}
+                            </Badge>
+                            <span className="font-medium">
+                              {section.title || section.type === 'summary' ? '動画の概要' : section.type}
+                            </span>
+                            <span className="text-muted-foreground ml-auto">
+                              {section.type}
+                            </span>
+                          </div>
+                        ))}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </div>
             
             {/* ハッシュタグ管理エリア（5.7対応） */}
