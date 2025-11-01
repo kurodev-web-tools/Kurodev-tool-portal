@@ -44,6 +44,9 @@ import { useExportHandlers } from '../hooks/useExportHandlers';
 import { useEditorState } from '../hooks/useEditorState';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { toast } from "sonner";
+import { ThumbnailProject } from '../types/project';
+import { saveProject as saveProjectUtil } from '../utils/projectUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -66,6 +69,16 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
   
   // エディター状態管理
   const editorState = useEditorState();
+  
+  // テンプレートコンテキスト（restoreState用）
+  const templateContext = useTemplate();
+  
+  // プロジェクト管理
+  const [currentProjectName, setCurrentProjectName] = useState<string>('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveProjectName, setSaveProjectName] = useState('');
+  const [savedProject, setSavedProject] = useState<ThumbnailProject | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // キーボードショートカット管理
   const { isShiftKeyDown } = useKeyboardShortcuts();
@@ -732,20 +745,98 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
     );
   }
 
-  // ハンドラー関数を追加
-  const handleSave = React.useCallback(() => {
-    // ローカルストレージに保存（簡易版）
+  // 実際の保存処理
+  const performSave = React.useCallback(async (projectName: string) => {
     try {
-      localStorage.setItem('thumbnail-project', JSON.stringify({
-        layers: editorState.layers,
-        selectedLayerId: editorState.selectedLayerId,
-        timestamp: Date.now()
-      }));
-      toast.success('プロジェクトを保存しました');
+      const template = editorState.selectedTemplate;
+      const project = await saveProjectUtil(
+        projectName,
+        editorState.layers,
+        editorState.selectedLayerId,
+        template?.id || null,
+        template?.aspectRatio || '16:9',
+        false // 手動保存
+      );
+      
+      setCurrentProjectName(projectName);
+      setSavedProject(project);
+      setShowSaveDialog(false);
+      toast.success(`プロジェクト「${projectName}」を保存しました`);
     } catch (error) {
-      toast.error('保存に失敗しました');
+      console.error('プロジェクト保存エラー:', error);
+      toast.error('プロジェクトの保存に失敗しました');
     }
-  }, [editorState.layers, editorState.selectedLayerId]);
+  }, [editorState.layers, editorState.selectedLayerId, editorState.selectedTemplate]);
+
+  // プロジェクト保存ハンドラー
+  const handleSave = React.useCallback(() => {
+    // 既存のプロジェクト名がある場合はそのまま保存、なければダイアログを表示
+    if (currentProjectName) {
+      performSave(currentProjectName);
+    } else {
+      setSaveProjectName('');
+      setShowSaveDialog(true);
+    }
+  }, [currentProjectName, performSave]);
+
+  // ダイアログから保存
+  const handleSaveFromDialog = React.useCallback(async () => {
+    const name = saveProjectName.trim();
+    if (!name) {
+      toast.error('プロジェクト名を入力してください');
+      return;
+    }
+    await performSave(name);
+  }, [saveProjectName, performSave]);
+
+  // プロジェクト読み込みハンドラー
+  const handleLoadProject = React.useCallback((project: ThumbnailProject) => {
+    try {
+      // レイヤーと選択状態を復元
+      templateContext.restoreState(project.layers, project.selectedLayerId);
+      setCurrentProjectName(project.name);
+      setSavedProject(project);
+      
+      toast.success(`プロジェクト「${project.name}」を読み込みました`);
+    } catch (error) {
+      console.error('プロジェクト読み込みエラー:', error);
+      toast.error('プロジェクトの読み込みに失敗しました');
+    }
+  }, [templateContext]);
+
+  // 自動保存機能（一定時間ごとまたは操作後）
+  useEffect(() => {
+    // 前回のタイマーをクリア
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // レイヤーが変更されたら自動保存をスケジュール
+    if (editorState.layers.length > 0) {
+      autoSaveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const template = editorState.selectedTemplate;
+          await saveProjectUtil(
+            currentProjectName || '自動保存',
+            editorState.layers,
+            editorState.selectedLayerId,
+            template?.id || null,
+            template?.aspectRatio || '16:9',
+            true // 自動保存
+          );
+          // 自動保存は通知しない（UXを考慮）
+        } catch (error) {
+          console.error('自動保存エラー:', error);
+        }
+      }, 30000); // 30秒後に自動保存
+    }
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [editorState.layers, editorState.selectedLayerId, currentProjectName, editorState.selectedTemplate]);
 
   const handleUndo = React.useCallback(() => {
     console.log('Toolbar undo button clicked');
@@ -2251,6 +2342,12 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
             selectedTemplate={editorState.selectedTemplate}
             setSelectedTemplate={editorState.setSelectedTemplate}
             onShapeSelect={(shapeType) => handleAddShape(shapeType as ShapeType)}
+            onLoadProject={handleLoadProject}
+            currentProjectName={currentProjectName}
+            onProjectSaved={(project) => {
+              setCurrentProjectName(project.name);
+              setSavedProject(project);
+            }}
           />
         )}
 
@@ -2289,6 +2386,40 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
           />
         )}
       </div>
+
+      {/* プロジェクト保存ダイアログ */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>プロジェクトを保存</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="project-name">プロジェクト名</Label>
+              <Input
+                id="project-name"
+                value={saveProjectName}
+                onChange={(e) => setSaveProjectName(e.target.value)}
+                placeholder="プロジェクト名を入力"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveFromDialog();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+              キャンセル
+            </Button>
+            <Button onClick={handleSaveFromDialog} disabled={!saveProjectName.trim()}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

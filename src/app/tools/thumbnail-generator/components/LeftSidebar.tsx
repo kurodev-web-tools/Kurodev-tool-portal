@@ -3,12 +3,14 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
-import { Layers, FolderOpen } from "lucide-react";
+import { Layers, FolderOpen, Save } from "lucide-react";
 
 import { useTemplate } from '../contexts/TemplateContext';
 import TemplateSelector from './TemplateSelector';
 import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 import { ShapeType } from '../contexts/TemplateContext';
+import { ProjectManager } from './ProjectManager';
+import { ThumbnailProject } from '../types/project';
 
 interface LeftSidebarProps {
   isDesktop: boolean;
@@ -33,6 +35,11 @@ interface LeftSidebarProps {
   
   // 図形選択
   onShapeSelect?: (shapeType: string) => void;
+  
+  // プロジェクト関連
+  onLoadProject?: (project: ThumbnailProject) => void;
+  currentProjectName?: string;
+  onProjectSaved?: (project: ThumbnailProject) => void;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -52,6 +59,9 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   selectedTemplate,
   setSelectedTemplate,
   onShapeSelect,
+  onLoadProject,
+  currentProjectName,
+  onProjectSaved,
 }) => {
   const [selectedTab, setSelectedTab] = React.useState("templates");
 
@@ -63,7 +73,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       </div>
       
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col min-w-0">
-        <TabsList className="grid w-10/12 grid-cols-2 mx-auto mt-4 min-w-0">
+        <TabsList className="grid w-10/12 grid-cols-3 mx-auto mt-4 min-w-0">
           <TabsTrigger value="templates" className="text-xs p-2 min-w-0 flex-col gap-2 max-w-full">
             <FolderOpen className="h-4 w-4" />
             <span className="truncate text-xs">素材</span>
@@ -71,6 +81,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <TabsTrigger value="layers" className="text-xs p-2 min-w-0 flex-col gap-2 max-w-full">
             <Layers className="h-4 w-4" />
             <span className="truncate text-xs">レイヤー</span>
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="text-xs p-2 min-w-0 flex-col gap-2 max-w-full">
+            <Save className="h-4 w-4" />
+            <span className="truncate text-xs">プロジェクト</span>
           </TabsTrigger>
         </TabsList>
         
@@ -100,6 +114,16 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               }}
               onShapeSelect={onShapeSelect}
               showShapeSelector={true}
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="projects" className="flex-1 px-3 pb-3 pt-2 mt-8 min-w-0 max-w-full overflow-x-hidden overflow-y-auto">
+          <div className="min-w-0 max-w-full">
+            <ProjectManager
+              onLoadProject={onLoadProject || (() => {})}
+              currentProjectName={currentProjectName}
+              onProjectSaved={onProjectSaved}
             />
           </div>
         </TabsContent>
