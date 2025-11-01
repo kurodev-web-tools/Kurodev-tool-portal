@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -35,6 +35,7 @@ export default function TitleGeneratorPage() {
   });
   const [activeTab, setActiveTab] = useState("settings"); // モバイル用タブの状態
   const [leftPanelTab, setLeftPanelTab] = useState("input"); // 左サイドバーのタブ（入力/履歴）
+  const [descriptionViewMode, setDescriptionViewMode] = useState<"edit" | "preview">("edit"); // 概要欄の表示モード（5.5対応）
   const [isLoading, setIsLoading] = useState(false); // ローディング状態
   const [finalTitle, setFinalTitle] = useState(""); // 最終タイトル
   const [finalDescription, setFinalDescription] = useState(""); // 最終概要欄
@@ -71,6 +72,7 @@ export default function TitleGeneratorPage() {
   const INPUT_STORAGE_KEY = 'title-generator-input-draft'; // 入力内容の一時保存（5.4対応）
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const AUTO_SAVE_DELAY = 1000; // 自動保存の遅延時間（ミリ秒）
+  const YOUTUBE_DESCRIPTION_LIMIT = 5000; // YouTube概要欄の文字数制限（5.5対応）
   
   // 入力フォームのstate管理（5.4対応）
   const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
@@ -650,7 +652,19 @@ Instagram: @your_instagram`;
               </div>
             </div>
             <div>
-              <Label htmlFor="final-description">最終概要欄</Label>
+              <Label htmlFor="final-description">
+                最終概要欄
+                <span className={cn(
+                  "ml-2 text-xs font-normal",
+                  finalDescription.length > YOUTUBE_DESCRIPTION_LIMIT 
+                    ? "text-red-400" 
+                    : finalDescription.length > YOUTUBE_DESCRIPTION_LIMIT * 0.9 
+                    ? "text-yellow-400" 
+                    : "text-muted-foreground"
+                )}>
+                  ({finalDescription.length} / {YOUTUBE_DESCRIPTION_LIMIT})
+                </span>
+              </Label>
               <div className="flex space-x-2">
                 {isLoading ? (
                   <Skeleton className="h-24 w-full" />
@@ -660,9 +674,14 @@ Instagram: @your_instagram`;
                     placeholder="AIが生成した概要欄"
                     value={finalDescription}
                     onChange={(e) => setFinalDescription(e.target.value)}
+                    rows={8}
+                    className="resize-y"
                   />
                 )}
-                <Button variant="outline" onClick={() => navigator.clipboard.writeText(finalDescription)} disabled={!finalDescription}>コピー</Button>
+                <Button variant="outline" onClick={() => {
+                  navigator.clipboard.writeText(finalDescription);
+                  toast.success('概要欄をコピーしました');
+                }} disabled={!finalDescription}>コピー</Button>
               </div>
             </div>
           </CardContent>
@@ -809,10 +828,125 @@ Instagram: @your_instagram`;
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>概要欄</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>概要欄</span>
+                  <Tabs value={descriptionViewMode} onValueChange={(v) => setDescriptionViewMode(v as "edit" | "preview")} className="w-auto">
+                    <TabsList className="h-8">
+                      <TabsTrigger value="edit" className="text-xs px-3">
+                        <Edit2 className="h-3 w-3 mr-1.5" />
+                        編集
+                      </TabsTrigger>
+                      <TabsTrigger value="preview" className="text-xs px-3">
+                        <Eye className="h-3 w-3 mr-1.5" />
+                        プレビュー
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <Textarea readOnly value={aiDescription} />
+              <CardContent className="space-y-4">
+                <Tabs value={descriptionViewMode} onValueChange={(v) => setDescriptionViewMode(v as "edit" | "preview")}>
+                  <TabsContent value="edit" className="space-y-2 mt-0">
+                    {/* 文字数カウンター（5.5対応） */}
+                    <div className="flex justify-end items-center gap-2 text-xs">
+                      <span className={cn(
+                        aiDescription.length > YOUTUBE_DESCRIPTION_LIMIT 
+                          ? "text-red-400 font-semibold" 
+                          : aiDescription.length > YOUTUBE_DESCRIPTION_LIMIT * 0.9 
+                          ? "text-yellow-400" 
+                          : "text-muted-foreground"
+                      )}>
+                        {aiDescription.length} / {YOUTUBE_DESCRIPTION_LIMIT}
+                      </span>
+                      {aiDescription.length > YOUTUBE_DESCRIPTION_LIMIT && (
+                        <Badge variant="destructive" className="text-xs">制限超過</Badge>
+                      )}
+                    </div>
+                    
+                    {/* 編集可能なテキストエリア（5.5対応） */}
+                    <Textarea
+                      value={aiDescription}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setAiDescription(newValue);
+                        // 同時にfinalDescriptionにも反映
+                        setFinalDescription(newValue);
+                      }}
+                      placeholder="AIが生成した概要欄（編集可能）"
+                      rows={12}
+                      className="resize-y font-mono text-sm"
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="preview" className="mt-0">
+                    {/* リアルタイムプレビュー（YouTube概要欄風）（5.5対応） */}
+                    <div className="border rounded-lg p-4 bg-[#0F0F0F] min-h-[200px]">
+                      {aiDescription ? (
+                        <div className="text-sm text-white whitespace-pre-wrap font-sans leading-relaxed">
+                          {aiDescription.split('\n').map((line, index) => {
+                            // セクション検出（【】で囲まれた見出し）
+                            const sectionMatch = line.match(/^【(.+?)】/);
+                            if (sectionMatch) {
+                              const sectionName = sectionMatch[1];
+                              return (
+                                <div key={index} className="mb-3">
+                                  <div className="text-[#20B2AA] font-semibold mb-1">
+                                    【{sectionName}】
+                                  </div>
+                                  <div className="text-gray-300 ml-2">
+                                    {line.replace(/^【.+?】/, '').trim() || '\u00A0'}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // ハッシュタグ検出
+                            if (line.includes('#') || line.trim().startsWith('#')) {
+                              return (
+                                <div key={index} className="mb-2 text-[#3EA6FF]">
+                                  {line}
+                                </div>
+                              );
+                            }
+                            
+                            // タイムスタンプ検出（00:00形式）
+                            if (line.match(/^\d{1,2}:\d{2}/)) {
+                              return (
+                                <div key={index} className="mb-1 text-[#3EA6FF] font-medium">
+                                  {line}
+                                </div>
+                              );
+                            }
+                            
+                            // 通常のテキスト
+                            return (
+                              <div key={index} className="mb-1 text-gray-300">
+                                {line || '\u00A0'}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-gray-500 text-sm italic">
+                          概要欄がありません
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* 文字数カウンター（プレビューでも表示） */}
+                    <div className="flex justify-end items-center gap-2 text-xs mt-2">
+                      <span className={cn(
+                        aiDescription.length > YOUTUBE_DESCRIPTION_LIMIT 
+                          ? "text-red-400 font-semibold" 
+                          : aiDescription.length > YOUTUBE_DESCRIPTION_LIMIT * 0.9 
+                          ? "text-yellow-400" 
+                          : "text-muted-foreground"
+                      )}>
+                        {aiDescription.length} / {YOUTUBE_DESCRIPTION_LIMIT}
+                      </span>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </>
