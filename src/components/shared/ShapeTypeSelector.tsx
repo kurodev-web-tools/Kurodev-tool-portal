@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Square, Circle, Triangle, Minus, ArrowRight, Star, Hexagon, Heart, Diamond } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { ShapeType } from '@/types/layers';
+import { SHAPE_OPTIONS_BY_CATEGORY } from '@/utils/shapeUtils';
 
 interface ShapeTypeSelectorProps {
   value: ShapeType;
@@ -15,7 +16,7 @@ interface ShapeTypeSelectorProps {
 /**
  * 図形タイプ選択用の共通コンポーネント
  * 
- * 9種類の図形タイプから選択できるボタングループを提供します。
+ * カテゴリ別に整理された16種類の図形タイプから選択できるUIを提供します。
  * アイコン付きで直感的に選択できます。
  * 
  * @param value - 現在選択されている図形タイプ
@@ -27,43 +28,59 @@ export const ShapeTypeSelector: React.FC<ShapeTypeSelectorProps> = ({
   onChange,
   className 
 }) => {
-  // 基本図形のみ（編集時は基本図形から選択）
-  const shapeOptions = [
-    { type: 'rectangle' as const, label: '四角形', icon: Square },
-    { type: 'circle' as const, label: '円', icon: Circle },
-    { type: 'triangle' as const, label: '三角形', icon: Triangle },
-    { type: 'line' as const, label: '線', icon: Minus },
-    { type: 'arrow' as const, label: '矢印', icon: ArrowRight },
-    { type: 'star' as const, label: '星', icon: Star },
-    { type: 'polygon' as const, label: '多角形', icon: Hexagon },
-    { type: 'heart' as const, label: 'ハート', icon: Heart },
-    { type: 'diamond' as const, label: 'ダイヤ', icon: Diamond },
-    // 新しい図形タイプは表示するが、アイコンは適宜対応
-    { type: 'dashed-line' as const, label: '点線', icon: Minus },
-    { type: 'dotted-line' as const, label: '点線', icon: Minus },
-    { type: 'wavy-line' as const, label: '波線', icon: Minus },
-    { type: 'speech-bubble-round' as const, label: '吹き出し', icon: Square },
-    { type: 'speech-bubble-square' as const, label: '吹き出し(角)', icon: Square },
-    { type: 'thought-bubble' as const, label: '思考バブル', icon: Square },
-    { type: 'badge' as const, label: 'バッジ', icon: Star },
-    { type: 'ribbon' as const, label: 'リボン', icon: Heart },
-  ];
+  // 現在選択されている図形がどのカテゴリに属するか判定
+  const getCurrentCategory = (): string => {
+    for (const [category, options] of Object.entries(SHAPE_OPTIONS_BY_CATEGORY)) {
+      if (options.some(opt => opt.type === value)) {
+        return category;
+      }
+    }
+    return 'basic'; // デフォルト
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getCurrentCategory());
+
+  // 選択された図形が変更されたらタブも更新
+  useEffect(() => {
+    setActiveTab(getCurrentCategory());
+  }, [value]);
 
   return (
-    <div className={cn("grid grid-cols-2 gap-2", className)} data-testid="shape-type-selector">
-      {shapeOptions.map(shape => (
-        <Button
-          key={shape.type}
-          variant={value === shape.type ? 'default' : 'outline'}
-          onClick={() => onChange(shape.type)}
-          size="sm"
-          className="flex items-center justify-center gap-1"
-          data-testid={`shape-type-${shape.type}`}
-        >
-          <shape.icon className="h-4 w-4" />
-          <span className="text-xs">{shape.label}</span>
-        </Button>
-      ))}
+    <div className={cn("space-y-2", className)} data-testid="shape-type-selector">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 h-9">
+          <TabsTrigger value="basic" className="text-xs px-2">基本</TabsTrigger>
+          <TabsTrigger value="decorative" className="text-xs px-2">装飾</TabsTrigger>
+          <TabsTrigger value="bubble" className="text-xs px-2">吹き出し</TabsTrigger>
+          <TabsTrigger value="badge" className="text-xs px-2">バッジ</TabsTrigger>
+        </TabsList>
+        
+        {Object.entries(SHAPE_OPTIONS_BY_CATEGORY).map(([category, options]) => (
+          <TabsContent key={category} value={category} className="mt-3">
+            <div className="grid grid-cols-3 gap-2">
+              {options.map(option => {
+                const Icon = option.icon;
+                return (
+                  <Button
+                    key={option.type}
+                    variant={value === option.type ? 'default' : 'outline'}
+                    onClick={() => onChange(option.type)}
+                    size="sm"
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1 h-16",
+                      value === option.type && "ring-2 ring-primary"
+                    )}
+                    data-testid={`shape-type-${option.type}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="text-xs">{option.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 };
