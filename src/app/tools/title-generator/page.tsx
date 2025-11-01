@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -34,6 +34,7 @@ export default function TitleGeneratorPage() {
     desktopDefaultOpen: true,
   });
   const [activeTab, setActiveTab] = useState("settings"); // モバイル用タブの状態
+  const [leftPanelTab, setLeftPanelTab] = useState("input"); // 左サイドバーのタブ（入力/履歴）
   const [isLoading, setIsLoading] = useState(false); // ローディング状態
   const [finalTitle, setFinalTitle] = useState(""); // 最終タイトル
   const [finalDescription, setFinalDescription] = useState(""); // 最終概要欄
@@ -45,12 +46,29 @@ export default function TitleGeneratorPage() {
     isFavorite: boolean;
   }
   
+  // 生成履歴のデータ構造（5.3対応）
+  interface GenerationHistory {
+    id: string;
+    timestamp: number;
+    titles: TitleOption[];
+    description: string;
+    inputData: {
+      videoTheme: string;
+      keywords: string;
+      targetAudience: string;
+      videoMood: string;
+    };
+  }
+  
   const [aiTitles, setAiTitles] = useState<TitleOption[]>([]); // AI提案タイトル案
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
   const [copiedItem, setCopiedItem] = useState<string | null>(null); // コピー状態
+  const [history, setHistory] = useState<GenerationHistory[]>([]); // 生成履歴
   
-  // お気に入りのローカルストレージキー
+  // ローカルストレージキー
   const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
+  const HISTORY_STORAGE_KEY = 'title-generator-history';
+  const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   
   // 入力フォームのstate管理（5.4対応）
   const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
@@ -59,6 +77,88 @@ export default function TitleGeneratorPage() {
   const [videoMood, setVideoMood] = useState(""); // 動画の雰囲気
   
   const { handleAsyncError } = useErrorHandler();
+
+  // 履歴の読み込み（初回マウント時）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setHistory(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch (err) {
+      console.error('履歴読み込み失敗', err);
+    }
+  }, []);
+
+  // 履歴の保存
+  const saveHistory = useCallback((newHistory: GenerationHistory) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      setHistory(prev => {
+        const updated = [newHistory, ...prev].slice(0, MAX_HISTORY_ITEMS);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+    } catch (err) {
+      console.error('履歴保存失敗', err);
+    }
+  }, []);
+
+  // 履歴の削除
+  const deleteHistory = useCallback((historyId: string) => {
+    setHistory(prev => {
+      const updated = prev.filter(h => h.id !== historyId);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+        } catch (err) {
+          console.error('履歴削除失敗', err);
+        }
+      }
+      return updated;
+    });
+    toast.success('履歴を削除しました');
+  }, []);
+
+  // 履歴の全削除
+  const clearAllHistory = useCallback(() => {
+    if (confirm('すべての履歴を削除しますか？')) {
+      setHistory([]);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(HISTORY_STORAGE_KEY);
+        } catch (err) {
+          console.error('履歴全削除失敗', err);
+        }
+      }
+      toast.success('すべての履歴を削除しました');
+    }
+  }, []);
+
+  // 履歴からの読み込み
+  const loadFromHistory = useCallback((historyItem: GenerationHistory) => {
+    setAiTitles(historyItem.titles);
+    setAiDescription(historyItem.description);
+    setFinalDescription(historyItem.description);
+    if (historyItem.titles.length > 0) {
+      setFinalTitle(historyItem.titles[0].text);
+    }
+    
+    // 入力フォームも復元
+    setVideoTheme(historyItem.inputData.videoTheme);
+    setKeywords(historyItem.inputData.keywords);
+    setTargetAudience(historyItem.inputData.targetAudience);
+    setVideoMood(historyItem.inputData.videoMood);
+    
+    // 左サイドバーを入力タブに切り替え
+    setLeftPanelTab('input');
+    
+    toast.success('履歴から読み込みました');
+  }, []);
 
   // T-04: フロントエンド内でのUIロジック実装
   const handleGenerateClick = useCallback(async () => {
@@ -135,13 +235,28 @@ Instagram: @your_instagram`;
       }
       setFinalDescription(generatedDescription);
       
+      // 履歴に保存（5.3対応）
+      const historyEntry: GenerationHistory = {
+        id: `history-${Date.now()}`,
+        timestamp: Date.now(),
+        titles: sortedTitles,
+        description: generatedDescription,
+        inputData: {
+          videoTheme,
+          keywords,
+          targetAudience,
+          videoMood,
+        },
+      };
+      saveHistory(historyEntry);
+      
       if (!isDesktop) {
         setActiveTab("results"); // モバイルでは結果タブに切り替える
       }
     }, "生成中にエラーが発生しました");
     
     setIsLoading(false);
-  }, [videoTheme, handleAsyncError, isDesktop]);
+  }, [videoTheme, keywords, targetAudience, videoMood, handleAsyncError, isDesktop, saveHistory]);
 
   const handleTitleSelect = useCallback((title: string) => {
     setFinalTitle(title);
@@ -229,71 +344,195 @@ Instagram: @your_instagram`;
 
   const controlPanelContent = (
     <div className="flex flex-col h-full p-6 space-y-4 relative">
-      <Separator />
-      <div className="flex-grow space-y-4 overflow-auto">
-        {/* T-02: コントロールパネルのUI作成 */}
+      <Tabs value={leftPanelTab} onValueChange={setLeftPanelTab} className="flex-1 flex flex-col min-w-0">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="input">入力</TabsTrigger>
+          <TabsTrigger value="history">
+            履歴
+            {history.length > 0 && (
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                {history.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="input" className="flex-1 space-y-4 overflow-auto mt-0">
+          {/* T-02: コントロールパネルのUI作成 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>動画情報入力</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 動画のテーマ・内容は全幅 */}
+              <div>
+                <Label htmlFor="video-theme">動画のテーマ・内容</Label>
+                <Textarea
+                  id="video-theme"
+                  placeholder="動画の台本や要約などを入力..."
+                  value={videoTheme}
+                  onChange={(e) => setVideoTheme(e.target.value)}
+                  rows={4}
+                  className="resize-y"
+                />
+              </div>
+              
+              {/* 2カラムレイアウト（5.1対応） */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="keywords">主要キーワード</Label>
+                  <Input 
+                    id="keywords" 
+                    placeholder="例: ゲーム名, キャラクター名, 感想"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="target-audience">ターゲット層</Label>
+                  <Input 
+                    id="target-audience" 
+                    placeholder="例: 10代男性, VTuberファン"
+                    value={targetAudience}
+                    onChange={(e) => setTargetAudience(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="video-mood">動画の雰囲気</Label>
+                <Input 
+                  id="video-mood" 
+                  placeholder="例: 面白い, 感動, 解説"
+                  value={videoMood}
+                  onChange={(e) => setVideoMood(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+          <Button size="lg" className="w-full" onClick={handleGenerateClick} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              '生成する'
+            )}
+          </Button>
+        </TabsContent>
+        
+        <TabsContent value="history" className="flex-1 space-y-4 overflow-auto mt-0">
         <Card>
           <CardHeader>
-            <CardTitle>動画情報入力</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>生成履歴</span>
+              {history.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllHistory}
+                  className="text-red-400 hover:text-red-300"
+                  aria-label="すべての履歴を削除"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 動画のテーマ・内容は全幅 */}
-            <div>
-              <Label htmlFor="video-theme">動画のテーマ・内容</Label>
-              <Textarea
-                id="video-theme"
-                placeholder="動画の台本や要約などを入力..."
-                value={videoTheme}
-                onChange={(e) => setVideoTheme(e.target.value)}
-                rows={4}
-                className="resize-y"
-              />
-            </div>
-            
-            {/* 2カラムレイアウト（5.1対応） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="keywords">主要キーワード</Label>
-                <Input 
-                  id="keywords" 
-                  placeholder="例: ゲーム名, キャラクター名, 感想"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                />
+          <CardContent>
+            {history.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground py-8">
+                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>生成履歴がありません</p>
+                <p className="text-xs mt-2">タイトルと概要欄を生成すると、ここに履歴が表示されます</p>
               </div>
-              <div>
-                <Label htmlFor="target-audience">ターゲット層</Label>
-                <Input 
-                  id="target-audience" 
-                  placeholder="例: 10代男性, VTuberファン"
-                  value={targetAudience}
-                  onChange={(e) => setTargetAudience(e.target.value)}
-                />
+            ) : (
+              <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+                {history.map((item) => {
+                  const dateStr = new Date(item.timestamp).toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                  const relativeTime = (() => {
+                    const diff = Date.now() - item.timestamp;
+                    const minutes = Math.floor(diff / 60000);
+                    const hours = Math.floor(diff / 3600000);
+                    const days = Math.floor(diff / 86400000);
+                    if (minutes < 1) return 'たった今';
+                    if (minutes < 60) return `${minutes}分前`;
+                    if (hours < 24) return `${hours}時間前`;
+                    if (days < 7) return `${days}日前`;
+                    return dateStr;
+                  })();
+                  
+                  return (
+                    <Card
+                      key={item.id}
+                      className={cn(
+                        "cursor-pointer hover:border-[#20B2AA] transition-all group relative overflow-visible"
+                      )}
+                      onClick={() => loadFromHistory(item)}
+                    >
+                      {/* 左側のボーダー（独立した要素として配置） */}
+                      <div className={cn(
+                        "absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-[#20B2AA] transition-colors rounded-l-xl",
+                        "-ml-2" // カードの外側に少しはみ出させる
+                      )} />
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            {/* 最初のタイトル案をプレビュー */}
+                            {item.titles.length > 0 && (
+                              <p className="text-sm font-medium truncate mb-1">
+                                {item.titles[0].text}
+                              </p>
+                            )}
+                            
+                            {/* 入力情報の簡易表示 */}
+                            {item.inputData.videoTheme && (
+                              <p className="text-xs text-muted-foreground truncate mb-1">
+                                {item.inputData.videoTheme.substring(0, 50)}
+                                {item.inputData.videoTheme.length > 50 ? '...' : ''}
+                              </p>
+                            )}
+                            
+                            {/* タイムスタンプ */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span>{relativeTime}</span>
+                              <span className="text-[#808080]">・</span>
+                              <span>{item.titles.length}件のタイトル案</span>
+                            </div>
+                          </div>
+                          
+                          {/* 削除ボタン */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteHistory(item.id);
+                            }}
+                            aria-label="履歴を削除"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="video-mood">動画の雰囲気</Label>
-              <Input 
-                id="video-mood" 
-                placeholder="例: 面白い, 感動, 解説"
-                value={videoMood}
-                onChange={(e) => setVideoMood(e.target.value)}
-              />
-            </div>
+            )}
           </CardContent>
         </Card>
-        <Button size="lg" className="w-full" onClick={handleGenerateClick} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              生成中...
-            </>
-          ) : (
-            '生成する'
-          )}
-        </Button>
-      </div>
+      </TabsContent>
+      </Tabs>
     </div>
   );
 
