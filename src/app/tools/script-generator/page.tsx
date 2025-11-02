@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2 } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -18,6 +18,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { logger } from '@/lib/logger';
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { toast } from "sonner";
 
 type IdeaCategory = 'gaming' | 'singing' | 'talk' | 'collaboration' | 'event' | 'other';
 type IdeaDifficulty = 'easy' | 'medium' | 'hard';
@@ -479,6 +480,221 @@ export default function ScriptGeneratorPage() {
     }, "台本生成中にエラーが発生しました");
     setIsGeneratingScript(false);
   }, [handleAsyncError]);
+
+  // 印刷処理（デザイナー提案 + 利用者提案）
+  const handlePrint = useCallback(() => {
+    if (!currentScript) return;
+    
+    // 選択されている企画案を取得
+    const selectedIdea = generatedIdeas.find(idea => idea.id === selectedIdeaId);
+    
+    // 印刷用の新しいウィンドウを開く（印刷プレビュー用）
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('ポップアップがブロックされています。ポップアップを許可してください。');
+      return;
+    }
+
+    // 印刷用HTMLを生成
+    const printHTML = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台本 - ${selectedIdea?.title || '企画案'}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', 'Meiryo', 'Hiragino Kaku Gothic ProN', sans-serif;
+      line-height: 1.8;
+      color: #333;
+      background: #fff;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    @media print {
+      body {
+        padding: 20px;
+      }
+      
+      .no-print {
+        display: none;
+      }
+      
+      @page {
+        margin: 2cm;
+        size: A4;
+      }
+      
+      h1, h2, h3 {
+        page-break-after: avoid;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+        margin-bottom: 30px;
+      }
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #000;
+      border-bottom: 2px solid #333;
+      padding-bottom: 10px;
+    }
+    
+    .metadata {
+      margin-bottom: 30px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-left: 4px solid #4A90E2;
+      font-size: 14px;
+    }
+    
+    .metadata-item {
+      margin-bottom: 8px;
+    }
+    
+    .metadata-label {
+      font-weight: bold;
+      color: #666;
+      display: inline-block;
+      min-width: 100px;
+    }
+    
+    .section {
+      margin-bottom: 40px;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #000;
+      padding: 10px;
+      background: #f9f9f9;
+      border-left: 4px solid #4A90E2;
+    }
+    
+    .section-content {
+      font-size: 16px;
+      line-height: 2;
+      color: #333;
+      white-space: pre-wrap;
+      padding: 0 10px;
+    }
+    
+    .section-content p {
+      margin-bottom: 12px;
+    }
+    
+    .footer {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+    }
+    
+    @media print {
+      .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>${selectedIdea?.title || '台本'}</h1>
+  
+  <div class="metadata">
+    ${selectedIdea?.description ? `
+      <div class="metadata-item">
+        <span class="metadata-label">概要:</span>
+        <span>${selectedIdea.description}</span>
+      </div>
+    ` : ''}
+    ${selectedIdea?.estimatedDuration ? `
+      <div class="metadata-item">
+        <span class="metadata-label">予想時間:</span>
+        <span>${selectedIdea.estimatedDuration}分</span>
+      </div>
+    ` : ''}
+    ${selectedIdea?.category ? `
+      <div class="metadata-item">
+        <span class="metadata-label">カテゴリ:</span>
+        <span>${categoryConfig[selectedIdea.category].label}</span>
+      </div>
+    ` : ''}
+    <div class="metadata-item">
+      <span class="metadata-label">作成日時:</span>
+      <span>${new Date().toLocaleString('ja-JP')}</span>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">【導入】</div>
+    <div class="section-content">${currentScript.introduction}</div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">【本題】</div>
+    <div class="section-content">${currentScript.body}</div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">【結論】</div>
+    <div class="section-content">${currentScript.conclusion}</div>
+  </div>
+  
+  ${selectedIdea?.points && selectedIdea.points.length > 0 ? `
+    <div class="section">
+      <div class="section-title">【ポイント】</div>
+      <div class="section-content">
+        <ul style="list-style-position: inside; padding-left: 0;">
+          ${selectedIdea.points.map((point: string) => `<li style="margin-bottom: 8px;">${point}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  ` : ''}
+  
+  <div class="footer">
+    <p>この台本は VTuberツールスイート で生成されました</p>
+  </div>
+</body>
+</html>
+    `;
+
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+    
+    // 少し待ってから印刷ダイアログを開く（レンダリング完了を待つ）
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 250);
+  }, [currentScript, selectedIdeaId, generatedIdeas]);
+
+  // PDFエクスポート処理（利用者提案）
+  const handleExportPDF = useCallback(() => {
+    if (!currentScript) return;
+    
+    // ブラウザの印刷機能を使用（PDF保存を選択）
+    handlePrint();
+    toast.success('印刷ダイアログを開きました。PDFに保存する場合は「保存先」でPDFを選択してください。');
+  }, [currentScript, handlePrint]);
 
   const renderControlPanel = useCallback(() => (
     <div className="space-y-4">
@@ -1441,10 +1657,36 @@ export default function ScriptGeneratorPage() {
           {currentScript && selectedIdeaId === currentScript.ideaId ? (
             <Card className="bg-[#2D2D2D]">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
-                  <FileText className="h-5 w-5" />
-                  台本プレビュー
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
+                    <FileText className="h-5 w-5" />
+                    台本プレビュー
+                  </CardTitle>
+                  
+                  {/* 印刷・PDFエクスポートボタン（利用者提案） */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrint}
+                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                      title="印刷"
+                    >
+                      <Printer className="h-4 w-4 mr-1" />
+                      印刷
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportPDF}
+                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                      title="PDFエクスポート"
+                    >
+                      <FileDown className="h-4 w-4 mr-1" />
+                      PDF
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4 text-sm whitespace-pre-wrap">
                 <div>
@@ -1489,10 +1731,36 @@ export default function ScriptGeneratorPage() {
         <div className="p-4 border-t border-[#4A4A4A] lg:hidden bg-[#1A1A1A]">
           <Card className="bg-[#2D2D2D]">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
-                <FileText className="h-5 w-5" />
-                台本プレビュー
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
+                  <FileText className="h-5 w-5" />
+                  台本プレビュー
+                </CardTitle>
+                
+                {/* 印刷・PDFエクスポートボタン（利用者提案） */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                    title="印刷"
+                  >
+                    <Printer className="h-4 w-4 mr-1" />
+                    印刷
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                    title="PDFエクスポート"
+                  >
+                    <FileDown className="h-4 w-4 mr-1" />
+                    PDF
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm whitespace-pre-wrap">
               <div>
