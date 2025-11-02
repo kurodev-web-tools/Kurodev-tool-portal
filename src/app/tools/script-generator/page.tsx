@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -139,6 +139,14 @@ interface Script {
   conclusion: string;
 }
 
+// アンドゥ・リドゥ用の履歴管理（利用者提案）
+interface ScriptHistoryItem {
+  introduction: string;
+  body: string;
+  conclusion: string;
+  timestamp: number;
+}
+
 // 生成履歴のデータ構造
 interface GenerationHistory {
   id: string;
@@ -176,6 +184,12 @@ export default function ScriptGeneratorPage() {
   const [history, setHistory] = useState<GenerationHistory[]>([]);
   const [historySearchQuery, setHistorySearchQuery] = useState<string>('');
   const [historyFilterCategory, setHistoryFilterCategory] = useState<IdeaCategory | 'all'>('all');
+  
+  // 台本エディターの状態管理（6.6）
+  const [scriptHistory, setScriptHistory] = useState<ScriptHistoryItem[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isEditingScript, setIsEditingScript] = useState(false);
+  const MAX_SCRIPT_HISTORY_LENGTH = 50; // 最大履歴数
   
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -462,6 +476,119 @@ export default function ScriptGeneratorPage() {
     }
   }, [currentScript]);
 
+  // 履歴に追加（アンドゥ・リドゥ用）
+  const addToScriptHistory = useCallback((script: Script) => {
+    const historyItem: ScriptHistoryItem = {
+      introduction: script.introduction,
+      body: script.body,
+      conclusion: script.conclusion,
+      timestamp: Date.now(),
+    };
+    
+    setScriptHistory(prev => {
+      // 現在の履歴インデックス以降を削除（新しい履歴を追加するため）
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(historyItem);
+      // 最大履歴数を超えた場合は古いものを削除
+      if (newHistory.length > MAX_SCRIPT_HISTORY_LENGTH) {
+        return newHistory.slice(-MAX_SCRIPT_HISTORY_LENGTH);
+      }
+      return newHistory;
+    });
+    setHistoryIndex(prev => {
+      const newIndex = prev + 1;
+      return newIndex >= MAX_SCRIPT_HISTORY_LENGTH - 1 ? MAX_SCRIPT_HISTORY_LENGTH - 1 : newIndex;
+    });
+  }, [historyIndex]);
+
+  // アンドゥ（利用者提案）
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0 && currentScript) {
+      const prevItem = scriptHistory[historyIndex - 1];
+      const updatedScript: Script = {
+        ...currentScript,
+        introduction: prevItem.introduction,
+        body: prevItem.body,
+        conclusion: prevItem.conclusion,
+      };
+      setCurrentScript(updatedScript);
+      setHistoryIndex(prev => prev - 1);
+      setIsEditingScript(true);
+    }
+  }, [scriptHistory, historyIndex, currentScript]);
+
+  // リドゥ（利用者提案）
+  const handleRedo = useCallback(() => {
+    if (historyIndex < scriptHistory.length - 1 && currentScript) {
+      const nextItem = scriptHistory[historyIndex + 1];
+      const updatedScript: Script = {
+        ...currentScript,
+        introduction: nextItem.introduction,
+        body: nextItem.body,
+        conclusion: nextItem.conclusion,
+      };
+      setCurrentScript(updatedScript);
+      setHistoryIndex(prev => prev + 1);
+      setIsEditingScript(true);
+    }
+  }, [scriptHistory, historyIndex, currentScript]);
+
+  // セクション編集ハンドラー
+  const handleSectionChange = useCallback((section: 'introduction' | 'body' | 'conclusion', value: string) => {
+    if (!currentScript) return;
+    
+    const updatedScript: Script = {
+      ...currentScript,
+      [section]: value,
+    };
+    setCurrentScript(updatedScript);
+    setIsEditingScript(true);
+  }, [currentScript]);
+
+  // 文字数・行数・予想時間の計算（利用者提案）
+  const calculateScriptStats = useMemo(() => {
+    if (!currentScript) return null;
+    
+    // 行数を正確に計算する関数（行番号表示と一致させる）
+    // 行番号表示では split('\n').map() を使用しているため、split('\n').length と一致する
+    const calculateLines = (text: string): number => {
+      // 空文字列の場合、split('\n')は['']を返すのでlengthは1（Textareaでは1行として表示される）
+      // それ以外はsplit('\n')の結果の配列の長さが行数
+      return text.split('\n').length;
+    };
+    
+    const totalText = currentScript.introduction + currentScript.body + currentScript.conclusion;
+    const totalChars = totalText.length;
+    const totalLines = calculateLines(totalText);
+    
+    // 予想時間の計算
+    // - 日本語の一般的な読み上げ速度: 約300文字/分（ゆっくり）
+    // - VTuberの配信を考慮し、話す速度や間を考慮: 約250文字/分（標準的な読み上げ速度）
+    // - 実際の配信では台本をそのまま読むわけではないため、余裕を持たせて計算
+    const charsPerMinute = 250; // 1分あたり250文字（標準的な読み上げ速度）
+    const estimatedMinutes = Math.max(1, Math.ceil(totalChars / charsPerMinute));
+    
+    return {
+      introduction: {
+        chars: currentScript.introduction.length,
+        lines: calculateLines(currentScript.introduction),
+      },
+      body: {
+        chars: currentScript.body.length,
+        lines: calculateLines(currentScript.body),
+      },
+      conclusion: {
+        chars: currentScript.conclusion.length,
+        lines: calculateLines(currentScript.conclusion),
+      },
+      total: {
+        chars: totalChars,
+        lines: totalLines,
+        estimatedMinutes,
+      },
+    };
+  }, [currentScript]);
+
   const handleGenerateScript = useCallback(async (idea: Idea) => {
     setIsGeneratingScript(true);
     await handleAsyncError(async () => {
@@ -476,6 +603,18 @@ export default function ScriptGeneratorPage() {
       };
       setCurrentScript(script);
       setSelectedIdeaId(idea.id);
+      
+      // 初期履歴を追加（6.6）
+      const historyItem: ScriptHistoryItem = {
+        introduction: script.introduction,
+        body: script.body,
+        conclusion: script.conclusion,
+        timestamp: Date.now(),
+      };
+      setScriptHistory([historyItem]);
+      setHistoryIndex(0);
+      setIsEditingScript(false);
+      
       logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.content.length }, 'ScriptGenerator');
     }, "台本生成中にエラーが発生しました");
     setIsGeneratingScript(false);
@@ -1688,18 +1827,142 @@ export default function ScriptGeneratorPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 text-sm whitespace-pre-wrap">
-                <div>
-                  <h5 className="font-bold mb-2 text-[#E0E0E0]">【導入】</h5>
-                  <p className="text-[#A0A0A0] leading-relaxed">{currentScript.introduction}</p>
+              <CardContent className="space-y-4">
+                {/* ツールバー（デザイナー提案） */}
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUndo}
+                      disabled={historyIndex <= 0}
+                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="アンドゥ"
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRedo}
+                      disabled={historyIndex >= scriptHistory.length - 1}
+                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="リドゥ"
+                    >
+                      <Redo2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (currentScript) {
+                          addToScriptHistory(currentScript);
+                          setIsEditingScript(false);
+                          toast.success('台本を保存しました');
+                        }
+                      }}
+                      disabled={!isEditingScript}
+                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="保存"
+                    >
+                      <Save className="h-4 w-4 mr-1" />
+                      保存
+                    </Button>
+                  </div>
+                  
+                  {/* 統計情報（利用者提案） */}
+                  {calculateScriptStats && (
+                    <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
+                      <span>文字数: {calculateScriptStats.total.chars}</span>
+                      <span>行数: {calculateScriptStats.total.lines}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        予想時間: {calculateScriptStats.total.estimatedMinutes}分
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h5 className="font-bold mb-2 text-[#E0E0E0]">【本題】</h5>
-                  <p className="text-[#A0A0A0] leading-relaxed">{currentScript.body}</p>
+
+                {/* 導入セクション（色分け、行番号、編集可能） */}
+                <div className="border-l-4 border-blue-500/50 bg-blue-500/5 p-4 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-bold text-[#E0E0E0]">【導入】</h5>
+                    {calculateScriptStats && (
+                      <span className="text-xs text-[#A0A0A0]">
+                        {calculateScriptStats.introduction.chars}文字 / {calculateScriptStats.introduction.lines}行
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    {/* 行番号表示（デザイナー提案） */}
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                      {currentScript.introduction.split('\n').map((_, index) => (
+                        <div key={index} className="leading-6 whitespace-nowrap">
+                          {index + 1}
+                        </div>
+                      ))}
+                    </div>
+                    <Textarea
+                      value={currentScript.introduction}
+                      onChange={(e) => handleSectionChange('introduction', e.target.value)}
+                      className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
+                      placeholder="導入部分を入力..."
+                    />
+                  </div>
                 </div>
-                <div>
-                  <h5 className="font-bold mb-2 text-[#E0E0E0]">【結論】</h5>
-                  <p className="text-[#A0A0A0] leading-relaxed">{currentScript.conclusion}</p>
+
+                {/* 本題セクション */}
+                <div className="border-l-4 border-green-500/50 bg-green-500/5 p-4 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-bold text-[#E0E0E0]">【本題】</h5>
+                    {calculateScriptStats && (
+                      <span className="text-xs text-[#A0A0A0]">
+                        {calculateScriptStats.body.chars}文字 / {calculateScriptStats.body.lines}行
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                      {currentScript.body.split('\n').map((_, index) => (
+                        <div key={index} className="leading-6 whitespace-nowrap">
+                          {index + 1}
+                        </div>
+                      ))}
+                    </div>
+                    <Textarea
+                      value={currentScript.body}
+                      onChange={(e) => handleSectionChange('body', e.target.value)}
+                      className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[200px]"
+                      placeholder="本題部分を入力..."
+                    />
+                  </div>
+                </div>
+
+                {/* 結論セクション */}
+                <div className="border-l-4 border-purple-500/50 bg-purple-500/5 p-4 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-bold text-[#E0E0E0]">【結論】</h5>
+                    {calculateScriptStats && (
+                      <span className="text-xs text-[#A0A0A0]">
+                        {calculateScriptStats.conclusion.chars}文字 / {calculateScriptStats.conclusion.lines}行
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                      {currentScript.conclusion.split('\n').map((_, index) => (
+                        <div key={index} className="leading-6 whitespace-nowrap">
+                          {index + 1}
+                        </div>
+                      ))}
+                    </div>
+                    <Textarea
+                      value={currentScript.conclusion}
+                      onChange={(e) => handleSectionChange('conclusion', e.target.value)}
+                      className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
+                      placeholder="結論部分を入力..."
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1762,18 +2025,142 @@ export default function ScriptGeneratorPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm whitespace-pre-wrap">
-              <div>
-                <h5 className="font-bold mb-2 text-[#E0E0E0]">【導入】</h5>
-                <p className="text-[#A0A0A0] leading-relaxed">{currentScript.introduction}</p>
+            <CardContent className="space-y-4">
+              {/* ツールバー（デザイナー提案） */}
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUndo}
+                    disabled={historyIndex <= 0}
+                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="アンドゥ"
+                  >
+                    <Undo2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRedo}
+                    disabled={historyIndex >= scriptHistory.length - 1}
+                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="リドゥ"
+                  >
+                    <Redo2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (currentScript) {
+                        addToScriptHistory(currentScript);
+                        setIsEditingScript(false);
+                        toast.success('台本を保存しました');
+                      }
+                    }}
+                    disabled={!isEditingScript}
+                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="保存"
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    保存
+                  </Button>
+                </div>
+                
+                {/* 統計情報（利用者提案） */}
+                {calculateScriptStats && (
+                  <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
+                    <span>文字数: {calculateScriptStats.total.chars}</span>
+                    <span>行数: {calculateScriptStats.total.lines}</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      予想時間: {calculateScriptStats.total.estimatedMinutes}分
+                    </span>
+                  </div>
+                )}
               </div>
-              <div>
-                <h5 className="font-bold mb-2 text-[#E0E0E0]">【本題】</h5>
-                <p className="text-[#A0A0A0] leading-relaxed">{currentScript.body}</p>
+
+              {/* 導入セクション（色分け、行番号、編集可能） */}
+              <div className="border-l-4 border-blue-500/50 bg-blue-500/5 p-4 rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-bold text-[#E0E0E0]">【導入】</h5>
+                  {calculateScriptStats && (
+                    <span className="text-xs text-[#A0A0A0]">
+                      {calculateScriptStats.introduction.chars}文字 / {calculateScriptStats.introduction.lines}行
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  {/* 行番号表示（デザイナー提案） */}
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                    {currentScript.introduction.split('\n').map((_, index) => (
+                      <div key={index} className="leading-6 whitespace-nowrap">
+                        {index + 1}
+                      </div>
+                    ))}
+                  </div>
+                  <Textarea
+                    value={currentScript.introduction}
+                    onChange={(e) => handleSectionChange('introduction', e.target.value)}
+                    className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
+                    placeholder="導入部分を入力..."
+                  />
+                </div>
               </div>
-              <div>
-                <h5 className="font-bold mb-2 text-[#E0E0E0]">【結論】</h5>
-                <p className="text-[#A0A0A0] leading-relaxed">{currentScript.conclusion}</p>
+
+              {/* 本題セクション */}
+              <div className="border-l-4 border-green-500/50 bg-green-500/5 p-4 rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-bold text-[#E0E0E0]">【本題】</h5>
+                  {calculateScriptStats && (
+                    <span className="text-xs text-[#A0A0A0]">
+                      {calculateScriptStats.body.chars}文字 / {calculateScriptStats.body.lines}行
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                    {currentScript.body.split('\n').map((_, index) => (
+                      <div key={index} className="leading-6 whitespace-nowrap">
+                        {index + 1}
+                      </div>
+                    ))}
+                  </div>
+                  <Textarea
+                    value={currentScript.body}
+                    onChange={(e) => handleSectionChange('body', e.target.value)}
+                    className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[200px]"
+                    placeholder="本題部分を入力..."
+                  />
+                </div>
+              </div>
+
+              {/* 結論セクション */}
+              <div className="border-l-4 border-purple-500/50 bg-purple-500/5 p-4 rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-bold text-[#E0E0E0]">【結論】</h5>
+                  {calculateScriptStats && (
+                    <span className="text-xs text-[#A0A0A0]">
+                      {calculateScriptStats.conclusion.chars}文字 / {calculateScriptStats.conclusion.lines}行
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                    {currentScript.conclusion.split('\n').map((_, index) => (
+                      <div key={index} className="leading-6 whitespace-nowrap">
+                        {index + 1}
+                      </div>
+                    ))}
+                  </div>
+                  <Textarea
+                    value={currentScript.conclusion}
+                    onChange={(e) => handleSectionChange('conclusion', e.target.value)}
+                    className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
+                    placeholder="結論部分を入力..."
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
