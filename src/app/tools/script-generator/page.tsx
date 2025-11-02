@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -138,6 +138,16 @@ interface Script {
   conclusion: string;
 }
 
+// 生成履歴のデータ構造
+interface GenerationHistory {
+  id: string;
+  timestamp: number; // Date.now()
+  ideas: Idea[]; // 生成された企画案の配列
+  keywords?: string; // 使用したキーワード
+  direction?: string; // 企画の方向性
+  createdAt: string; // ISO形式の日時文字列（表示用）
+}
+
 export default function ScriptGeneratorPage() {
   const [generatedIdeas, setGeneratedIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<number | null>(null);
@@ -158,6 +168,13 @@ export default function ScriptGeneratorPage() {
   // ローカルストレージキー
   const IDEAS_ORDER_STORAGE_KEY = 'script-generator-ideas-order';
   const FAVORITES_STORAGE_KEY = 'script-generator-favorites';
+  const HISTORY_STORAGE_KEY = 'script-generator-history';
+  const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
+  
+  // 生成履歴の状態管理
+  const [history, setHistory] = useState<GenerationHistory[]>([]);
+  const [historySearchQuery, setHistorySearchQuery] = useState<string>('');
+  const [historyFilterCategory, setHistoryFilterCategory] = useState<IdeaCategory | 'all'>('all');
   
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -206,6 +223,116 @@ export default function ScriptGeneratorPage() {
       }
     }
   }, []); // 初回のみ実行
+
+  // 履歴の読み込み（初回マウント時）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setHistory(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch (err) {
+      console.error('履歴読み込み失敗', err);
+    }
+  }, []);
+
+  // 履歴の保存機能
+  const saveHistory = useCallback((ideas: Idea[], keywords?: string, direction?: string) => {
+    if (typeof window === 'undefined' || ideas.length === 0) return;
+    
+    try {
+      const newHistory: GenerationHistory = {
+        id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: Date.now(),
+        ideas: ideas.map(idea => ({
+          ...idea,
+          // お気に入り状態は履歴には保存しない（現在の状態を維持）
+        })),
+        keywords,
+        direction,
+        createdAt: new Date().toISOString(),
+      };
+      
+      setHistory(prev => {
+        const updated = [newHistory, ...prev].slice(0, MAX_HISTORY_ITEMS);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+    } catch (err) {
+      console.error('履歴保存失敗', err);
+    }
+  }, []);
+
+  // 履歴の削除機能
+  const deleteHistory = useCallback((historyId: string) => {
+    setHistory(prev => {
+      const updated = prev.filter(h => h.id !== historyId);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+        } catch (err) {
+          console.error('履歴削除失敗', err);
+        }
+      }
+      return updated;
+    });
+  }, []);
+
+  // 履歴の全削除
+  const clearAllHistory = useCallback(() => {
+    if (confirm('すべての履歴を削除しますか？')) {
+      setHistory([]);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(HISTORY_STORAGE_KEY);
+        } catch (err) {
+          console.error('履歴全削除失敗', err);
+        }
+      }
+    }
+  }, []);
+
+  // 履歴から再生成機能
+  const loadFromHistory = useCallback((historyItem: GenerationHistory) => {
+    setGeneratedIdeas(historyItem.ideas.map(idea => ({
+      ...idea,
+      isFavorite: favoriteIds.has(idea.id) // 現在のお気に入り状態を維持
+    })));
+    setSelectedIdeaId(null);
+    setCurrentScript(null);
+    setIdeaViewMode('all');
+    // 履歴タブを閉じて、メインエリアにフォーカス
+    setSelectedTab(isDesktop ? "generate" : "persona");
+  }, [favoriteIds, isDesktop]);
+
+  // フィルタリングされた履歴
+  const filteredHistory = useMemo(() => {
+    return history.filter(item => {
+      // 検索クエリ（キーワード、方向性、企画案タイトルで検索）
+      if (historySearchQuery) {
+        const query = historySearchQuery.toLowerCase();
+        const matchesSearch = 
+          (item.keywords && item.keywords.toLowerCase().includes(query)) ||
+          (item.direction && item.direction.toLowerCase().includes(query)) ||
+          item.ideas.some(idea => 
+            idea.title.toLowerCase().includes(query) ||
+            idea.description.toLowerCase().includes(query)
+          );
+        if (!matchesSearch) return false;
+      }
+      
+      // カテゴリフィルター
+      if (historyFilterCategory !== 'all') {
+        const hasCategory = item.ideas.some(idea => idea.category === historyFilterCategory);
+        if (!hasCategory) return false;
+      }
+      
+      return true;
+    });
+  }, [history, historySearchQuery, historyFilterCategory]);
 
   // お気に入りの切り替え
   const toggleFavorite = useCallback((id: number) => {
@@ -304,10 +431,11 @@ export default function ScriptGeneratorPage() {
     await handleAsyncError(async () => {
       // モック処理
       await new Promise(resolve => setTimeout(resolve, 1000));
-    setGeneratedIdeas(dummyIdeas.map(idea => ({
+    const generated = dummyIdeas.map(idea => ({
       ...idea,
       isFavorite: favoriteIds.has(idea.id)
-    })));
+    }));
+    setGeneratedIdeas(generated);
     setSelectedIdeaId(null);
     // フィルターをリセット
     setSearchQuery('');
@@ -315,9 +443,12 @@ export default function ScriptGeneratorPage() {
     setSelectedDifficulty('all');
     setDurationFilter({});
     setIdeaViewMode('all');
+    
+    // 履歴を保存（キーワードと方向性は実際の入力から取得）
+    saveHistory(generated);
     }, "企画案生成中にエラーが発生しました");
     setIsGeneratingIdeas(false);
-  }, [handleAsyncError, favoriteIds]);
+  }, [handleAsyncError, favoriteIds, saveHistory]);
 
   const handleCardClick = useCallback((id: number) => {
     setSelectedIdeaId(id);
@@ -421,15 +552,179 @@ export default function ScriptGeneratorPage() {
         </div>
       </TabsContent>
       <TabsContent value="history" className="mt-4 space-y-4">
-        <div className="space-y-2">
-          <Label>生成履歴</Label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            <p className="text-sm text-muted-foreground">生成履歴がここに表示されます</p>
+        {/* 履歴の検索・フィルター */}
+        {history.length > 0 && (
+          <div className="space-y-3 p-3 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
+            <div className="space-y-2">
+              <Label htmlFor="history-search-mobile" className="flex items-center gap-2 text-sm text-[#E0E0E0]">
+                <Search className="h-4 w-4" />
+                検索
+              </Label>
+              <Input
+                id="history-search-mobile"
+                placeholder="キーワード、方向性、タイトルで検索..."
+                value={historySearchQuery}
+                onChange={(e) => setHistorySearchQuery(e.target.value)}
+                className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm text-[#A0A0A0]">カテゴリ</Label>
+              <Select 
+                value={historyFilterCategory} 
+                onValueChange={(value) => setHistoryFilterCategory(value as IdeaCategory | 'all')}
+              >
+                <SelectTrigger className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  {(Object.keys(categoryConfig) as IdeaCategory[]).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {categoryConfig[category].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {(historySearchQuery || historyFilterCategory !== 'all') && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setHistorySearchQuery('');
+                    setHistoryFilterCategory('all');
+                  }}
+                  className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  フィルターをクリア
+                </Button>
+              </div>
+            )}
+            
+            <div className="text-xs text-[#A0A0A0]">
+              {filteredHistory.length}件の履歴が見つかりました（全{history.length}件中）
+            </div>
           </div>
+        )}
+        
+        {/* 履歴一覧 */}
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {history.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <History className="h-8 w-8 mx-auto mb-2" />
+              <p>まだ履歴がありません</p>
+              <p className="text-sm mt-1">企画案を生成すると、ここに履歴が表示されます</p>
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <Search className="h-8 w-8 mx-auto mb-2" />
+              <p>検索条件に一致する履歴がありません</p>
+            </div>
+          ) : (
+            filteredHistory.map((item) => (
+              <Card 
+                key={item.id}
+                className="bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all cursor-pointer"
+                onClick={() => loadFromHistory(item)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <History className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {item.ideas.length}件の企画案
+                        </CardTitle>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {item.keywords && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            {item.keywords}
+                          </Badge>
+                        )}
+                        {item.direction && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            {item.direction}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* タイムスタンプ表示（デザイナー提案） */}
+                      <div className="flex items-center gap-1 text-xs text-[#A0A0A0]">
+                        <Clock className="h-3 w-3" />
+                        {new Date(item.timestamp).toLocaleString('ja-JP', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* 削除ボタン（デザイナー提案） */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteHistory(item.id);
+                      }}
+                      className="h-8 w-8 text-[#A0A0A0] hover:text-red-400 hover:bg-red-500/10"
+                      aria-label="履歴を削除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                
+                <CardContent>
+                  {/* 最初の3件の企画案タイトルをプレビュー表示 */}
+                  <div className="space-y-1">
+                    {item.ideas.slice(0, 3).map((idea) => (
+                      <div key={idea.id} className="text-xs text-[#A0A0A0] line-clamp-1 flex items-center gap-2">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          categoryConfig[idea.category].bgColor
+                        )} />
+                        {idea.title}
+                      </div>
+                    ))}
+                    {item.ideas.length > 3 && (
+                      <div className="text-xs text-[#4A4A4A]">
+                        +{item.ideas.length - 3}件
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
+        
+        {/* 全削除ボタン */}
+        {history.length > 0 && (
+          <div className="flex justify-end pt-2 border-t border-[#4A4A4A]">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllHistory}
+              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              すべての履歴を削除
+            </Button>
+          </div>
+        )}
       </TabsContent>
     </Tabs>
-  ), [selectedTab]);
+  ), [selectedTab, history, filteredHistory, historySearchQuery, historyFilterCategory, loadFromHistory, deleteHistory, clearAllHistory]);
 
   const sidebarContent = useMemo(() => (
     <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
@@ -490,14 +785,177 @@ export default function ScriptGeneratorPage() {
         </div>
         <Button variant="outline" className="w-full">ペルソナを管理する</Button>
       </TabsContent>
-      <TabsContent value="history" className="mt-4 space-y-2">
-        <p className="text-sm text-muted-foreground">過去に生成した企画案:</p>
-        <div className="border rounded-md p-2 hover:bg-accent cursor-pointer">
-          <p className="font-semibold">超絶高難易度ゲームに初見で挑戦！</p>
+      <TabsContent value="history" className="mt-4 space-y-4">
+        {/* 履歴の検索・フィルター */}
+        {history.length > 0 && (
+          <div className="space-y-3 p-3 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
+            <div className="space-y-2">
+              <Label htmlFor="history-search-desktop" className="flex items-center gap-2 text-sm text-[#E0E0E0]">
+                <Search className="h-4 w-4" />
+                検索
+              </Label>
+              <Input
+                id="history-search-desktop"
+                placeholder="キーワード、方向性、タイトルで検索..."
+                value={historySearchQuery}
+                onChange={(e) => setHistorySearchQuery(e.target.value)}
+                className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm text-[#A0A0A0]">カテゴリ</Label>
+              <Select 
+                value={historyFilterCategory} 
+                onValueChange={(value) => setHistoryFilterCategory(value as IdeaCategory | 'all')}
+              >
+                <SelectTrigger className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  {(Object.keys(categoryConfig) as IdeaCategory[]).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {categoryConfig[category].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {(historySearchQuery || historyFilterCategory !== 'all') && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setHistorySearchQuery('');
+                    setHistoryFilterCategory('all');
+                  }}
+                  className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  フィルターをクリア
+                </Button>
+              </div>
+            )}
+            
+            <div className="text-xs text-[#A0A0A0]">
+              {filteredHistory.length}件の履歴が見つかりました（全{history.length}件中）
+            </div>
+          </div>
+        )}
+        
+        {/* 履歴一覧 */}
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {history.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <History className="h-8 w-8 mx-auto mb-2" />
+              <p>まだ履歴がありません</p>
+              <p className="text-sm mt-1">企画案を生成すると、ここに履歴が表示されます</p>
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <Search className="h-8 w-8 mx-auto mb-2" />
+              <p>検索条件に一致する履歴がありません</p>
+            </div>
+          ) : (
+            filteredHistory.map((item) => (
+              <Card 
+                key={item.id}
+                className="bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all cursor-pointer"
+                onClick={() => loadFromHistory(item)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <History className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {item.ideas.length}件の企画案
+                        </CardTitle>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {item.keywords && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            {item.keywords}
+                          </Badge>
+                        )}
+                        {item.direction && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            {item.direction}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* タイムスタンプ表示（デザイナー提案） */}
+                      <div className="flex items-center gap-1 text-xs text-[#A0A0A0]">
+                        <Clock className="h-3 w-3" />
+                        {new Date(item.timestamp).toLocaleString('ja-JP', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* 削除ボタン（デザイナー提案） */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteHistory(item.id);
+                      }}
+                      className="h-8 w-8 text-[#A0A0A0] hover:text-red-400 hover:bg-red-500/10"
+                      aria-label="履歴を削除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                
+                <CardContent>
+                  {/* 最初の3件の企画案タイトルをプレビュー表示 */}
+                  <div className="space-y-1">
+                    {item.ideas.slice(0, 3).map((idea) => (
+                      <div key={idea.id} className="text-xs text-[#A0A0A0] line-clamp-1 flex items-center gap-2">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          categoryConfig[idea.category].bgColor
+                        )} />
+                        {idea.title}
+                      </div>
+                    ))}
+                    {item.ideas.length > 3 && (
+                      <div className="text-xs text-[#4A4A4A]">
+                        +{item.ideas.length - 3}件
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
-        <div className="border rounded-md p-2 hover:bg-accent cursor-pointer">
-          <p className="font-semibold">視聴者参加型！みんなで決める歌枠セットリスト</p>
-        </div>
+        
+        {/* 全削除ボタン */}
+        {history.length > 0 && (
+          <div className="flex justify-end pt-2 border-t border-[#4A4A4A]">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllHistory}
+              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              すべての履歴を削除
+            </Button>
+          </div>
+        )}
       </TabsContent>
     </Tabs>
   ), [selectedTab, handleGenerate, isGeneratingIdeas]);
