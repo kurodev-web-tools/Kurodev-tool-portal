@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -157,6 +157,19 @@ interface GenerationHistory {
   createdAt: string; // ISO形式の日時文字列（表示用）
 }
 
+// 保存済み台本のデータ構造（6.7）
+interface SavedScript {
+  id: string;
+  scriptId: number; // currentScript.ideaIdと対応
+  title: string; // 企画案のタイトル
+  introduction: string;
+  body: string;
+  conclusion: string;
+  createdAt: number; // 作成タイムスタンプ
+  updatedAt: number; // 更新タイムスタンプ
+  version: number; // バージョン番号（同一scriptIdの複数バージョン対応）
+}
+
 export default function ScriptGeneratorPage() {
   const [generatedIdeas, setGeneratedIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<number | null>(null);
@@ -178,7 +191,9 @@ export default function ScriptGeneratorPage() {
   const IDEAS_ORDER_STORAGE_KEY = 'script-generator-ideas-order';
   const FAVORITES_STORAGE_KEY = 'script-generator-favorites';
   const HISTORY_STORAGE_KEY = 'script-generator-history';
+  const SAVED_SCRIPTS_STORAGE_KEY = 'script-generator-saved-scripts'; // 6.7
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
+  const MAX_SAVED_SCRIPTS = 50; // 最大保存件数（6.7）
   
   // 生成履歴の状態管理
   const [history, setHistory] = useState<GenerationHistory[]>([]);
@@ -190,6 +205,11 @@ export default function ScriptGeneratorPage() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isEditingScript, setIsEditingScript] = useState(false);
   const MAX_SCRIPT_HISTORY_LENGTH = 50; // 最大履歴数
+  
+  // 保存済み台本の状態管理（6.7）
+  const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'editing' | 'saving'>('saved'); // 保存状態
+  const AUTO_SAVE_INTERVAL = 30000; // 自動保存間隔（30秒）
   
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -251,6 +271,21 @@ export default function ScriptGeneratorPage() {
       }
     } catch (err) {
       console.error('履歴読み込み失敗', err);
+    }
+  }, []);
+
+  // 保存済み台本の読み込み（初回マウント時）（6.7）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(SAVED_SCRIPTS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setSavedScripts(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch (err) {
+      console.error('保存済み台本読み込み失敗', err);
     }
   }, []);
 
@@ -543,7 +578,195 @@ export default function ScriptGeneratorPage() {
     };
     setCurrentScript(updatedScript);
     setIsEditingScript(true);
+    setSaveStatus('editing'); // 編集状態に変更（6.7）
   }, [currentScript]);
+
+  // 台本の保存機能（6.7）
+  const saveScript = useCallback((isAutoSave: boolean = false) => {
+    if (!currentScript || typeof window === 'undefined') {
+      console.log('保存失敗: currentScriptがnullまたはwindowがundefined');
+      return;
+    }
+    
+    const selectedIdea = generatedIdeas.find(idea => idea.id === currentScript.ideaId);
+    if (!selectedIdea) {
+      console.log('保存失敗: selectedIdeaが見つかりません', {
+        scriptId: currentScript.ideaId,
+        generatedIdeasCount: generatedIdeas.length,
+        generatedIds: generatedIdeas.map(i => i.id)
+      });
+      // selectedIdeaが見つからない場合でも、currentScriptから保存する
+      // （generatedIdeasが空でも保存できるように）
+      const fallbackTitle = `台本 ${currentScript.ideaId}`;
+      
+      setSaveStatus('saving');
+      
+      try {
+        const existingScripts = savedScripts.filter(s => s.scriptId === currentScript.ideaId);
+        const maxVersion = existingScripts.length > 0 
+          ? Math.max(...existingScripts.map(s => s.version))
+          : 0;
+        
+        const newVersion = existingScripts.length > 0 && !isAutoSave
+          ? maxVersion + 1
+          : (existingScripts.length > 0 ? maxVersion : 1);
+        
+        const savedScript: SavedScript = {
+          id: `saved-${currentScript.ideaId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          scriptId: currentScript.ideaId,
+          title: fallbackTitle,
+          introduction: currentScript.introduction,
+          body: currentScript.body,
+          conclusion: currentScript.conclusion,
+          createdAt: existingScripts.length > 0 ? existingScripts[0].createdAt : Date.now(),
+          updatedAt: Date.now(),
+          version: newVersion,
+        };
+
+        setSavedScripts(prev => {
+          let updated: SavedScript[];
+          if (isAutoSave && existingScripts.length > 0) {
+            updated = prev.map(s => 
+              s.scriptId === currentScript.ideaId && s.version === maxVersion
+                ? savedScript
+                : s
+            );
+          } else {
+            updated = [savedScript, ...prev].slice(0, MAX_SAVED_SCRIPTS);
+          }
+          
+          localStorage.setItem(SAVED_SCRIPTS_STORAGE_KEY, JSON.stringify(updated));
+          return updated;
+        });
+        
+        setSaveStatus('saved');
+        setIsEditingScript(false);
+        
+        if (!isAutoSave) {
+          toast.success('台本を保存しました');
+        }
+      } catch (err) {
+        console.error('台本保存失敗', err);
+        setSaveStatus('editing');
+        toast.error('保存に失敗しました');
+      }
+      return;
+    }
+
+    setSaveStatus('saving');
+    
+    try {
+      // 同一scriptIdの既存保存を検索
+      const existingScripts = savedScripts.filter(s => s.scriptId === currentScript.ideaId);
+      const maxVersion = existingScripts.length > 0 
+        ? Math.max(...existingScripts.map(s => s.version))
+        : 0;
+      
+      // 既存の保存がある場合はバージョンを増やす（複数バージョン対応）
+      const newVersion = existingScripts.length > 0 && !isAutoSave
+        ? maxVersion + 1
+        : (existingScripts.length > 0 ? maxVersion : 1);
+      
+      const savedScript: SavedScript = {
+        id: `saved-${currentScript.ideaId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        scriptId: currentScript.ideaId,
+        title: selectedIdea.title,
+        introduction: currentScript.introduction,
+        body: currentScript.body,
+        conclusion: currentScript.conclusion,
+        createdAt: existingScripts.length > 0 ? existingScripts[0].createdAt : Date.now(),
+        updatedAt: Date.now(),
+        version: newVersion,
+      };
+
+      setSavedScripts(prev => {
+        // 自動保存の場合は既存を更新、手動保存の場合は新規追加
+        let updated: SavedScript[];
+        if (isAutoSave && existingScripts.length > 0) {
+          // 自動保存: 最新バージョンを更新
+          updated = prev.map(s => 
+            s.scriptId === currentScript.ideaId && s.version === maxVersion
+              ? savedScript
+              : s
+          );
+        } else {
+          // 手動保存: 新規追加
+          updated = [savedScript, ...prev].slice(0, MAX_SAVED_SCRIPTS);
+        }
+        
+        localStorage.setItem(SAVED_SCRIPTS_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+      
+      setSaveStatus('saved');
+      setIsEditingScript(false);
+      
+      if (!isAutoSave) {
+        toast.success('台本を保存しました');
+      }
+    } catch (err) {
+      console.error('台本保存失敗', err);
+      setSaveStatus('editing');
+      toast.error('保存に失敗しました');
+    }
+    }, [currentScript, generatedIdeas, savedScripts]);
+
+  // 自動保存の実装（6.7）
+  useEffect(() => {
+    if (!currentScript || saveStatus !== 'editing' || isEditingScript === false) return;
+
+    const autoSaveTimer = setTimeout(() => {
+      saveScript(true); // 自動保存
+    }, AUTO_SAVE_INTERVAL);
+
+    return () => {
+      clearTimeout(autoSaveTimer);
+    };
+  }, [currentScript, saveStatus, isEditingScript, saveScript]);
+
+  // 保存済み台本の読み込み（6.7）
+  const loadSavedScript = useCallback((savedScript: SavedScript) => {
+    const script: Script = {
+      ideaId: savedScript.scriptId,
+      content: `${savedScript.introduction}\n\n${savedScript.body}\n\n${savedScript.conclusion}`,
+      introduction: savedScript.introduction,
+      body: savedScript.body,
+      conclusion: savedScript.conclusion,
+    };
+    
+    setCurrentScript(script);
+    setSelectedIdeaId(savedScript.scriptId);
+    setSaveStatus('saved');
+    setIsEditingScript(false);
+    
+    // 履歴に追加
+    const historyItem: ScriptHistoryItem = {
+      introduction: script.introduction,
+      body: script.body,
+      conclusion: script.conclusion,
+      timestamp: Date.now(),
+    };
+    setScriptHistory([historyItem]);
+    setHistoryIndex(0);
+    
+    toast.success('保存済み台本を読み込みました');
+  }, []);
+
+  // 保存済み台本の削除（6.7）
+  const deleteSavedScript = useCallback((scriptId: string) => {
+    setSavedScripts(prev => {
+      const updated = prev.filter(s => s.id !== scriptId);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(SAVED_SCRIPTS_STORAGE_KEY, JSON.stringify(updated));
+        } catch (err) {
+          console.error('保存済み台本削除失敗', err);
+        }
+      }
+      return updated;
+    });
+    toast.success('保存済み台本を削除しました');
+  }, []);
 
   // 文字数・行数・予想時間の計算（利用者提案）
   const calculateScriptStats = useMemo(() => {
@@ -614,6 +837,7 @@ export default function ScriptGeneratorPage() {
       setScriptHistory([historyItem]);
       setHistoryIndex(0);
       setIsEditingScript(false);
+      setSaveStatus('saved'); // 初期状態は保存済み（6.7）
       
       logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.content.length }, 'ScriptGenerator');
     }, "台本生成中にエラーが発生しました");
@@ -875,12 +1099,13 @@ export default function ScriptGeneratorPage() {
     </div>
   ), [isGeneratingIdeas, handleGenerate]);
 
-  // モバイル用のサイドバーコンテンツ（ペルソナと履歴のみ）
+  // モバイル用のサイドバーコンテンツ（ペルソナ、履歴、保存済み）
   const mobileSidebarContent = useMemo(() => (
     <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="persona">ペルソナ</TabsTrigger>
         <TabsTrigger value="history">履歴</TabsTrigger>
+        <TabsTrigger value="saved">保存済み</TabsTrigger>
       </TabsList>
       <TabsContent value="persona" className="mt-4 space-y-4">
         <div className="space-y-2">
@@ -1078,15 +1303,94 @@ export default function ScriptGeneratorPage() {
           </div>
         )}
       </TabsContent>
+      <TabsContent value="saved" className="mt-4 space-y-4">
+        {/* 保存済み台本一覧（6.7） */}
+        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          {savedScripts.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <BookOpen className="h-8 w-8 mx-auto mb-2" />
+              <p>まだ保存済み台本がありません</p>
+              <p className="text-sm mt-1">台本を編集して保存すると、ここに表示されます</p>
+            </div>
+          ) : (
+            savedScripts.map((saved) => (
+              <Card 
+                key={saved.id}
+                className="bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {saved.title}
+                        </CardTitle>
+                        {saved.version > 1 && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            v{saved.version}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* タイムスタンプ表示 */}
+                      <div className="flex items-center gap-1 text-xs text-[#A0A0A0] mb-2">
+                        <Clock className="h-3 w-3" />
+                        更新: {new Date(saved.updatedAt).toLocaleString('ja-JP', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                      
+                      {/* プレビュー */}
+                      <div className="text-xs text-[#A0A0A0] line-clamp-2">
+                        {saved.introduction.substring(0, 50)}...
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter className="gap-2 pt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => loadSavedScript(saved)}
+                    className="flex-1 border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    読み込む
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('この保存済み台本を削除しますか？')) {
+                        deleteSavedScript(saved.id);
+                      }
+                    }}
+                    className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          )}
+        </div>
+      </TabsContent>
     </Tabs>
-  ), [selectedTab, history, filteredHistory, historySearchQuery, historyFilterCategory, loadFromHistory, deleteHistory, clearAllHistory]);
+  ), [selectedTab, history, filteredHistory, historySearchQuery, historyFilterCategory, loadFromHistory, deleteHistory, clearAllHistory, savedScripts, loadSavedScript, deleteSavedScript]);
 
   const sidebarContent = useMemo(() => (
     <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="generate">生成</TabsTrigger>
         <TabsTrigger value="persona">ペルソナ</TabsTrigger>
         <TabsTrigger value="history">履歴</TabsTrigger>
+        <TabsTrigger value="saved">保存済み</TabsTrigger>
       </TabsList>
       <TabsContent value="generate" className="mt-4 space-y-4">
         <div className="space-y-2">
@@ -1312,8 +1616,86 @@ export default function ScriptGeneratorPage() {
           </div>
         )}
       </TabsContent>
+      <TabsContent value="saved" className="mt-4 space-y-4">
+        {/* 保存済み台本一覧（6.7） */}
+        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          {savedScripts.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <BookOpen className="h-8 w-8 mx-auto mb-2" />
+              <p>まだ保存済み台本がありません</p>
+              <p className="text-sm mt-1">台本を編集して保存すると、ここに表示されます</p>
+            </div>
+          ) : (
+            savedScripts.map((saved) => (
+              <Card 
+                key={saved.id}
+                className="bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {saved.title}
+                        </CardTitle>
+                        {saved.version > 1 && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            v{saved.version}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* タイムスタンプ表示 */}
+                      <div className="flex items-center gap-1 text-xs text-[#A0A0A0] mb-2">
+                        <Clock className="h-3 w-3" />
+                        更新: {new Date(saved.updatedAt).toLocaleString('ja-JP', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                      
+                      {/* プレビュー */}
+                      <div className="text-xs text-[#A0A0A0] line-clamp-2">
+                        {saved.introduction.substring(0, 50)}...
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter className="gap-2 pt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => loadSavedScript(saved)}
+                    className="flex-1 border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    読み込む
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('この保存済み台本を削除しますか？')) {
+                        deleteSavedScript(saved.id);
+                      }
+                    }}
+                    className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          )}
+        </div>
+      </TabsContent>
     </Tabs>
-  ), [selectedTab, handleGenerate, isGeneratingIdeas]);
+  ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, loadSavedScript, deleteSavedScript]);
 
   return (
     <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-4.1rem)] lg:overflow-hidden">
@@ -1857,30 +2239,60 @@ export default function ScriptGeneratorPage() {
                       onClick={() => {
                         if (currentScript) {
                           addToScriptHistory(currentScript);
-                          setIsEditingScript(false);
-                          toast.success('台本を保存しました');
+                          saveScript(false); // 手動保存（6.7）
                         }
                       }}
-                      disabled={!isEditingScript}
+                      disabled={!isEditingScript || saveStatus === 'saving'}
                       className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
                       title="保存"
                     >
-                      <Save className="h-4 w-4 mr-1" />
-                      保存
+                      {saveStatus === 'saving' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-1" />
+                          保存
+                        </>
+                      )}
                     </Button>
                   </div>
                   
-                  {/* 統計情報（利用者提案） */}
-                  {calculateScriptStats && (
-                    <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
-                      <span>文字数: {calculateScriptStats.total.chars}</span>
-                      <span>行数: {calculateScriptStats.total.lines}</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        予想時間: {calculateScriptStats.total.estimatedMinutes}分
-                      </span>
-                    </div>
-                  )}
+                  {/* 統計情報と保存状態（利用者提案 + 6.7） */}
+                  <div className="flex items-center gap-4">
+                    {calculateScriptStats && (
+                      <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
+                        <span>文字数: {calculateScriptStats.total.chars}</span>
+                        <span>行数: {calculateScriptStats.total.lines}</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          予想時間: {calculateScriptStats.total.estimatedMinutes}分
+                        </span>
+                      </div>
+                    )}
+                    {/* 保存状態バッジ（6.7） */}
+                    {currentScript && (
+                      <div className="ml-auto">
+                        {saveStatus === 'saved' && (
+                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
+                            保存済み
+                          </Badge>
+                        )}
+                        {saveStatus === 'editing' && (
+                          <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
+                            編集中
+                          </Badge>
+                        )}
+                        {saveStatus === 'saving' && (
+                          <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
+                            保存中...
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 導入セクション（色分け、行番号、編集可能） */}
@@ -2055,30 +2467,60 @@ export default function ScriptGeneratorPage() {
                     onClick={() => {
                       if (currentScript) {
                         addToScriptHistory(currentScript);
-                        setIsEditingScript(false);
-                        toast.success('台本を保存しました');
+                        saveScript(false); // 手動保存（6.7）
                       }
                     }}
-                    disabled={!isEditingScript}
+                    disabled={!isEditingScript || saveStatus === 'saving'}
                     className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
                     title="保存"
                   >
-                    <Save className="h-4 w-4 mr-1" />
-                    保存
+                    {saveStatus === 'saving' ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        保存中...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-1" />
+                        保存
+                      </>
+                    )}
                   </Button>
                 </div>
                 
-                {/* 統計情報（利用者提案） */}
-                {calculateScriptStats && (
-                  <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
-                    <span>文字数: {calculateScriptStats.total.chars}</span>
-                    <span>行数: {calculateScriptStats.total.lines}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      予想時間: {calculateScriptStats.total.estimatedMinutes}分
-                    </span>
-                  </div>
-                )}
+                {/* 統計情報と保存状態（利用者提案 + 6.7） */}
+                <div className="flex items-center gap-4">
+                  {calculateScriptStats && (
+                    <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
+                      <span>文字数: {calculateScriptStats.total.chars}</span>
+                      <span>行数: {calculateScriptStats.total.lines}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        予想時間: {calculateScriptStats.total.estimatedMinutes}分
+                      </span>
+                    </div>
+                  )}
+                  {/* 保存状態バッジ（6.7） */}
+                  {currentScript && (
+                    <div className="ml-auto">
+                      {saveStatus === 'saved' && (
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
+                          保存済み
+                        </Badge>
+                      )}
+                      {saveStatus === 'editing' && (
+                        <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
+                          編集中
+                        </Badge>
+                      )}
+                      {saveStatus === 'saving' && (
+                        <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
+                          保存中...
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* 導入セクション（色分け、行番号、編集可能） */}
@@ -2195,7 +2637,8 @@ export default function ScriptGeneratorPage() {
           tabs={[
             { id: "generate", label: "生成", icon: <Lightbulb className="h-4 w-4" /> },
             { id: "persona", label: "ペルソナ", icon: <Construction className="h-4 w-4" /> },
-            { id: "history", label: "履歴", icon: <FileText className="h-4 w-4" /> }
+            { id: "history", label: "履歴", icon: <FileText className="h-4 w-4" /> },
+            { id: "saved", label: "保存済み", icon: <BookOpen className="h-4 w-4" /> }
           ]}
           onTabClick={setSelectedTab}
         />
