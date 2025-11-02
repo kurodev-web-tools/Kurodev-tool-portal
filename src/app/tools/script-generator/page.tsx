@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2 } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2, Play, Pause, Volume2, Gauge, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -17,6 +17,7 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { logger } from '@/lib/logger';
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -55,6 +56,17 @@ interface Idea {
   thumbnail?: string; // サムネイル画像URL（オプション）
   isFavorite?: boolean; // お気に入りフラグ
   order?: number; // 並び替え順序
+}
+
+// ペルソナ管理の型定義（6.12）
+interface Persona {
+  id: string;
+  name: string;
+  description: string; // ペルソナの特徴や話し方
+  speakingStyle?: string[]; // 話し方のスタイル（オプション）
+  traits?: string[]; // キャラクターの特徴（オプション）
+  createdAt: number;
+  updatedAt: number;
 }
 
 // カテゴリごとの色分けとアイコン定義
@@ -393,6 +405,12 @@ export default function ScriptGeneratorPage() {
     customPrompt: '',
   });
   
+  // 台本プレビューの状態管理（6.11）
+  const [previewMode, setPreviewMode] = useState<'edit' | 'reading' | 'timeline'>('edit');
+  const [readingSpeed, setReadingSpeed] = useState(1.0); // 読み上げ速度（0.5〜2.0倍速）
+  const [currentReadingIndex, setCurrentReadingIndex] = useState<number | null>(null);
+  const [isReading, setIsReading] = useState(false);
+  
   // 検索・フィルターの状態管理
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<IdeaCategory[]>([]);
@@ -409,8 +427,11 @@ export default function ScriptGeneratorPage() {
   const HISTORY_STORAGE_KEY = 'script-generator-history';
   const SAVED_SCRIPTS_STORAGE_KEY = 'script-generator-saved-scripts'; // 6.7
   const CUSTOM_TEMPLATES_STORAGE_KEY = 'script-generator-custom-templates'; // 6.8
+  const PERSONAS_STORAGE_KEY = 'script-generator-personas'; // 6.12
+  const DEFAULT_PERSONA_STORAGE_KEY = 'script-generator-default-persona'; // 6.12
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const MAX_SAVED_SCRIPTS = 50; // 最大保存件数（6.7）
+  const MAX_PERSONAS = 50; // 最大ペルソナ数（6.12）
   
   // 生成履歴の状態管理
   const [history, setHistory] = useState<GenerationHistory[]>([]);
@@ -431,6 +452,19 @@ export default function ScriptGeneratorPage() {
   // 台本テンプレートの状態管理（6.8）
   const [customTemplates, setCustomTemplates] = useState<ScriptTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('standard'); // 選択中のテンプレートID
+  
+  // ペルソナ管理の状態管理（6.12）
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
+  const [defaultPersonaId, setDefaultPersonaId] = useState<string | null>(null);
+  const [isPersonaDialogOpen, setIsPersonaDialogOpen] = useState(false);
+  const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
+  const [personaFormData, setPersonaFormData] = useState({
+    name: '',
+    description: '',
+    speakingStyle: [] as string[],
+    traits: [] as string[],
+  });
   
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -522,6 +556,27 @@ export default function ScriptGeneratorPage() {
       }
     } catch (err) {
       console.error('カスタムテンプレート読み込み失敗', err);
+    }
+  }, []);
+
+  // ペルソナデータの読み込み（初回マウント時）（6.12）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(PERSONAS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setPersonas(Array.isArray(parsed) ? parsed : []);
+      }
+      
+      const defaultId = localStorage.getItem(DEFAULT_PERSONA_STORAGE_KEY);
+      if (defaultId) {
+        setDefaultPersonaId(defaultId);
+        setSelectedPersonaId(defaultId);
+      }
+    } catch (err) {
+      console.error('ペルソナ読み込み失敗', err);
     }
   }, []);
 
@@ -669,6 +724,165 @@ export default function ScriptGeneratorPage() {
       return true;
     });
   }, [history, historySearchQuery, historyFilterCategory]);
+
+  // ペルソナの保存（localStorage）（6.12）
+  const savePersonas = useCallback((newPersonas: Persona[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(PERSONAS_STORAGE_KEY, JSON.stringify(newPersonas));
+    } catch (err) {
+      console.error('ペルソナ保存失敗', err);
+      toast.error('ペルソナの保存に失敗しました');
+    }
+  }, []);
+
+  // デフォルトペルソナの保存（6.12）
+  const saveDefaultPersona = useCallback((personaId: string | null) => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (personaId) {
+        localStorage.setItem(DEFAULT_PERSONA_STORAGE_KEY, personaId);
+      } else {
+        localStorage.removeItem(DEFAULT_PERSONA_STORAGE_KEY);
+      }
+    } catch (err) {
+      console.error('デフォルトペルソナ保存失敗', err);
+    }
+  }, []);
+
+  // ペルソナフォームのリセット（6.12）
+  const resetPersonaForm = useCallback(() => {
+    setPersonaFormData({
+      name: '',
+      description: '',
+      speakingStyle: [],
+      traits: [],
+    });
+    setEditingPersona(null);
+  }, []);
+
+  // ペルソナの作成（6.12）
+  const createPersona = useCallback(() => {
+    const newPersona: Persona = {
+      id: `persona-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: personaFormData.name.trim(),
+      description: personaFormData.description.trim(),
+      speakingStyle: personaFormData.speakingStyle,
+      traits: personaFormData.traits,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    if (!newPersona.name) {
+      toast.error('ペルソナ名を入力してください');
+      return;
+    }
+
+    if (personas.length >= MAX_PERSONAS) {
+      toast.error(`ペルソナは最大${MAX_PERSONAS}件まで作成できます`);
+      return;
+    }
+
+    const updated = [...personas, newPersona];
+    setPersonas(updated);
+    savePersonas(updated);
+    
+    // 最初のペルソナを自動的にデフォルトと選択に設定
+    if (personas.length === 0) {
+      setDefaultPersonaId(newPersona.id);
+      setSelectedPersonaId(newPersona.id);
+      saveDefaultPersona(newPersona.id);
+    }
+    
+    toast.success('ペルソナを作成しました');
+    setIsPersonaDialogOpen(false);
+    resetPersonaForm();
+  }, [personas, personaFormData, savePersonas, saveDefaultPersona, resetPersonaForm]);
+
+  // ペルソナの更新（6.12）
+  const updatePersona = useCallback((persona: Persona) => {
+    const updated = personas.map(p => 
+      p.id === persona.id 
+        ? { ...persona, updatedAt: Date.now() }
+        : p
+    );
+    setPersonas(updated);
+    savePersonas(updated);
+    toast.success('ペルソナを更新しました');
+    setIsPersonaDialogOpen(false);
+    resetPersonaForm();
+  }, [personas, savePersonas, resetPersonaForm]);
+
+  // ペルソナの削除（6.12）
+  const deletePersona = useCallback((id: string) => {
+    const persona = personas.find(p => p.id === id);
+    if (!persona) return;
+
+    if (defaultPersonaId === id) {
+      toast.error('デフォルトに設定されているペルソナは削除できません。先に他のペルソナをデフォルトに設定してください。');
+      return;
+    }
+
+    if (!confirm(`「${persona.name}」を削除しますか？`)) {
+      return;
+    }
+
+    const updated = personas.filter(p => p.id !== id);
+    setPersonas(updated);
+    savePersonas(updated);
+    
+    if (selectedPersonaId === id) {
+      setSelectedPersonaId(defaultPersonaId || (updated.length > 0 ? updated[0].id : null));
+    }
+    
+    toast.success('ペルソナを削除しました');
+  }, [personas, defaultPersonaId, selectedPersonaId, savePersonas]);
+
+  // デフォルトペルソナの設定（6.12）
+  const setDefaultPersona = useCallback((id: string) => {
+    setDefaultPersonaId(id);
+    saveDefaultPersona(id);
+    toast.success('デフォルトペルソナを設定しました');
+  }, [saveDefaultPersona]);
+
+  // 編集開始（6.12）
+  const handleEditPersona = useCallback((persona: Persona) => {
+    setEditingPersona(persona);
+    setPersonaFormData({
+      name: persona.name,
+      description: persona.description,
+      speakingStyle: persona.speakingStyle || [],
+      traits: persona.traits || [],
+    });
+    setIsPersonaDialogOpen(true);
+  }, []);
+
+  // 新規作成開始（6.12）
+  const handleCreatePersona = useCallback(() => {
+    resetPersonaForm();
+    setIsPersonaDialogOpen(true);
+  }, [resetPersonaForm]);
+
+  // ダイアログ保存処理（6.12）
+  const handleSavePersona = useCallback(() => {
+    if (editingPersona) {
+      const updated: Persona = {
+        ...editingPersona,
+        name: personaFormData.name.trim(),
+        description: personaFormData.description.trim(),
+        speakingStyle: personaFormData.speakingStyle,
+        traits: personaFormData.traits,
+        updatedAt: Date.now(),
+      };
+      if (!updated.name) {
+        toast.error('ペルソナ名を入力してください');
+        return;
+      }
+      updatePersona(updated);
+    } else {
+      createPersona();
+    }
+  }, [editingPersona, personaFormData, updatePersona, createPersona]);
 
   // お気に入りの切り替え
   const toggleFavorite = useCallback((id: number) => {
@@ -1086,6 +1300,13 @@ export default function ScriptGeneratorPage() {
     toast.success('保存済み台本を削除しました');
   }, []);
 
+  // 時間をMM:SS形式にフォーマット（6.11）
+  const formatTime = useCallback((seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, []);
+  
   // 文字数・行数・予想時間の計算（利用者提案 + 6.8対応：動的セクション）
   const calculateScriptStats = useMemo(() => {
     if (!currentScript) return null;
@@ -1141,6 +1362,39 @@ export default function ScriptGeneratorPage() {
       },
     };
   }, [currentScript]);
+  
+  // タイムライン表示用の時間計算（6.11）
+  const calculateTimeline = useMemo(() => {
+    if (!currentScript || !calculateScriptStats) return null;
+    
+    const charsPerMinute = 250; // 1分あたり250文字
+    let cumulativeSeconds = 0;
+    
+    const sections = currentTemplate.sections.sort((a, b) => a.order - b.order);
+    const timeline = sections.map((section) => {
+      const sectionValue = getSectionValue(section.id);
+      const sectionChars = sectionValue.length;
+      const sectionSeconds = Math.max(Math.ceil((sectionChars / charsPerMinute) * 60), 1);
+      
+      const startTime = cumulativeSeconds;
+      const endTime = cumulativeSeconds + sectionSeconds;
+      cumulativeSeconds = endTime;
+      
+      return {
+        section,
+        startTime,
+        endTime,
+        duration: sectionSeconds,
+        chars: sectionChars,
+      };
+    });
+    
+    return {
+      sections: timeline,
+      totalSeconds: cumulativeSeconds,
+      totalMinutes: Math.ceil(cumulativeSeconds / 60),
+    };
+  }, [currentScript, currentTemplate, calculateScriptStats, getSectionValue]);
 
   // テンプレート適用関数（6.8）
   const applyTemplate = useCallback((template: ScriptTemplate) => {
@@ -1762,28 +2016,123 @@ export default function ScriptGeneratorPage() {
         <TabsTrigger value="saved">保存済み</TabsTrigger>
       </TabsList>
       <TabsContent value="persona" className="mt-4 space-y-4">
+        {/* ペルソナ選択 */}
         <div className="space-y-2">
           <Label htmlFor="persona-select-mobile">使用するペルソナ</Label>
-          <Select>
+          <Select 
+            value={selectedPersonaId || undefined} 
+            onValueChange={(value) => setSelectedPersonaId(value || null)}
+          >
             <SelectTrigger id="persona-select-mobile">
               <SelectValue placeholder="ペルソナを選択" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">デフォルト</SelectItem>
-              <SelectItem value="energetic">エネルギッシュ</SelectItem>
-              <SelectItem value="calm">落ち着いた</SelectItem>
-              <SelectItem value="funny">面白い</SelectItem>
+              {personas.length === 0 ? (
+                <div className="px-2 py-1.5 text-sm text-[#A0A0A0]">ペルソナがありません</div>
+              ) : (
+                personas.map((persona) => (
+                  <SelectItem key={persona.id} value={persona.id}>
+                    {persona.name}
+                    {defaultPersonaId === persona.id && ' (デフォルト)'}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="persona-desc-mobile">ペルソナの特徴</Label>
-          <Textarea 
-            id="persona-desc-mobile"
-            placeholder="ペルソナの特徴や話し方を記述..."
-            className="min-h-[100px]"
-          />
+
+        {/* ペルソナ一覧 */}
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+          {personas.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <Construction className="h-8 w-8 mx-auto mb-2" />
+              <p>まだペルソナがありません</p>
+              <p className="text-sm mt-1">新しいペルソナを作成してください</p>
+            </div>
+          ) : (
+            personas.map((persona) => (
+              <Card 
+                key={persona.id}
+                className={cn(
+                  "bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all",
+                  selectedPersonaId === persona.id && "border-blue-500/50 bg-blue-500/5"
+                )}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Construction className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {persona.name}
+                        </CardTitle>
+                        {defaultPersonaId === persona.id && (
+                          <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">
+                            <Star className="h-3 w-3 mr-1" />
+                            デフォルト
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-[#A0A0A0] line-clamp-2">
+                        {persona.description}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter className="gap-2 pt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedPersonaId(persona.id)}
+                    className="flex-1 border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    選択
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditPersona(persona)}
+                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  {defaultPersonaId !== persona.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDefaultPersona(persona.id)}
+                      className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                      title="デフォルトに設定"
+                    >
+                      <Star className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deletePersona(persona.id)}
+                    className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                    disabled={defaultPersonaId === persona.id}
+                    title={defaultPersonaId === persona.id ? "デフォルトペルソナは削除できません" : "削除"}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          )}
         </div>
+
+        {/* 新規作成ボタン */}
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={handleCreatePersona}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          新しいペルソナを作成
+        </Button>
       </TabsContent>
       <TabsContent value="history" className="mt-4 space-y-4">
         {/* 履歴の検索・フィルター */}
@@ -2036,7 +2385,7 @@ export default function ScriptGeneratorPage() {
         </div>
       </TabsContent>
     </Tabs>
-  ), [selectedTab, history, filteredHistory, historySearchQuery, historyFilterCategory, loadFromHistory, deleteHistory, clearAllHistory, savedScripts, loadSavedScript, deleteSavedScript]);
+  ), [selectedTab, history, filteredHistory, historySearchQuery, historyFilterCategory, loadFromHistory, deleteHistory, clearAllHistory, savedScripts, loadSavedScript, deleteSavedScript, personas, selectedPersonaId, defaultPersonaId, handleEditPersona, setSelectedPersonaId, setDefaultPersona, deletePersona, handleCreatePersona]);
 
   const sidebarContent = useMemo(() => (
     <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
@@ -2327,19 +2676,123 @@ export default function ScriptGeneratorPage() {
         </div>
       </TabsContent>
       <TabsContent value="persona" className="mt-4 space-y-4">
+        {/* ペルソナ選択 */}
         <div className="space-y-2">
           <Label htmlFor="persona-select">使用するペルソナ</Label>
-          <Select>
+          <Select 
+            value={selectedPersonaId || undefined} 
+            onValueChange={(value) => setSelectedPersonaId(value || null)}
+          >
             <SelectTrigger id="persona-select">
               <SelectValue placeholder="ペルソナを選択" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="persona-1">元気なゲーマー女子</SelectItem>
-              <SelectItem value="persona-2">クールな解説お姉さん</SelectItem>
+              {personas.length === 0 ? (
+                <div className="px-2 py-1.5 text-sm text-[#A0A0A0]">ペルソナがありません</div>
+              ) : (
+                personas.map((persona) => (
+                  <SelectItem key={persona.id} value={persona.id}>
+                    {persona.name}
+                    {defaultPersonaId === persona.id && ' (デフォルト)'}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" className="w-full">ペルソナを管理する</Button>
+
+        {/* ペルソナ一覧 */}
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {personas.length === 0 ? (
+            <div className="text-center py-8 text-[#A0A0A0]">
+              <Construction className="h-8 w-8 mx-auto mb-2" />
+              <p>まだペルソナがありません</p>
+              <p className="text-sm mt-1">新しいペルソナを作成してください</p>
+            </div>
+          ) : (
+            personas.map((persona) => (
+              <Card 
+                key={persona.id}
+                className={cn(
+                  "bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all",
+                  selectedPersonaId === persona.id && "border-blue-500/50 bg-blue-500/5"
+                )}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Construction className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {persona.name}
+                        </CardTitle>
+                        {defaultPersonaId === persona.id && (
+                          <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">
+                            <Star className="h-3 w-3 mr-1" />
+                            デフォルト
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-[#A0A0A0] line-clamp-2">
+                        {persona.description}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter className="gap-2 pt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedPersonaId(persona.id)}
+                    className="flex-1 border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    選択
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditPersona(persona)}
+                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  {defaultPersonaId !== persona.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDefaultPersona(persona.id)}
+                      className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                      title="デフォルトに設定"
+                    >
+                      <Star className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deletePersona(persona.id)}
+                    className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                    disabled={defaultPersonaId === persona.id}
+                    title={defaultPersonaId === persona.id ? "デフォルトペルソナは削除できません" : "削除"}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* 新規作成ボタン */}
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={handleCreatePersona}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          新しいペルソナを作成
+        </Button>
       </TabsContent>
       <TabsContent value="history" className="mt-4 space-y-4">
         {/* 履歴の検索・フィルター */}
@@ -2592,7 +3045,7 @@ export default function ScriptGeneratorPage() {
         </div>
       </TabsContent>
     </Tabs>
-  ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, loadSavedScript, deleteSavedScript, allTemplates, selectedTemplateId, categoryConfig]);
+  ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, loadSavedScript, deleteSavedScript, allTemplates, selectedTemplateId, categoryConfig, personas, selectedPersonaId, defaultPersonaId, handleEditPersona, setSelectedPersonaId, setDefaultPersona, deletePersona, handleCreatePersona]);
 
   return (
     <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-4.1rem)] lg:overflow-hidden">
@@ -3093,8 +3546,27 @@ export default function ScriptGeneratorPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* ツールバー（デザイナー提案） */}
-                <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
+                {/* 表示モード切り替えタブ（6.11） */}
+                <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'edit' | 'reading' | 'timeline')}>
+                  <TabsList className="grid w-full grid-cols-3 bg-[#1A1A1A] border border-[#4A4A4A]">
+                    <TabsTrigger value="edit" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      編集
+                    </TabsTrigger>
+                    <TabsTrigger value="reading" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                      <Volume2 className="h-4 w-4 mr-1" />
+                      読み上げ
+                    </TabsTrigger>
+                    <TabsTrigger value="timeline" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                      <Gauge className="h-4 w-4 mr-1" />
+                      タイムライン
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  {/* 編集モード */}
+                  <TabsContent value="edit" className="mt-4 space-y-4">
+                    {/* ツールバー（デザイナー提案） */}
+                    <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -3213,6 +3685,173 @@ export default function ScriptGeneratorPage() {
                       </div>
                     );
                   })}
+                  </TabsContent>
+                  
+                  {/* 読み上げモード（6.11） */}
+                  <TabsContent value="reading" className="mt-4 space-y-4">
+                    {/* 読み上げ速度調整 */}
+                    <div className="space-y-3 pb-4 border-b border-[#4A4A4A]">
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center gap-2 text-[#E0E0E0]">
+                          <Volume2 className="h-4 w-4" />
+                          読み上げ速度
+                        </Label>
+                        <span className="text-sm text-[#A0A0A0]">{readingSpeed.toFixed(1)}倍速</span>
+                      </div>
+                      <Slider
+                        min={0.5}
+                        max={2.0}
+                        step={0.1}
+                        value={[readingSpeed]}
+                        onValueChange={(value) => setReadingSpeed(value[0])}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-[#4A4A4A]">
+                        <span>0.5倍</span>
+                        <span>1.0倍</span>
+                        <span>2.0倍</span>
+                      </div>
+                    </div>
+                    
+                    {/* 読み上げコントロール */}
+                    <div className="flex items-center gap-2 pb-4 border-b border-[#4A4A4A]">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsReading(!isReading)}
+                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                      >
+                        {isReading ? (
+                          <>
+                            <Pause className="h-4 w-4 mr-1" />
+                            停止
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-1" />
+                            読み上げ開始
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {/* 読み上げ表示（大きめフォント） */}
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                      {currentTemplate.sections
+                        .sort((a, b) => a.order - b.order)
+                        .map((section, sectionIndex) => {
+                          const sectionValue = getSectionValue(section.id);
+                          const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
+                          const lines = sectionValue.split('\n');
+                          
+                          return (
+                            <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
+                              <h5 className="font-bold text-lg text-[#E0E0E0] mb-3">【{section.label}】</h5>
+                              <div className="space-y-2">
+                                {lines.map((line, lineIndex) => {
+                                  const globalLineIndex = currentTemplate.sections
+                                    .slice(0, sectionIndex)
+                                    .reduce((acc, s) => acc + getSectionValue(s.id).split('\n').length, 0) + lineIndex;
+                                  const isCurrentLine = currentReadingIndex === globalLineIndex;
+                                  
+                                  return (
+                                    <div
+                                      key={lineIndex}
+                                      className={cn(
+                                        "text-lg leading-relaxed p-2 rounded transition-all",
+                                        isCurrentLine
+                                          ? "bg-primary/20 border-2 border-primary text-[#E0E0E0] font-semibold"
+                                          : "text-[#A0A0A0]"
+                                      )}
+                                    >
+                                      {line || '\u00A0'}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </TabsContent>
+                  
+                  {/* タイムライン表示（6.11） */}
+                  <TabsContent value="timeline" className="mt-4 space-y-4">
+                    {calculateTimeline ? (
+                      <>
+                        {/* 全体時間表示 */}
+                        <div className="p-4 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-5 w-5 text-primary" />
+                              <span className="text-lg font-semibold text-[#E0E0E0]">総時間</span>
+                            </div>
+                            <span className="text-2xl font-bold text-primary">
+                              {formatTime(calculateTimeline.totalSeconds)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* セクションタイムライン */}
+                        <div className="space-y-3">
+                          {calculateTimeline.sections.map((timelineItem, index) => {
+                            const colorClasses = sectionColorMap[timelineItem.section.color] || sectionColorMap.blue;
+                            const percentage = (timelineItem.duration / calculateTimeline.totalSeconds) * 100;
+                            
+                            // セクションカラーに応じたドットの色を設定
+                            const dotColorMap: Record<string, string> = {
+                              blue: 'bg-blue-500',
+                              green: 'bg-green-500',
+                              purple: 'bg-purple-500',
+                              yellow: 'bg-yellow-500',
+                              orange: 'bg-orange-500',
+                              pink: 'bg-pink-500',
+                            };
+                            const dotColor = dotColorMap[timelineItem.section.color] || 'bg-blue-500';
+                            
+                            return (
+                              <div key={timelineItem.section.id} className="border border-[#4A4A4A] rounded-lg p-4 bg-[#2D2D2D]">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${dotColor}`} />
+                                    <h5 className="font-semibold text-[#E0E0E0]">【{timelineItem.section.label}】</h5>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-sm text-[#A0A0A0]">
+                                    <span>{formatTime(timelineItem.startTime)}</span>
+                                    <span className="text-primary">→</span>
+                                    <span>{formatTime(timelineItem.endTime)}</span>
+                                  </div>
+                                </div>
+                                
+                                {/* タイムラインバー */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between text-xs text-[#4A4A4A]">
+                                    <span>開始: {formatTime(timelineItem.startTime)}</span>
+                                    <span className="text-primary font-semibold">継続時間: {formatTime(timelineItem.duration)}</span>
+                                    <span>終了: {formatTime(timelineItem.endTime)}</span>
+                                  </div>
+                                  <div className="w-full h-3 bg-[#1A1A1A] rounded-full overflow-hidden">
+                                    <div
+                                      className={cn("h-full transition-all", dotColor)}
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <div className="text-xs text-[#A0A0A0]">
+                                    {timelineItem.chars}文字 / 累積: {formatTime(timelineItem.endTime)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center text-[#A0A0A0] py-8">
+                        タイムラインを計算中...
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           ) : (
@@ -3285,8 +3924,27 @@ export default function ScriptGeneratorPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* ツールバー（デザイナー提案） */}
-              <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
+              {/* 表示モード切り替えタブ（6.11） */}
+              <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'edit' | 'reading' | 'timeline')}>
+                <TabsList className="grid w-full grid-cols-3 bg-[#1A1A1A] border border-[#4A4A4A]">
+                  <TabsTrigger value="edit" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    編集
+                  </TabsTrigger>
+                  <TabsTrigger value="reading" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                    <Volume2 className="h-4 w-4 mr-1" />
+                    読み上げ
+                  </TabsTrigger>
+                  <TabsTrigger value="timeline" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                    <Gauge className="h-4 w-4 mr-1" />
+                    タイムライン
+                  </TabsTrigger>
+                </TabsList>
+                
+                {/* 編集モード */}
+                <TabsContent value="edit" className="mt-4 space-y-4">
+                  {/* ツールバー（デザイナー提案） */}
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -3405,6 +4063,173 @@ export default function ScriptGeneratorPage() {
                     </div>
                   );
                 })}
+                </TabsContent>
+                
+                {/* 読み上げモード（6.11） */}
+                <TabsContent value="reading" className="mt-4 space-y-4">
+                  {/* 読み上げ速度調整 */}
+                  <div className="space-y-3 pb-4 border-b border-[#4A4A4A]">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2 text-[#E0E0E0]">
+                        <Volume2 className="h-4 w-4" />
+                        読み上げ速度
+                      </Label>
+                      <span className="text-sm text-[#A0A0A0]">{readingSpeed.toFixed(1)}倍速</span>
+                    </div>
+                    <Slider
+                      min={0.5}
+                      max={2.0}
+                      step={0.1}
+                      value={[readingSpeed]}
+                      onValueChange={(value) => setReadingSpeed(value[0])}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-[#4A4A4A]">
+                      <span>0.5倍</span>
+                      <span>1.0倍</span>
+                      <span>2.0倍</span>
+                    </div>
+                  </div>
+                  
+                  {/* 読み上げコントロール */}
+                  <div className="flex items-center gap-2 pb-4 border-b border-[#4A4A4A]">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsReading(!isReading)}
+                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                    >
+                      {isReading ? (
+                        <>
+                          <Pause className="h-4 w-4 mr-1" />
+                          停止
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-1" />
+                          読み上げ開始
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {/* 読み上げ表示（大きめフォント） */}
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                    {currentTemplate.sections
+                      .sort((a, b) => a.order - b.order)
+                      .map((section, sectionIndex) => {
+                        const sectionValue = getSectionValue(section.id);
+                        const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
+                        const lines = sectionValue.split('\n');
+                        
+                        return (
+                          <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
+                            <h5 className="font-bold text-lg text-[#E0E0E0] mb-3">【{section.label}】</h5>
+                            <div className="space-y-2">
+                              {lines.map((line, lineIndex) => {
+                                const globalLineIndex = currentTemplate.sections
+                                  .slice(0, sectionIndex)
+                                  .reduce((acc, s) => acc + getSectionValue(s.id).split('\n').length, 0) + lineIndex;
+                                const isCurrentLine = currentReadingIndex === globalLineIndex;
+                                
+                                return (
+                                  <div
+                                    key={lineIndex}
+                                    className={cn(
+                                      "text-lg leading-relaxed p-2 rounded transition-all",
+                                      isCurrentLine
+                                        ? "bg-primary/20 border-2 border-primary text-[#E0E0E0] font-semibold"
+                                        : "text-[#A0A0A0]"
+                                    )}
+                                  >
+                                    {line || '\u00A0'}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </TabsContent>
+                
+                {/* タイムライン表示（6.11） */}
+                <TabsContent value="timeline" className="mt-4 space-y-4">
+                  {calculateTimeline ? (
+                    <>
+                      {/* 全体時間表示 */}
+                      <div className="p-4 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-5 w-5 text-primary" />
+                            <span className="text-lg font-semibold text-[#E0E0E0]">総時間</span>
+                          </div>
+                          <span className="text-2xl font-bold text-primary">
+                            {formatTime(calculateTimeline.totalSeconds)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* セクションタイムライン */}
+                      <div className="space-y-3">
+                        {calculateTimeline.sections.map((timelineItem, index) => {
+                          const colorClasses = sectionColorMap[timelineItem.section.color] || sectionColorMap.blue;
+                          const percentage = (timelineItem.duration / calculateTimeline.totalSeconds) * 100;
+                          
+                          // セクションカラーに応じたドットの色を設定
+                          const dotColorMap: Record<string, string> = {
+                            blue: 'bg-blue-500',
+                            green: 'bg-green-500',
+                            purple: 'bg-purple-500',
+                            yellow: 'bg-yellow-500',
+                            orange: 'bg-orange-500',
+                            pink: 'bg-pink-500',
+                          };
+                          const dotColor = dotColorMap[timelineItem.section.color] || 'bg-blue-500';
+                          
+                          return (
+                            <div key={timelineItem.section.id} className="border border-[#4A4A4A] rounded-lg p-4 bg-[#2D2D2D]">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-3 h-3 rounded-full ${dotColor}`} />
+                                  <h5 className="font-semibold text-[#E0E0E0]">【{timelineItem.section.label}】</h5>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-[#A0A0A0]">
+                                  <span>{formatTime(timelineItem.startTime)}</span>
+                                  <span className="text-primary">→</span>
+                                  <span>{formatTime(timelineItem.endTime)}</span>
+                                </div>
+                              </div>
+                              
+                              {/* タイムラインバー */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between text-xs text-[#4A4A4A]">
+                                  <span>開始: {formatTime(timelineItem.startTime)}</span>
+                                  <span className="text-primary font-semibold">継続時間: {formatTime(timelineItem.duration)}</span>
+                                  <span>終了: {formatTime(timelineItem.endTime)}</span>
+                                </div>
+                                <div className="w-full h-3 bg-[#1A1A1A] rounded-full overflow-hidden">
+                                  <div
+                                    className={cn("h-full transition-all", colorClasses.bg.replace('/5', ''))}
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                                <div className="text-xs text-[#A0A0A0]">
+                                  {timelineItem.chars}文字 / 累積: {formatTime(timelineItem.endTime)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-[#A0A0A0] py-8">
+                      タイムラインを計算中...
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
@@ -3446,6 +4271,102 @@ export default function ScriptGeneratorPage() {
           onTabClick={setSelectedTab}
         />
       )}
+
+      {/* ペルソナ編集ダイアログ（6.12） */}
+      <Dialog open={isPersonaDialogOpen} onOpenChange={(open) => {
+        setIsPersonaDialogOpen(open);
+        if (!open) {
+          resetPersonaForm();
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPersona ? 'ペルソナを編集' : '新しいペルソナを作成'}
+            </DialogTitle>
+            <DialogDescription>
+              ペルソナの情報を入力してください。AIがこの情報を元に企画案や台本を生成します。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="persona-name">ペルソナ名 *</Label>
+              <Input
+                id="persona-name"
+                value={personaFormData.name}
+                onChange={(e) => setPersonaFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="例: 元気なゲーマー女子"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="persona-description">ペルソナの特徴・話し方 *</Label>
+              <Textarea
+                id="persona-description"
+                value={personaFormData.description}
+                onChange={(e) => setPersonaFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="例: いつも元気で明るく、ゲームが大好き。視聴者と積極的にコミュニケーションを取るスタイル。"
+                className="min-h-[120px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>話し方のスタイル（オプション）</Label>
+              <div className="flex flex-wrap gap-2">
+                {['カジュアル', 'フォーマル', 'エネルギッシュ', '落ち着いた', 'テクニカル', 'エンターテイニング'].map((style) => (
+                  <Badge
+                    key={style}
+                    variant={personaFormData.speakingStyle.includes(style) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setPersonaFormData(prev => ({
+                        ...prev,
+                        speakingStyle: prev.speakingStyle.includes(style)
+                          ? prev.speakingStyle.filter(s => s !== style)
+                          : [...prev.speakingStyle, style]
+                      }));
+                    }}
+                  >
+                    {style}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>キャラクターの特徴（オプション）</Label>
+              <div className="flex flex-wrap gap-2">
+                {['ゲーマー', '歌好き', '雑談好き', 'コラボ好き', 'イベント参加', 'その他'].map((trait) => (
+                  <Badge
+                    key={trait}
+                    variant={personaFormData.traits.includes(trait) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setPersonaFormData(prev => ({
+                        ...prev,
+                        traits: prev.traits.includes(trait)
+                          ? prev.traits.filter(t => t !== trait)
+                          : [...prev.traits, trait]
+                      }));
+                    }}
+                  >
+                    {trait}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsPersonaDialogOpen(false);
+              resetPersonaForm();
+            }}>
+              キャンセル
+            </Button>
+            <Button onClick={handleSavePersona} disabled={!personaFormData.name.trim()}>
+              {editingPersona ? '更新' : '作成'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
