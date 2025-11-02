@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -17,6 +17,7 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { logger } from '@/lib/logger';
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 type IdeaCategory = 'gaming' | 'singing' | 'talk' | 'collaboration' | 'event' | 'other';
 type IdeaDifficulty = 'easy' | 'medium' | 'hard';
@@ -30,6 +31,8 @@ interface Idea {
   estimatedDuration: number; // 予想配信時間（分）
   difficulty?: IdeaDifficulty;
   thumbnail?: string; // サムネイル画像URL（オプション）
+  isFavorite?: boolean; // お気に入りフラグ
+  order?: number; // 並び替え順序
 }
 
 // カテゴリごとの色分けとアイコン定義
@@ -148,6 +151,14 @@ export default function ScriptGeneratorPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<IdeaDifficulty | 'all'>('all');
   const [durationFilter, setDurationFilter] = useState<{ min?: number; max?: number }>({});
   
+  // お気に入りと並び替えの状態管理
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+  const [ideaViewMode, setIdeaViewMode] = useState<'all' | 'favorites' | 'recent'>('all');
+  
+  // ローカルストレージキー
+  const IDEAS_ORDER_STORAGE_KEY = 'script-generator-ideas-order';
+  const FAVORITES_STORAGE_KEY = 'script-generator-favorites';
+  
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
     desktopDefaultOpen: true,
@@ -160,9 +171,94 @@ export default function ScriptGeneratorPage() {
     setSelectedTab(isDesktop ? "generate" : "persona");
   }, [isDesktop]);
 
+  // ローカルストレージからお気に入りと並び替え順序を読み込み
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (savedFavorites) {
+      try {
+        const favoriteArray = JSON.parse(savedFavorites);
+        setFavoriteIds(new Set(favoriteArray));
+        
+        // 既存の企画案にお気に入りフラグを設定
+        setGeneratedIdeas(prev => prev.map(idea => ({
+          ...idea,
+          isFavorite: favoriteArray.includes(idea.id)
+        })));
+      } catch (e) {
+        console.error('Failed to load favorites:', e);
+      }
+    }
+    
+    const savedOrder = localStorage.getItem(IDEAS_ORDER_STORAGE_KEY);
+    if (savedOrder && generatedIdeas.length > 0) {
+      try {
+        const orderMap = JSON.parse(savedOrder);
+        setGeneratedIdeas(prev => {
+          const orderedIdeas = [...prev].sort((a, b) => {
+            const orderA = orderMap[a.id] ?? a.id;
+            const orderB = orderMap[b.id] ?? b.id;
+            return orderA - orderB;
+          });
+          return orderedIdeas;
+        });
+      } catch (e) {
+        console.error('Failed to load order:', e);
+      }
+    }
+  }, []); // 初回のみ実行
+
+  // お気に入りの切り替え
+  const toggleFavorite = useCallback((id: number) => {
+    setFavoriteIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      
+      // ローカルストレージに保存
+      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(newSet)));
+      
+      // 状態更新
+      setGeneratedIdeas(prev => prev.map(idea => 
+        idea.id === id ? { ...idea, isFavorite: newSet.has(id) } : idea
+      ));
+      
+      return newSet;
+    });
+  }, []);
+
+  // ドラッグ&ドロップのハンドラー
+  const handleDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+    
+    // 並び替えを反映（元の配列の順序を更新）
+    setGeneratedIdeas(prev => {
+      const updatedIdeas = [...prev];
+      const sourceId = parseInt(result.draggableId);
+      const sourceIndex = updatedIdeas.findIndex(i => i.id === sourceId);
+      
+      if (sourceIndex === -1) return prev;
+      
+      const [movedItem] = updatedIdeas.splice(sourceIndex, 1);
+      updatedIdeas.splice(result.destination!.index, 0, movedItem);
+      
+      // 並び替え順序を保存
+      const orderMap = updatedIdeas.reduce((acc, item, index) => {
+        acc[item.id] = index;
+        return acc;
+      }, {} as Record<number, number>);
+      
+      localStorage.setItem(IDEAS_ORDER_STORAGE_KEY, JSON.stringify(orderMap));
+      
+      return updatedIdeas;
+    });
+  }, []);
+
   // フィルタリングロジック
   const filteredIdeas = useMemo(() => {
-    return generatedIdeas.filter((idea) => {
+    let ideas = generatedIdeas.filter((idea) => {
       // 検索クエリ（タイトル・説明文・ポイントで検索）
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -193,23 +289,35 @@ export default function ScriptGeneratorPage() {
       
       return true;
     });
-  }, [generatedIdeas, searchQuery, selectedCategories, selectedDifficulty, durationFilter]);
+    
+    // お気に入りタブでフィルタリング
+    if (ideaViewMode === 'favorites') {
+      ideas = ideas.filter(idea => idea.isFavorite);
+    }
+    // recentは生成順（既にsortedIdeasの順序で表示）
+    
+    return ideas;
+  }, [generatedIdeas, searchQuery, selectedCategories, selectedDifficulty, durationFilter, ideaViewMode]);
 
   const handleGenerate = useCallback(async () => {
     setIsGeneratingIdeas(true);
     await handleAsyncError(async () => {
       // モック処理
       await new Promise(resolve => setTimeout(resolve, 1000));
-    setGeneratedIdeas(dummyIdeas);
+    setGeneratedIdeas(dummyIdeas.map(idea => ({
+      ...idea,
+      isFavorite: favoriteIds.has(idea.id)
+    })));
     setSelectedIdeaId(null);
     // フィルターをリセット
     setSearchQuery('');
     setSelectedCategories([]);
     setSelectedDifficulty('all');
     setDurationFilter({});
+    setIdeaViewMode('all');
     }, "企画案生成中にエラーが発生しました");
     setIsGeneratingIdeas(false);
-  }, [handleAsyncError]);
+  }, [handleAsyncError, favoriteIds]);
 
   const handleCardClick = useCallback((id: number) => {
     setSelectedIdeaId(id);
@@ -476,6 +584,23 @@ export default function ScriptGeneratorPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* お気に入りタブ */}
+            {generatedIdeas.length > 0 && (
+              <Tabs value={ideaViewMode} onValueChange={(value) => setIdeaViewMode(value as 'all' | 'favorites' | 'recent')} className="mb-4">
+                <TabsList className="grid w-full grid-cols-3 bg-[#2D2D2D] border border-[#4A4A4A]">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-[#1A1A1A]">
+                    すべて ({generatedIdeas.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="favorites" className="data-[state=active]:bg-[#1A1A1A]">
+                    お気に入り ({generatedIdeas.filter(i => i.isFavorite).length})
+                  </TabsTrigger>
+                  <TabsTrigger value="recent" className="data-[state=active]:bg-[#1A1A1A]">
+                    最近生成
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
+            
             {/* 検索・フィルターUI */}
             {generatedIdeas.length > 0 && (
               <div className="mb-4 space-y-4 p-4 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
@@ -655,22 +780,39 @@ export default function ScriptGeneratorPage() {
             
             {/* 企画案カード一覧 */}
             {filteredIdeas.length > 0 && (
-              <div className="space-y-4">
-                {filteredIdeas.map((idea) => {
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="ideas">
+                  {(provided) => (
+                    <div 
+                      {...provided.droppableProps} 
+                      ref={provided.innerRef}
+                      className="space-y-4"
+                    >
+                      {filteredIdeas.map((idea, index) => {
               const category = categoryConfig[idea.category];
               const CategoryIcon = category.icon;
               
               return (
-                <React.Fragment key={idea.id}>
+                <Draggable 
+                  key={idea.id} 
+                  draggableId={idea.id.toString()} 
+                  index={index}
+                  isDragDisabled={idea.isFavorite} // お気に入りは固定
+                >
+                  {(provided, snapshot) => (
                   <Card 
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
                     className={cn(
                       "cursor-pointer transition-all relative overflow-hidden",
                       "hover:border-primary hover:shadow-lg hover:shadow-primary/20",
                       selectedIdeaId === idea.id && "border-primary shadow-md",
+                      snapshot.isDragging && "shadow-2xl opacity-90 bg-[#3A3A3A]",
+                      idea.isFavorite && "border-l-4 border-l-yellow-500/80",
                       // グラデーション背景
                       `bg-gradient-to-br ${category.gradient}`,
-                      // カテゴリごとの左側ボーダー
-                      `border-l-4 ${category.borderColor}`
+                      // カテゴリごとの左側ボーダー（お気に入りでない場合のみ）
+                      !idea.isFavorite && `border-l-4 ${category.borderColor}`
                     )}
                     onClick={() => handleCardClick(idea.id)}
                     role="button"
@@ -684,7 +826,18 @@ export default function ScriptGeneratorPage() {
                       }
                     }}
                   >
-                    <CardHeader className="pb-3">
+                    {/* ドラッグハンドル */}
+                    {!idea.isFavorite && (
+                      <div 
+                        {...provided.dragHandleProps}
+                        className="absolute left-0 top-0 bottom-0 w-6 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-[#4A4A4A]/50 z-10 rounded-l-md transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <GripVertical className="h-4 w-4 text-[#A0A0A0]" />
+                      </div>
+                    )}
+                    
+                    <CardHeader className={cn("pb-3", !idea.isFavorite && "pl-8")}>
                       <div className="flex items-start gap-3">
                         {/* カテゴリアイコン */}
                         <div className={cn(
@@ -697,14 +850,39 @@ export default function ScriptGeneratorPage() {
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
-                            <CardTitle className="text-lg font-semibold line-clamp-2 text-[#E0E0E0]">
+                            <CardTitle className="text-lg font-semibold line-clamp-2 text-[#E0E0E0] flex-1">
                               {idea.title}
                             </CardTitle>
-                            {/* 予想配信時間 */}
-                            <Badge variant="outline" className="flex-shrink-0 border-[#4A4A4A] text-[#A0A0A0]">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {idea.estimatedDuration}分
-                            </Badge>
+                            
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {/* お気に入りボタン */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(idea.id);
+                                }}
+                                className={cn(
+                                  "h-8 w-8",
+                                  idea.isFavorite 
+                                    ? "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10" 
+                                    : "text-[#A0A0A0] hover:text-yellow-400 hover:bg-yellow-500/10"
+                                )}
+                                aria-label={idea.isFavorite ? "お気に入りから削除" : "お気に入りに追加"}
+                              >
+                                <Star className={cn(
+                                  "h-4 w-4 transition-all",
+                                  idea.isFavorite && "fill-current"
+                                )} />
+                              </Button>
+                              
+                              {/* 予想配信時間 */}
+                              <Badge variant="outline" className="flex-shrink-0 border-[#4A4A4A] text-[#A0A0A0]">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {idea.estimatedDuration}分
+                              </Badge>
+                            </div>
                           </div>
                           
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -778,10 +956,15 @@ export default function ScriptGeneratorPage() {
                       </Button>
                     </CardFooter>
                   </Card>
-                </React.Fragment>
+                  )}
+                </Draggable>
               );
             })}
-              </div>
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
           </div>
         )}
