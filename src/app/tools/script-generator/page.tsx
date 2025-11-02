@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2, Play, Pause, Volume2, Gauge, Check } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2, Play, Pause, Volume2, Gauge, Check, Share2, Copy, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -18,6 +18,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { logger } from '@/lib/logger';
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -580,6 +581,42 @@ export default function ScriptGeneratorPage() {
     }
   }, []);
 
+  // URLパラメータから企画案を読み込み（6.13）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const ideaParam = urlParams.get('idea');
+    
+    if (ideaParam) {
+      try {
+        const decodedData = decodeURIComponent(atob(ideaParam));
+        const ideaData = JSON.parse(decodedData);
+        
+        // 企画案として表示
+        const importedIdea: Idea = {
+          id: Date.now(),
+          title: ideaData.title || '共有された企画案',
+          description: ideaData.description || '',
+          points: ideaData.points || [],
+          category: ideaData.category || 'other',
+          estimatedDuration: ideaData.estimatedDuration || 60,
+          difficulty: ideaData.difficulty,
+        };
+        
+        setGeneratedIdeas(prev => [importedIdea, ...prev]);
+        setSelectedIdeaId(importedIdea.id);
+        toast.success('共有された企画案を読み込みました');
+        
+        // URLからパラメータを削除
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (err) {
+        console.error('企画案読み込み失敗', err);
+        toast.error('共有URLの読み込みに失敗しました');
+      }
+    }
+  }, []);
+
   // 全テンプレート（デフォルト + カスタム）を取得（6.8）
   const allTemplates = useMemo(() => {
     return [...defaultTemplates, ...customTemplates];
@@ -904,6 +941,184 @@ export default function ScriptGeneratorPage() {
       
       return newSet;
     });
+  }, []);
+
+  // 企画案をテキスト形式に変換（6.13）
+  const formatIdeaAsText = useCallback((idea: Idea): string => {
+    const categoryLabel = categoryConfig[idea.category].label;
+    const difficultyLabel = idea.difficulty === 'easy' ? '初級' : idea.difficulty === 'medium' ? '中級' : idea.difficulty === 'hard' ? '上級' : '';
+    
+    return `【企画案】${idea.title}
+
+${idea.description}
+
+■ カテゴリ: ${categoryLabel}
+${difficultyLabel ? `■ 難易度: ${difficultyLabel}\n` : ''}■ 予想配信時間: ${idea.estimatedDuration}分
+
+■ おすすめポイント:
+${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
+
+生成日時: ${new Date().toLocaleString('ja-JP')}
+`;
+  }, []);
+
+  // 企画案をコピー（6.13）
+  const handleCopyIdea = useCallback(async (idea: Idea) => {
+    try {
+      const text = formatIdeaAsText(idea);
+      await navigator.clipboard.writeText(text);
+      toast.success('クリップボードにコピーしました');
+    } catch (err) {
+      logger.error('コピー失敗', err, 'ScriptGenerator');
+      toast.error('コピーに失敗しました');
+    }
+  }, [formatIdeaAsText]);
+
+  // 企画案をテキストファイルとしてエクスポート（6.13）
+  const handleExportIdeaAsText = useCallback((idea: Idea) => {
+    try {
+      const text = formatIdeaAsText(idea);
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `企画案_${idea.title.replace(/[^\w\s]/g, '_')}_${new Date().getTime()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('テキストファイルとしてエクスポートしました');
+    } catch (err) {
+      logger.error('エクスポート失敗', err, 'ScriptGenerator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, [formatIdeaAsText]);
+
+  // 企画案をURL共有（6.13）
+  const handleShareIdeaUrl = useCallback(async (idea: Idea) => {
+    try {
+      // 企画案データをbase64エンコード
+      const ideaData = JSON.stringify({
+        title: idea.title,
+        description: idea.description,
+        points: idea.points,
+        category: idea.category,
+        estimatedDuration: idea.estimatedDuration,
+        difficulty: idea.difficulty,
+      });
+      
+      const encodedData = btoa(encodeURIComponent(ideaData));
+      const shareUrl = `${window.location.origin}${window.location.pathname}?idea=${encodedData}`;
+      
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('共有URLをクリップボードにコピーしました');
+    } catch (err) {
+      logger.error('URL共有失敗', err, 'ScriptGenerator');
+      toast.error('URL共有に失敗しました');
+    }
+  }, []);
+
+  // 企画案をPDFとしてエクスポート（6.13）
+  const handleExportIdeaAsPDF = useCallback(async (idea: Idea) => {
+    try {
+      // PDF生成用のHTMLを作成
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${idea.title}</title>
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      padding: 40px;
+      color: #333;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 24px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #555;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      margin-right: 8px;
+      font-size: 12px;
+    }
+    ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #ccc;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>【企画案】${idea.title}</h1>
+  
+  <div class="section">
+    <p>${idea.description}</p>
+  </div>
+  
+  <div class="section">
+    <span class="badge">${categoryConfig[idea.category].label}</span>
+    ${idea.difficulty ? `<span class="badge">${idea.difficulty === 'easy' ? '初級' : idea.difficulty === 'medium' ? '中級' : '上級'}</span>` : ''}
+    <span class="badge">${idea.estimatedDuration}分</span>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">おすすめポイント</div>
+    <ul>
+      ${idea.points.map(point => `<li>${point}</li>`).join('')}
+    </ul>
+  </div>
+  
+  <div class="footer">
+    生成日時: ${new Date().toLocaleString('ja-JP')}
+  </div>
+</body>
+</html>
+      `;
+
+      // 新しいウィンドウでPDF印刷ダイアログを開く
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+            toast.success('PDFとして保存できます（印刷ダイアログから「PDFに保存」を選択）');
+          }, 250);
+        };
+      } else {
+        toast.error('ポップアップがブロックされています');
+      }
+    } catch (err) {
+      logger.error('PDFエクスポート失敗', err, 'ScriptGenerator');
+      toast.error('PDFエクスポートに失敗しました');
+    }
   }, []);
 
   // ドラッグ&ドロップのハンドラー
@@ -3399,6 +3614,68 @@ export default function ScriptGeneratorPage() {
                                   idea.isFavorite && "fill-current"
                                 )} />
                               </Button>
+                              
+                              {/* 共有・エクスポートメニュー（6.13） */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="h-8 w-8 text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                    aria-label="共有・エクスポート"
+                                  >
+                                    <Share2 className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent 
+                                  align="end" 
+                                  className="bg-[#2D2D2D] border-[#4A4A4A] min-w-[180px]"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopyIdea(idea);
+                                    }}
+                                    className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                  >
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    コピー
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleShareIdeaUrl(idea);
+                                    }}
+                                    className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                  >
+                                    <Share2 className="h-4 w-4 mr-2" />
+                                    URL共有
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className="bg-[#4A4A4A]" />
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleExportIdeaAsText(idea);
+                                    }}
+                                    className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                  >
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    テキストエクスポート
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleExportIdeaAsPDF(idea);
+                                    }}
+                                    className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                  >
+                                    <FileDown className="h-4 w-4 mr-2" />
+                                    PDFエクスポート
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                               
                               {/* 予想配信時間 */}
                               <Badge variant="outline" className="flex-shrink-0 border-[#4A4A4A] text-[#A0A0A0]">
