@@ -9,21 +9,87 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
 import { useErrorHandler } from '@/hooks/use-error-handler';
-// validateRequired and cn are imported but not used in this simplified version
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { logger } from '@/lib/logger';
+
+type IdeaCategory = 'gaming' | 'singing' | 'talk' | 'collaboration' | 'event' | 'other';
+type IdeaDifficulty = 'easy' | 'medium' | 'hard';
 
 interface Idea {
   id: number;
   title: string;
   description: string;
   points: string[];
+  category: IdeaCategory;
+  estimatedDuration: number; // 予想配信時間（分）
+  difficulty?: IdeaDifficulty;
+  thumbnail?: string; // サムネイル画像URL（オプション）
 }
+
+// カテゴリごとの色分けとアイコン定義
+const categoryConfig: Record<IdeaCategory, {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  gradient: string;
+  borderColor: string;
+  badgeColor: string;
+  bgColor: string;
+}> = {
+  gaming: {
+    label: 'ゲーム',
+    icon: Gamepad2,
+    gradient: 'from-blue-600/20 via-blue-500/10 to-purple-600/20',
+    borderColor: 'border-blue-500/50',
+    badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    bgColor: 'bg-blue-500/10',
+  },
+  singing: {
+    label: '歌枠',
+    icon: Music,
+    gradient: 'from-pink-600/20 via-pink-500/10 to-rose-600/20',
+    borderColor: 'border-pink-500/50',
+    badgeColor: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+    bgColor: 'bg-pink-500/10',
+  },
+  talk: {
+    label: '雑談',
+    icon: MessageCircle,
+    gradient: 'from-green-600/20 via-green-500/10 to-emerald-600/20',
+    borderColor: 'border-green-500/50',
+    badgeColor: 'bg-green-500/20 text-green-400 border-green-500/30',
+    bgColor: 'bg-green-500/10',
+  },
+  collaboration: {
+    label: 'コラボ',
+    icon: Users,
+    gradient: 'from-orange-600/20 via-orange-500/10 to-amber-600/20',
+    borderColor: 'border-orange-500/50',
+    badgeColor: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+    bgColor: 'bg-orange-500/10',
+  },
+  event: {
+    label: 'イベント',
+    icon: Calendar,
+    gradient: 'from-purple-600/20 via-purple-500/10 to-violet-600/20',
+    borderColor: 'border-purple-500/50',
+    badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    bgColor: 'bg-purple-500/10',
+  },
+  other: {
+    label: 'その他',
+    icon: Lightbulb,
+    gradient: 'from-gray-600/20 via-gray-500/10 to-slate-600/20',
+    borderColor: 'border-gray-500/50',
+    badgeColor: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+    bgColor: 'bg-gray-500/10',
+  },
+};
 
 const dummyIdeas: Idea[] = [
   {
@@ -31,18 +97,27 @@ const dummyIdeas: Idea[] = [
     title: '超絶高難易度ゲームに初見で挑戦！',
     description: '視聴者から寄せられた「絶対にクリアできない」と噂のゲームに、何の予備知識もなく挑戦します。絶叫と感動のドラマが生まれること間違いなし！',
     points: ['リアクション芸が光る', '視聴者との一体感が生まれる', '切り抜き動画映えする'],
+    category: 'gaming',
+    estimatedDuration: 120,
+    difficulty: 'hard',
   },
   {
     id: 2,
     title: '視聴者参加型！みんなで決める歌枠セットリスト',
     description: '配信中にアンケート機能を使って、次に歌う曲を視聴者に決めてもらうインタラクティブな歌枠。定番曲から意外な曲まで、何が飛び出すか分からない！',
     points: ['ファンサービス満点', 'コメントが盛り上がる', 'アーカイブの再生数も期待できる'],
+    category: 'singing',
+    estimatedDuration: 90,
+    difficulty: 'easy',
   },
   {
     id: 3,
     title: '完全オリジナル！自作ゲームお披露目会',
     description: '数ヶ月かけて制作した自作ゲームを、ファンと一緒についにプレイ！開発秘話や裏話を交えながら、感動のエンディングを目指す。',
     points: ['クリエイターとしての一面を見せられる', '独自性が高い', '記念配信に最適'],
+    category: 'gaming',
+    estimatedDuration: 180,
+    difficulty: 'medium',
   },
 ];
 
@@ -354,57 +429,131 @@ export default function ScriptGeneratorPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {generatedIdeas.map((idea) => (
-              <React.Fragment key={idea.id}>
-                <Card 
-                  className="cursor-pointer hover:border-primary transition-all"
-                  onClick={() => handleCardClick(idea.id)}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={selectedIdeaId === idea.id}
-                  aria-label={`企画案: ${idea.title}`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleCardClick(idea.id);
-                    }
-                  }}
-                >
-                  <CardHeader>
-                    <CardTitle>{idea.title}</CardTitle>
-                    <CardDescription>{idea.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <h4 className="font-semibold text-sm mb-2">おすすめポイント</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {idea.points.map((point: string, index: number) => (
-                        <Badge key={index} variant="secondary">{point}</Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="gap-2">
-                    <Button variant="outline" aria-label="この企画を調整">この企画を調整</Button>
-                    <Button 
-                      onClick={() => handleGenerateScript(idea)}
-                      disabled={isGeneratingScript}
-                      aria-label={`${idea.title}の台本を生成`}
-                    >
-                      {isGeneratingScript ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                          台本生成中...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                          台本を生成する
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </React.Fragment>
-            ))}
+            {generatedIdeas.map((idea) => {
+              const category = categoryConfig[idea.category];
+              const CategoryIcon = category.icon;
+              
+              return (
+                <React.Fragment key={idea.id}>
+                  <Card 
+                    className={cn(
+                      "cursor-pointer transition-all relative overflow-hidden",
+                      "hover:border-primary hover:shadow-lg hover:shadow-primary/20",
+                      selectedIdeaId === idea.id && "border-primary shadow-md",
+                      // グラデーション背景
+                      `bg-gradient-to-br ${category.gradient}`,
+                      // カテゴリごとの左側ボーダー
+                      `border-l-4 ${category.borderColor}`
+                    )}
+                    onClick={() => handleCardClick(idea.id)}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={selectedIdeaId === idea.id}
+                    aria-label={`企画案: ${idea.title}`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleCardClick(idea.id);
+                      }
+                    }}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start gap-3">
+                        {/* カテゴリアイコン */}
+                        <div className={cn(
+                          "w-12 h-12 rounded-lg flex items-center justify-center shadow-md flex-shrink-0",
+                          category.bgColor,
+                          "border border-[#4A4A4A]"
+                        )}>
+                          <CategoryIcon className="h-6 w-6 text-[#E0E0E0]" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <CardTitle className="text-lg font-semibold line-clamp-2 text-[#E0E0E0]">
+                              {idea.title}
+                            </CardTitle>
+                            {/* 予想配信時間 */}
+                            <Badge variant="outline" className="flex-shrink-0 border-[#4A4A4A] text-[#A0A0A0]">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {idea.estimatedDuration}分
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            {/* カテゴリバッジ */}
+                            <Badge className={cn(
+                              category.badgeColor,
+                              "text-xs font-medium"
+                            )}>
+                              {category.label}
+                            </Badge>
+                            
+                            {/* 難易度バッジ */}
+                            {idea.difficulty && (
+                              <Badge 
+                                variant="outline"
+                                className={cn(
+                                  "text-xs font-medium border-[#4A4A4A]",
+                                  idea.difficulty === 'easy' && 'text-green-400 border-green-500/50 bg-green-500/10',
+                                  idea.difficulty === 'medium' && 'text-yellow-400 border-yellow-500/50 bg-yellow-500/10',
+                                  idea.difficulty === 'hard' && 'text-red-400 border-red-500/50 bg-red-500/10',
+                                )}
+                              >
+                                {idea.difficulty === 'easy' ? '初級' : 
+                                 idea.difficulty === 'medium' ? '中級' : '上級'}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <CardDescription className="line-clamp-2 text-[#A0A0A0]">
+                            {idea.description}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <h4 className="font-semibold text-sm mb-2 text-[#E0E0E0]">おすすめポイント</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {idea.points.map((point: string, index: number) => (
+                          <Badge 
+                            key={index} 
+                            variant="secondary"
+                            className="text-xs bg-[#2D2D2D] text-[#A0A0A0] border-[#4A4A4A]"
+                          >
+                            {point}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                    
+                    <CardFooter className="gap-2">
+                      <Button variant="outline" aria-label="この企画を調整" className="border-[#4A4A4A]">
+                        この企画を調整
+                      </Button>
+                      <Button 
+                        onClick={() => handleGenerateScript(idea)}
+                        disabled={isGeneratingScript}
+                        aria-label={`${idea.title}の台本を生成`}
+                      >
+                        {isGeneratingScript ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                            台本生成中...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                            台本を生成する
+                          </>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </React.Fragment>
+              );
+            })}
           </div>
         )}
       </main>
