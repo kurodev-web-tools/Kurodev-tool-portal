@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -131,12 +131,87 @@ const dummyScript = {
   conclusion: 'というわけで、今日の配信はここまで！たくさんのコメント、スパチャありがとう！次回もまた見てね！おつ〇〇～！',
 };
 
+// 台本テンプレートのセクション定義（6.8）
+interface ScriptSection {
+  id: string;
+  label: string;
+  placeholder: string;
+  required: boolean;
+  order: number;
+  color: string; // 色分け用（blue, green, purple, yellow, orange, pink）
+}
+
+// 台本テンプレートのデータ構造（6.8）
+interface ScriptTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: IdeaCategory;
+  sections: ScriptSection[];
+  isCustom?: boolean; // カスタムテンプレートかどうか
+}
+
+// デフォルトテンプレート定義（6.8）
+const defaultTemplates: ScriptTemplate[] = [
+  {
+    id: 'standard',
+    name: '標準形式',
+    description: '導入・本題・結論の3部構成',
+    category: 'other',
+    sections: [
+      { id: 'introduction', label: '導入', placeholder: '導入部分を入力...', required: true, order: 1, color: 'blue' },
+      { id: 'body', label: '本題', placeholder: '本題部分を入力...', required: true, order: 2, color: 'green' },
+      { id: 'conclusion', label: '結論', placeholder: '結論部分を入力...', required: true, order: 3, color: 'purple' },
+    ]
+  },
+  {
+    id: 'gaming',
+    name: 'ゲーム実況形式',
+    description: 'ゲーム実況向けのテンプレート',
+    category: 'gaming',
+    sections: [
+      { id: 'intro', label: '挨拶・ゲーム紹介', placeholder: '挨拶とゲーム紹介...', required: true, order: 1, color: 'blue' },
+      { id: 'setup', label: '準備・ルール説明', placeholder: '準備やルール説明...', required: false, order: 2, color: 'yellow' },
+      { id: 'play', label: 'ゲームプレイ', placeholder: 'ゲームプレイの内容...', required: true, order: 3, color: 'green' },
+      { id: 'highlight', label: '見どころ', placeholder: '見どころやポイント...', required: false, order: 4, color: 'orange' },
+      { id: 'ending', label: '終了挨拶', placeholder: '終了挨拶...', required: true, order: 5, color: 'purple' },
+    ]
+  },
+  {
+    id: 'singing',
+    name: '歌枠形式',
+    description: '歌枠配信用のテンプレート',
+    category: 'singing',
+    sections: [
+      { id: 'intro', label: '挨拶', placeholder: '挨拶...', required: true, order: 1, color: 'blue' },
+      { id: 'setlist', label: 'セットリスト紹介', placeholder: 'セットリスト...', required: false, order: 2, color: 'pink' },
+      { id: 'performance', label: '歌唱', placeholder: '歌唱内容...', required: true, order: 3, color: 'green' },
+      { id: 'thanks', label: 'お礼・次回予告', placeholder: 'お礼と次回予告...', required: true, order: 4, color: 'purple' },
+    ]
+  },
+  {
+    id: 'talk',
+    name: '雑談形式',
+    description: '雑談配信用のテンプレート',
+    category: 'talk',
+    sections: [
+      { id: 'intro', label: '挨拶・今日のテーマ', placeholder: '挨拶と今日のテーマ...', required: true, order: 1, color: 'blue' },
+      { id: 'topic1', label: '話題1', placeholder: '話題1の内容...', required: false, order: 2, color: 'green' },
+      { id: 'topic2', label: '話題2', placeholder: '話題2の内容...', required: false, order: 3, color: 'yellow' },
+      { id: 'interaction', label: '視聴者との交流', placeholder: '視聴者との交流内容...', required: false, order: 4, color: 'orange' },
+      { id: 'ending', label: '終了挨拶', placeholder: '終了挨拶...', required: true, order: 5, color: 'purple' },
+    ]
+  },
+];
+
 interface Script {
   ideaId: number;
   content: string;
   introduction: string;
   body: string;
   conclusion: string;
+  templateId?: string; // 使用したテンプレートID（6.8）
+  sections?: Record<string, string>; // 動的セクション（6.8）
 }
 
 // アンドゥ・リドゥ用の履歴管理（利用者提案）
@@ -192,6 +267,7 @@ export default function ScriptGeneratorPage() {
   const FAVORITES_STORAGE_KEY = 'script-generator-favorites';
   const HISTORY_STORAGE_KEY = 'script-generator-history';
   const SAVED_SCRIPTS_STORAGE_KEY = 'script-generator-saved-scripts'; // 6.7
+  const CUSTOM_TEMPLATES_STORAGE_KEY = 'script-generator-custom-templates'; // 6.8
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const MAX_SAVED_SCRIPTS = 50; // 最大保存件数（6.7）
   
@@ -210,6 +286,10 @@ export default function ScriptGeneratorPage() {
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'editing' | 'saving'>('saved'); // 保存状態
   const AUTO_SAVE_INTERVAL = 30000; // 自動保存間隔（30秒）
+  
+  // 台本テンプレートの状態管理（6.8）
+  const [customTemplates, setCustomTemplates] = useState<ScriptTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('standard'); // 選択中のテンプレートID
   
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -288,6 +368,71 @@ export default function ScriptGeneratorPage() {
       console.error('保存済み台本読み込み失敗', err);
     }
   }, []);
+
+  // カスタムテンプレートの読み込み（初回マウント時）（6.8）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = localStorage.getItem(CUSTOM_TEMPLATES_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setCustomTemplates(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch (err) {
+      console.error('カスタムテンプレート読み込み失敗', err);
+    }
+  }, []);
+
+  // 全テンプレート（デフォルト + カスタム）を取得（6.8）
+  const allTemplates = useMemo(() => {
+    return [...defaultTemplates, ...customTemplates];
+  }, [customTemplates]);
+
+  // 選択中のテンプレートを取得（6.8）
+  const selectedTemplate = useMemo(() => {
+    return allTemplates.find(t => t.id === selectedTemplateId) || defaultTemplates[0];
+  }, [allTemplates, selectedTemplateId]);
+
+  // セクション色のマッピング（6.8）
+  const sectionColorMap: Record<string, { border: string; bg: string }> = {
+    blue: { border: 'border-blue-500/50', bg: 'bg-blue-500/5' },
+    green: { border: 'border-green-500/50', bg: 'bg-green-500/5' },
+    purple: { border: 'border-purple-500/50', bg: 'bg-purple-500/5' },
+    yellow: { border: 'border-yellow-500/50', bg: 'bg-yellow-500/5' },
+    orange: { border: 'border-orange-500/50', bg: 'bg-orange-500/5' },
+    pink: { border: 'border-pink-500/50', bg: 'bg-pink-500/5' },
+  };
+
+  // 現在の台本で使用中のテンプレートを取得（6.8）
+  const currentTemplate = useMemo(() => {
+    if (!currentScript?.templateId) {
+      // テンプレート未指定の場合は標準形式を使用（互換性のため）
+      return defaultTemplates[0];
+    }
+    return allTemplates.find(t => t.id === currentScript.templateId) || defaultTemplates[0];
+  }, [currentScript, allTemplates]);
+
+  // セクションの値を取得（互換性のため）（6.8）
+  const getSectionValue = useCallback((sectionId: string): string => {
+    if (!currentScript) return '';
+    
+    // 動的セクションから取得を試みる
+    if (currentScript.sections && currentScript.sections[sectionId]) {
+      return currentScript.sections[sectionId];
+    }
+    
+    // 標準セクションの互換性マッピング
+    if (sectionId === 'introduction' || sectionId === 'intro') {
+      return currentScript.introduction || '';
+    } else if (sectionId === 'body' || sectionId === 'play' || sectionId === 'performance') {
+      return currentScript.body || '';
+    } else if (sectionId === 'conclusion' || sectionId === 'ending' || sectionId === 'thanks') {
+      return currentScript.conclusion || '';
+    }
+    
+    return '';
+  }, [currentScript]);
 
   // 履歴の保存機能
   const saveHistory = useCallback((ideas: Idea[], keywords?: string, direction?: string) => {
@@ -568,14 +713,29 @@ export default function ScriptGeneratorPage() {
     }
   }, [scriptHistory, historyIndex, currentScript]);
 
-  // セクション編集ハンドラー
-  const handleSectionChange = useCallback((section: 'introduction' | 'body' | 'conclusion', value: string) => {
+  // セクション編集ハンドラー（6.8対応：動的セクションに対応）
+  const handleSectionChange = useCallback((sectionId: string, value: string) => {
     if (!currentScript) return;
     
+    // 標準形式との互換性を保つ
     const updatedScript: Script = {
       ...currentScript,
-      [section]: value,
+      // 標準セクションの場合は既存フィールドを更新
+      ...(sectionId === 'introduction' && { introduction: value }),
+      ...(sectionId === 'body' && { body: value }),
+      ...(sectionId === 'conclusion' && { conclusion: value }),
+      // 動的セクションの場合
+      sections: currentScript.sections ? {
+        ...currentScript.sections,
+        [sectionId]: value,
+      } : {
+        introduction: currentScript.introduction,
+        body: currentScript.body,
+        conclusion: currentScript.conclusion,
+        [sectionId]: value,
+      },
     };
+    
     setCurrentScript(updatedScript);
     setIsEditingScript(true);
     setSaveStatus('editing'); // 編集状態に変更（6.7）
@@ -768,7 +928,7 @@ export default function ScriptGeneratorPage() {
     toast.success('保存済み台本を削除しました');
   }, []);
 
-  // 文字数・行数・予想時間の計算（利用者提案）
+  // 文字数・行数・予想時間の計算（利用者提案 + 6.8対応：動的セクション）
   const calculateScriptStats = useMemo(() => {
     if (!currentScript) return null;
     
@@ -780,7 +940,18 @@ export default function ScriptGeneratorPage() {
       return text.split('\n').length;
     };
     
-    const totalText = currentScript.introduction + currentScript.body + currentScript.conclusion;
+    // 動的セクションに対応（6.8）
+    let totalText = '';
+    if (currentScript.templateId && currentScript.sections) {
+      // テンプレートベースの場合、全セクションを結合
+      Object.values(currentScript.sections).forEach(sectionText => {
+        totalText += sectionText;
+      });
+    } else {
+      // 標準形式の場合、既存のフィールドを使用（互換性）
+      totalText = currentScript.introduction + currentScript.body + currentScript.conclusion;
+    }
+    
     const totalChars = totalText.length;
     const totalLines = calculateLines(totalText);
     
@@ -791,18 +962,19 @@ export default function ScriptGeneratorPage() {
     const charsPerMinute = 250; // 1分あたり250文字（標準的な読み上げ速度）
     const estimatedMinutes = Math.max(1, Math.ceil(totalChars / charsPerMinute));
     
+    // 標準形式との互換性を保つため、既存フィールドも計算（6.8）
     return {
       introduction: {
-        chars: currentScript.introduction.length,
-        lines: calculateLines(currentScript.introduction),
+        chars: currentScript.introduction?.length || 0,
+        lines: calculateLines(currentScript.introduction || ''),
       },
       body: {
-        chars: currentScript.body.length,
-        lines: calculateLines(currentScript.body),
+        chars: currentScript.body?.length || 0,
+        lines: calculateLines(currentScript.body || ''),
       },
       conclusion: {
-        chars: currentScript.conclusion.length,
-        lines: calculateLines(currentScript.conclusion),
+        chars: currentScript.conclusion?.length || 0,
+        lines: calculateLines(currentScript.conclusion || ''),
       },
       total: {
         chars: totalChars,
@@ -812,18 +984,79 @@ export default function ScriptGeneratorPage() {
     };
   }, [currentScript]);
 
+  // テンプレート適用関数（6.8）
+  const applyTemplate = useCallback((template: ScriptTemplate) => {
+    if (!currentScript) return;
+    
+    const sections: Record<string, string> = {};
+    // 既存のセクションをマッピング（互換性のため）
+    const sectionMapping: Record<string, string> = {
+      'introduction': currentScript.introduction || '',
+      'body': currentScript.body || '',
+      'conclusion': currentScript.conclusion || '',
+    };
+    
+    // テンプレートのセクションに基づいて初期化
+    template.sections.forEach(section => {
+      sections[section.id] = sectionMapping[section.id] || '';
+    });
+    
+    const script: Script = {
+      ...currentScript,
+      templateId: template.id,
+      sections,
+    };
+    
+    setCurrentScript(script);
+    setIsEditingScript(false);
+    setSaveStatus('saved');
+    
+    toast.success(`「${template.name}」テンプレートを適用しました`);
+  }, [currentScript]);
+
   const handleGenerateScript = useCallback(async (idea: Idea) => {
     setIsGeneratingScript(true);
     await handleAsyncError(async () => {
       // モック処理
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 選択されたテンプレートに基づいて台本を生成（6.8）
+      const template = selectedTemplate;
+      const sections: Record<string, string> = {};
+      
+      // テンプレートのセクションに基づいてダミーテキストを生成
+      template.sections.forEach(section => {
+        if (section.id === 'introduction' || section.id === 'intro') {
+          sections[section.id] = dummyScript.introduction;
+        } else if (section.id === 'body' || section.id === 'play' || section.id === 'performance') {
+          sections[section.id] = dummyScript.body;
+        } else if (section.id === 'conclusion' || section.id === 'ending' || section.id === 'thanks') {
+          sections[section.id] = dummyScript.conclusion;
+        } else {
+          sections[section.id] = `（${section.label}の内容）`;
+        }
+      });
+      
+      // 標準形式との互換性を保つため、既存フィールドも設定
+      const introduction = sections['introduction'] || sections['intro'] || '';
+      const body = sections['body'] || sections['play'] || sections['performance'] || '';
+      const conclusion = sections['conclusion'] || sections['ending'] || sections['thanks'] || '';
+      
+      const contentParts = template.sections
+        .sort((a, b) => a.order - b.order)
+        .map(section => `【${section.label}】\n${sections[section.id] || ''}`)
+        .join('\n\n');
+      
       const script: Script = {
         ideaId: idea.id,
-        content: `【${idea.title}】\n\n${dummyScript.introduction}\n\n${idea.description}\n\n${dummyScript.body}\n\n${dummyScript.conclusion}`,
-        introduction: dummyScript.introduction,
-        body: dummyScript.body,
-        conclusion: dummyScript.conclusion,
+        content: `【${idea.title}】\n\n${contentParts}`,
+        introduction,
+        body,
+        conclusion,
+        templateId: template.id,
+        sections,
       };
+      
       setCurrentScript(script);
       setSelectedIdeaId(idea.id);
       
@@ -839,10 +1072,10 @@ export default function ScriptGeneratorPage() {
       setIsEditingScript(false);
       setSaveStatus('saved'); // 初期状態は保存済み（6.7）
       
-      logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.content.length }, 'ScriptGenerator');
+      logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.content.length, templateId: template.id }, 'ScriptGenerator');
     }, "台本生成中にエラーが発生しました");
     setIsGeneratingScript(false);
-  }, [handleAsyncError]);
+  }, [handleAsyncError, selectedTemplate]);
 
   // 印刷処理（デザイナー提案 + 利用者提案）
   const handlePrint = useCallback(() => {
@@ -1086,18 +1319,101 @@ export default function ScriptGeneratorPage() {
           <Badge variant="outline" className="cursor-pointer">#新作ゲーム</Badge>
         </div>
       </div>
-      <Button className="w-full" onClick={handleGenerate} disabled={isGeneratingIdeas}>
-        {isGeneratingIdeas ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            生成中...
-          </>
-        ) : (
-          '企画案を生成する'
-        )}
-      </Button>
-    </div>
-  ), [isGeneratingIdeas, handleGenerate]);
+        <Button className="w-full" onClick={handleGenerate} disabled={isGeneratingIdeas}>
+          {isGeneratingIdeas ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              生成中...
+            </>
+          ) : (
+            '企画案を生成する'
+          )}
+        </Button>
+        
+        {/* 台本テンプレート選択（6.8） */}
+        <div className="space-y-2 pt-4 border-t border-[#4A4A4A]">
+          <Label className="text-sm flex items-center gap-2 text-[#E0E0E0]">
+            <Layout className="h-4 w-4" />
+            台本テンプレート
+          </Label>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {allTemplates.map((template) => {
+              const category = categoryConfig[template.category];
+              const CategoryIcon = category.icon;
+              const isSelected = selectedTemplateId === template.id;
+              
+              return (
+                <Card
+                  key={template.id}
+                  className={cn(
+                    "cursor-pointer transition-all border-2",
+                    isSelected 
+                      ? "border-primary bg-[#2D2D2D] shadow-md" 
+                      : "border-[#4A4A4A] bg-[#2D2D2D] hover:border-[#4A4A4A]/80",
+                    template.isCustom && "border-dashed"
+                  )}
+                  onClick={() => setSelectedTemplateId(template.id)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2 flex-1">
+                        <CategoryIcon className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {template.name}
+                        </CardTitle>
+                        {template.isCustom && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            カスタム
+                          </Badge>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <Badge className="bg-primary text-white text-xs">
+                          選択中
+                        </Badge>
+                      )}
+                    </div>
+                    <CardDescription className="text-xs text-[#A0A0A0] line-clamp-2">
+                      {template.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex flex-wrap gap-1">
+                      {template.sections.slice(0, 3).map((section) => (
+                        <Badge 
+                          key={section.id}
+                          variant="outline"
+                          className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]"
+                        >
+                          {section.label}
+                        </Badge>
+                      ))}
+                      {template.sections.length > 3 && (
+                        <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                          +{template.sections.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]"
+            onClick={() => {
+              // カスタムテンプレート作成ダイアログを開く（後で実装）
+              toast.info('カスタムテンプレート作成機能は準備中です');
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            カスタムテンプレートを作成
+          </Button>
+        </div>
+      </div>
+    ), [isGeneratingIdeas, handleGenerate, allTemplates, selectedTemplateId, categoryConfig]);
 
   // モバイル用のサイドバーコンテンツ（ペルソナ、履歴、保存済み）
   const mobileSidebarContent = useMemo(() => (
@@ -1428,6 +1744,89 @@ export default function ScriptGeneratorPage() {
             '企画案を生成する'
           )}
         </Button>
+        
+        {/* 台本テンプレート選択（6.8） */}
+        <div className="space-y-2 pt-4 border-t border-[#4A4A4A]">
+          <Label className="text-sm flex items-center gap-2 text-[#E0E0E0]">
+            <Layout className="h-4 w-4" />
+            台本テンプレート
+          </Label>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {allTemplates.map((template) => {
+              const category = categoryConfig[template.category];
+              const CategoryIcon = category.icon;
+              const isSelected = selectedTemplateId === template.id;
+              
+              return (
+                <Card
+                  key={template.id}
+                  className={cn(
+                    "cursor-pointer transition-all border-2",
+                    isSelected 
+                      ? "border-primary bg-[#2D2D2D] shadow-md" 
+                      : "border-[#4A4A4A] bg-[#2D2D2D] hover:border-[#4A4A4A]/80",
+                    template.isCustom && "border-dashed"
+                  )}
+                  onClick={() => setSelectedTemplateId(template.id)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2 flex-1">
+                        <CategoryIcon className="h-4 w-4 text-[#A0A0A0]" />
+                        <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
+                          {template.name}
+                        </CardTitle>
+                        {template.isCustom && (
+                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                            カスタム
+                          </Badge>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <Badge className="bg-primary text-white text-xs">
+                          選択中
+                        </Badge>
+                      )}
+                    </div>
+                    <CardDescription className="text-xs text-[#A0A0A0] line-clamp-2">
+                      {template.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex flex-wrap gap-1">
+                      {template.sections.slice(0, 3).map((section) => (
+                        <Badge 
+                          key={section.id}
+                          variant="outline"
+                          className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]"
+                        >
+                          {section.label}
+                        </Badge>
+                      ))}
+                      {template.sections.length > 3 && (
+                        <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                          +{template.sections.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]"
+            onClick={() => {
+              // カスタムテンプレート作成ダイアログを開く（後で実装）
+              toast.info('カスタムテンプレート作成機能は準備中です');
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            カスタムテンプレートを作成
+          </Button>
+        </div>
       </TabsContent>
       <TabsContent value="persona" className="mt-4 space-y-4">
         <div className="space-y-2">
@@ -1695,7 +2094,7 @@ export default function ScriptGeneratorPage() {
         </div>
       </TabsContent>
     </Tabs>
-  ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, loadSavedScript, deleteSavedScript]);
+  ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, loadSavedScript, deleteSavedScript, allTemplates, selectedTemplateId, categoryConfig]);
 
   return (
     <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-4.1rem)] lg:overflow-hidden">
@@ -2295,87 +2694,41 @@ export default function ScriptGeneratorPage() {
                   </div>
                 </div>
 
-                {/* 導入セクション（色分け、行番号、編集可能） */}
-                <div className="border-l-4 border-blue-500/50 bg-blue-500/5 p-4 rounded">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-bold text-[#E0E0E0]">【導入】</h5>
-                    {calculateScriptStats && (
-                      <span className="text-xs text-[#A0A0A0]">
-                        {calculateScriptStats.introduction.chars}文字 / {calculateScriptStats.introduction.lines}行
-                      </span>
-                    )}
-                  </div>
-                  <div className="relative">
-                    {/* 行番号表示（デザイナー提案） */}
-                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
-                      {currentScript.introduction.split('\n').map((_, index) => (
-                        <div key={index} className="leading-6 whitespace-nowrap">
-                          {index + 1}
+                {/* 動的セクション表示（テンプレートベース）（6.8） */}
+                {currentTemplate.sections
+                  .sort((a, b) => a.order - b.order)
+                  .map((section) => {
+                    const sectionValue = getSectionValue(section.id);
+                    const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
+                    const lineCount = sectionValue.split('\n').length;
+                    
+                    return (
+                      <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-bold text-[#E0E0E0]">【{section.label}】</h5>
+                          <span className="text-xs text-[#A0A0A0]">
+                            {sectionValue.length}文字 / {lineCount}行
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                    <Textarea
-                      value={currentScript.introduction}
-                      onChange={(e) => handleSectionChange('introduction', e.target.value)}
-                      className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
-                      placeholder="導入部分を入力..."
-                    />
-                  </div>
-                </div>
-
-                {/* 本題セクション */}
-                <div className="border-l-4 border-green-500/50 bg-green-500/5 p-4 rounded">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-bold text-[#E0E0E0]">【本題】</h5>
-                    {calculateScriptStats && (
-                      <span className="text-xs text-[#A0A0A0]">
-                        {calculateScriptStats.body.chars}文字 / {calculateScriptStats.body.lines}行
-                      </span>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
-                      {currentScript.body.split('\n').map((_, index) => (
-                        <div key={index} className="leading-6 whitespace-nowrap">
-                          {index + 1}
+                        <div className="relative">
+                          {/* 行番号表示（デザイナー提案） */}
+                          <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                            {sectionValue.split('\n').map((_, index) => (
+                              <div key={index} className="leading-6 whitespace-nowrap">
+                                {index + 1}
+                              </div>
+                            ))}
+                          </div>
+                          <Textarea
+                            value={sectionValue}
+                            onChange={(e) => handleSectionChange(section.id, e.target.value)}
+                            className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
+                            placeholder={section.placeholder}
+                          />
                         </div>
-                      ))}
-                    </div>
-                    <Textarea
-                      value={currentScript.body}
-                      onChange={(e) => handleSectionChange('body', e.target.value)}
-                      className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[200px]"
-                      placeholder="本題部分を入力..."
-                    />
-                  </div>
-                </div>
-
-                {/* 結論セクション */}
-                <div className="border-l-4 border-purple-500/50 bg-purple-500/5 p-4 rounded">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-bold text-[#E0E0E0]">【結論】</h5>
-                    {calculateScriptStats && (
-                      <span className="text-xs text-[#A0A0A0]">
-                        {calculateScriptStats.conclusion.chars}文字 / {calculateScriptStats.conclusion.lines}行
-                      </span>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
-                      {currentScript.conclusion.split('\n').map((_, index) => (
-                        <div key={index} className="leading-6 whitespace-nowrap">
-                          {index + 1}
-                        </div>
-                      ))}
-                    </div>
-                    <Textarea
-                      value={currentScript.conclusion}
-                      onChange={(e) => handleSectionChange('conclusion', e.target.value)}
-                      className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
-                      placeholder="結論部分を入力..."
-                    />
-                  </div>
-                </div>
+                      </div>
+                    );
+                  })}
               </CardContent>
             </Card>
           ) : (
@@ -2523,87 +2876,41 @@ export default function ScriptGeneratorPage() {
                 </div>
               </div>
 
-              {/* 導入セクション（色分け、行番号、編集可能） */}
-              <div className="border-l-4 border-blue-500/50 bg-blue-500/5 p-4 rounded">
-                <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-bold text-[#E0E0E0]">【導入】</h5>
-                  {calculateScriptStats && (
-                    <span className="text-xs text-[#A0A0A0]">
-                      {calculateScriptStats.introduction.chars}文字 / {calculateScriptStats.introduction.lines}行
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  {/* 行番号表示（デザイナー提案） */}
-                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
-                    {currentScript.introduction.split('\n').map((_, index) => (
-                      <div key={index} className="leading-6 whitespace-nowrap">
-                        {index + 1}
+              {/* 動的セクション表示（テンプレートベース）（6.8） */}
+              {currentTemplate.sections
+                .sort((a, b) => a.order - b.order)
+                .map((section) => {
+                  const sectionValue = getSectionValue(section.id);
+                  const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
+                  const lineCount = sectionValue.split('\n').length;
+                  
+                  return (
+                    <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-bold text-[#E0E0E0]">【{section.label}】</h5>
+                        <span className="text-xs text-[#A0A0A0]">
+                          {sectionValue.length}文字 / {lineCount}行
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                  <Textarea
-                    value={currentScript.introduction}
-                    onChange={(e) => handleSectionChange('introduction', e.target.value)}
-                    className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
-                    placeholder="導入部分を入力..."
-                  />
-                </div>
-              </div>
-
-              {/* 本題セクション */}
-              <div className="border-l-4 border-green-500/50 bg-green-500/5 p-4 rounded">
-                <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-bold text-[#E0E0E0]">【本題】</h5>
-                  {calculateScriptStats && (
-                    <span className="text-xs text-[#A0A0A0]">
-                      {calculateScriptStats.body.chars}文字 / {calculateScriptStats.body.lines}行
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
-                    {currentScript.body.split('\n').map((_, index) => (
-                      <div key={index} className="leading-6 whitespace-nowrap">
-                        {index + 1}
+                      <div className="relative">
+                        {/* 行番号表示（デザイナー提案） */}
+                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                          {sectionValue.split('\n').map((_, index) => (
+                            <div key={index} className="leading-6 whitespace-nowrap">
+                              {index + 1}
+                            </div>
+                          ))}
+                        </div>
+                        <Textarea
+                          value={sectionValue}
+                          onChange={(e) => handleSectionChange(section.id, e.target.value)}
+                          className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
+                          placeholder={section.placeholder}
+                        />
                       </div>
-                    ))}
-                  </div>
-                  <Textarea
-                    value={currentScript.body}
-                    onChange={(e) => handleSectionChange('body', e.target.value)}
-                    className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[200px]"
-                    placeholder="本題部分を入力..."
-                  />
-                </div>
-              </div>
-
-              {/* 結論セクション */}
-              <div className="border-l-4 border-purple-500/50 bg-purple-500/5 p-4 rounded">
-                <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-bold text-[#E0E0E0]">【結論】</h5>
-                  {calculateScriptStats && (
-                    <span className="text-xs text-[#A0A0A0]">
-                      {calculateScriptStats.conclusion.chars}文字 / {calculateScriptStats.conclusion.lines}行
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
-                    {currentScript.conclusion.split('\n').map((_, index) => (
-                      <div key={index} className="leading-6 whitespace-nowrap">
-                        {index + 1}
-                      </div>
-                    ))}
-                  </div>
-                  <Textarea
-                    value={currentScript.conclusion}
-                    onChange={(e) => handleSectionChange('conclusion', e.target.value)}
-                    className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
-                    placeholder="結論部分を入力..."
-                  />
-                </div>
-              </div>
+                    </div>
+                  );
+                })}
             </CardContent>
           </Card>
         </div>
