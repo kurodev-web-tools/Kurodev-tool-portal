@@ -15,6 +15,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { logger } from '@/lib/logger';
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -31,6 +33,16 @@ interface GenerationStep {
 }
 
 type GenerationType = 'ideas' | 'script';
+
+// 生成設定の型定義（6.10）
+interface GenerationSettings {
+  keywords: string;
+  direction: string;
+  duration: number; // 配信時間（分）
+  speakingStyle: string[]; // 話し方のスタイル（複数選択可）
+  includeElements: string[]; // 含める要素（複数選択可）
+  customPrompt: string; // カスタムプロンプト
+}
 
 interface Idea {
   id: number;
@@ -370,6 +382,16 @@ export default function ScriptGeneratorPage() {
   // 生成プロセスの可視化（6.9）
   const [ideaGenerationStep, setIdeaGenerationStep] = useState<string | null>(null);
   const [scriptGenerationStep, setScriptGenerationStep] = useState<string | null>(null);
+  
+  // 生成設定の状態管理（6.10）
+  const [generationSettings, setGenerationSettings] = useState<GenerationSettings>({
+    keywords: '',
+    direction: '',
+    duration: 60, // デフォルト60分
+    speakingStyle: [],
+    includeElements: [],
+    customPrompt: '',
+  });
   
   // 検索・フィルターの状態管理
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -1450,41 +1472,201 @@ export default function ScriptGeneratorPage() {
 
   const renderControlPanel = useCallback(() => (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="keywords-mobile">キーワード</Label>
-        <Input id="keywords-mobile" placeholder="例: ゲーム実況、マリオカート" />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="direction-mobile">企画の方向性</Label>
-        <Select>
-          <SelectTrigger id="direction-mobile">
-            <SelectValue placeholder="方向性を選択" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="funny">面白い系</SelectItem>
-            <SelectItem value="moving">感動系</SelectItem>
-            <SelectItem value="educational">解説・学習系</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>現在のトレンド</Label>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className="cursor-pointer">#VTuberの夏休み</Badge>
-          <Badge variant="outline" className="cursor-pointer">#ゲーム実況</Badge>
-          <Badge variant="outline" className="cursor-pointer">#新作ゲーム</Badge>
-        </div>
-      </div>
-        <Button className="w-full" onClick={handleGenerate} disabled={isGeneratingIdeas}>
-          {isGeneratingIdeas ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              生成中...
-            </>
-          ) : (
-            '企画案を生成する'
-          )}
-        </Button>
+      {/* 生成設定（アコーディオン形式）（6.10） */}
+      <Accordion type="multiple" defaultValue={["basic"]} className="w-full">
+        {/* 基本設定 */}
+        <AccordionItem value="basic" className="border-[#4A4A4A]">
+          <AccordionTrigger className="text-[#E0E0E0] hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4" />
+              <span>基本設定</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="keywords-mobile">キーワード</Label>
+              <Input
+                id="keywords-mobile"
+                placeholder="例: ゲーム実況、マリオカート"
+                value={generationSettings.keywords}
+                onChange={(e) => setGenerationSettings(prev => ({ ...prev, keywords: e.target.value }))}
+                className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="direction-mobile">企画の方向性</Label>
+              <Select
+                value={generationSettings.direction}
+                onValueChange={(value) => setGenerationSettings(prev => ({ ...prev, direction: value }))}
+              >
+                <SelectTrigger id="direction-mobile" className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]">
+                  <SelectValue placeholder="方向性を選択" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+                  <SelectItem value="funny">面白い系</SelectItem>
+                  <SelectItem value="moving">感動系</SelectItem>
+                  <SelectItem value="educational">解説・学習系</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>現在のトレンド</Label>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="cursor-pointer border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]">#VTuberの夏休み</Badge>
+                <Badge variant="outline" className="cursor-pointer border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]">#ゲーム実況</Badge>
+                <Badge variant="outline" className="cursor-pointer border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]">#新作ゲーム</Badge>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 配信設定 */}
+        <AccordionItem value="streaming" className="border-[#4A4A4A]">
+          <AccordionTrigger className="text-[#E0E0E0] hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>配信設定</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pt-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="duration-mobile">配信時間</Label>
+                <span className="text-sm text-[#A0A0A0]">{generationSettings.duration}分</span>
+              </div>
+              <Slider
+                id="duration-mobile"
+                min={30}
+                max={180}
+                step={30}
+                value={[generationSettings.duration]}
+                onValueChange={(value) => setGenerationSettings(prev => ({ ...prev, duration: value[0] }))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-[#4A4A4A]">
+                <span>30分</span>
+                <span>180分</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>話し方のスタイル</Label>
+              <div className="space-y-2">
+                {[
+                  { id: 'casual', label: 'カジュアル' },
+                  { id: 'formal', label: 'フォーマル' },
+                  { id: 'energetic', label: 'エネルギッシュ' },
+                  { id: 'calm', label: '落ち着いた' },
+                  { id: 'technical', label: 'テクニカル' },
+                  { id: 'entertaining', label: 'エンタメ' },
+                ].map((style) => (
+                  <div key={style.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`style-mobile-${style.id}`}
+                      checked={generationSettings.speakingStyle.includes(style.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setGenerationSettings(prev => ({
+                            ...prev,
+                            speakingStyle: [...prev.speakingStyle, style.id]
+                          }));
+                        } else {
+                          setGenerationSettings(prev => ({
+                            ...prev,
+                            speakingStyle: prev.speakingStyle.filter(s => s !== style.id)
+                          }));
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={`style-mobile-${style.id}`}
+                      className="text-sm text-[#E0E0E0] cursor-pointer"
+                    >
+                      {style.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 詳細設定 */}
+        <AccordionItem value="advanced" className="border-[#4A4A4A]">
+          <AccordionTrigger className="text-[#E0E0E0] hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Construction className="h-4 w-4" />
+              <span>詳細設定</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>含める要素の選択</Label>
+              <div className="space-y-2">
+                {[
+                  { id: 'gaming', label: 'ゲーム要素', icon: Gamepad2 },
+                  { id: 'music', label: '音楽要素', icon: Music },
+                  { id: 'collaboration', label: 'コラボ要素', icon: Users },
+                  { id: 'event', label: 'イベント要素', icon: Calendar },
+                  { id: 'other', label: 'その他', icon: Lightbulb },
+                ].map((element) => {
+                  const ElementIcon = element.icon;
+                  return (
+                    <div key={element.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`element-mobile-${element.id}`}
+                        checked={generationSettings.includeElements.includes(element.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setGenerationSettings(prev => ({
+                              ...prev,
+                              includeElements: [...prev.includeElements, element.id]
+                            }));
+                          } else {
+                            setGenerationSettings(prev => ({
+                              ...prev,
+                              includeElements: prev.includeElements.filter(e => e !== element.id)
+                            }));
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`element-mobile-${element.id}`}
+                        className="text-sm text-[#E0E0E0] cursor-pointer flex items-center gap-2"
+                      >
+                        <ElementIcon className="h-4 w-4" />
+                        {element.label}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customPrompt-mobile">カスタムプロンプト</Label>
+              <Textarea
+                id="customPrompt-mobile"
+                placeholder="追加で指定したい要件があれば入力してください"
+                value={generationSettings.customPrompt}
+                onChange={(e) => setGenerationSettings(prev => ({ ...prev, customPrompt: e.target.value }))}
+                className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A] min-h-[100px]"
+              />
+              <p className="text-xs text-[#4A4A4A]">
+                生成時に考慮してほしい追加の要件や指示を入力できます
+              </p>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      <Button className="w-full" onClick={handleGenerate} disabled={isGeneratingIdeas}>
+        {isGeneratingIdeas ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            生成中...
+          </>
+        ) : (
+          '企画案を生成する'
+        )}
+      </Button>
         
         {/* 台本テンプレート選択（6.8） */}
         <div className="space-y-2 pt-4 border-t border-[#4A4A4A]">
@@ -1865,31 +2047,191 @@ export default function ScriptGeneratorPage() {
         <TabsTrigger value="saved">保存済み</TabsTrigger>
       </TabsList>
       <TabsContent value="generate" className="mt-4 space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="keywords">キーワード</Label>
-          <Input id="keywords" placeholder="例: ゲーム実況、マリオカート" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="direction">企画の方向性</Label>
-          <Select>
-            <SelectTrigger id="direction">
-              <SelectValue placeholder="方向性を選択" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="funny">面白い系</SelectItem>
-              <SelectItem value="moving">感動系</SelectItem>
-              <SelectItem value="educational">解説・学習系</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>現在のトレンド</Label>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="cursor-pointer">#VTuberの夏休み</Badge>
-            <Badge variant="outline" className="cursor-pointer">#ゲーム実況</Badge>
-            <Badge variant="outline" className="cursor-pointer">#新作ゲーム</Badge>
-          </div>
-        </div>
+        {/* 生成設定（アコーディオン形式）（6.10） */}
+        <Accordion type="multiple" defaultValue={["basic"]} className="w-full">
+          {/* 基本設定 */}
+          <AccordionItem value="basic" className="border-[#4A4A4A]">
+            <AccordionTrigger className="text-[#E0E0E0] hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-4 w-4" />
+                <span>基本設定</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="keywords">キーワード</Label>
+                <Input
+                  id="keywords"
+                  placeholder="例: ゲーム実況、マリオカート"
+                  value={generationSettings.keywords}
+                  onChange={(e) => setGenerationSettings(prev => ({ ...prev, keywords: e.target.value }))}
+                  className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="direction">企画の方向性</Label>
+                <Select
+                  value={generationSettings.direction}
+                  onValueChange={(value) => setGenerationSettings(prev => ({ ...prev, direction: value }))}
+                >
+                  <SelectTrigger id="direction" className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]">
+                    <SelectValue placeholder="方向性を選択" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+                    <SelectItem value="funny">面白い系</SelectItem>
+                    <SelectItem value="moving">感動系</SelectItem>
+                    <SelectItem value="educational">解説・学習系</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>現在のトレンド</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="cursor-pointer border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]">#VTuberの夏休み</Badge>
+                  <Badge variant="outline" className="cursor-pointer border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]">#ゲーム実況</Badge>
+                  <Badge variant="outline" className="cursor-pointer border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]">#新作ゲーム</Badge>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 配信設定 */}
+          <AccordionItem value="streaming" className="border-[#4A4A4A]">
+            <AccordionTrigger className="text-[#E0E0E0] hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>配信設定</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="duration">配信時間</Label>
+                  <span className="text-sm text-[#A0A0A0]">{generationSettings.duration}分</span>
+                </div>
+                <Slider
+                  id="duration"
+                  min={30}
+                  max={180}
+                  step={30}
+                  value={[generationSettings.duration]}
+                  onValueChange={(value) => setGenerationSettings(prev => ({ ...prev, duration: value[0] }))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-[#4A4A4A]">
+                  <span>30分</span>
+                  <span>180分</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>話し方のスタイル</Label>
+                <div className="space-y-2">
+                  {[
+                    { id: 'casual', label: 'カジュアル' },
+                    { id: 'formal', label: 'フォーマル' },
+                    { id: 'energetic', label: 'エネルギッシュ' },
+                    { id: 'calm', label: '落ち着いた' },
+                    { id: 'technical', label: 'テクニカル' },
+                    { id: 'entertaining', label: 'エンタメ' },
+                  ].map((style) => (
+                    <div key={style.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`style-${style.id}`}
+                        checked={generationSettings.speakingStyle.includes(style.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setGenerationSettings(prev => ({
+                              ...prev,
+                              speakingStyle: [...prev.speakingStyle, style.id]
+                            }));
+                          } else {
+                            setGenerationSettings(prev => ({
+                              ...prev,
+                              speakingStyle: prev.speakingStyle.filter(s => s !== style.id)
+                            }));
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`style-${style.id}`}
+                        className="text-sm text-[#E0E0E0] cursor-pointer"
+                      >
+                        {style.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 詳細設定 */}
+          <AccordionItem value="advanced" className="border-[#4A4A4A]">
+            <AccordionTrigger className="text-[#E0E0E0] hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Construction className="h-4 w-4" />
+                <span>詳細設定</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>含める要素の選択</Label>
+                <div className="space-y-2">
+                  {[
+                    { id: 'gaming', label: 'ゲーム要素', icon: Gamepad2 },
+                    { id: 'music', label: '音楽要素', icon: Music },
+                    { id: 'collaboration', label: 'コラボ要素', icon: Users },
+                    { id: 'event', label: 'イベント要素', icon: Calendar },
+                    { id: 'other', label: 'その他', icon: Lightbulb },
+                  ].map((element) => {
+                    const ElementIcon = element.icon;
+                    return (
+                      <div key={element.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`element-${element.id}`}
+                          checked={generationSettings.includeElements.includes(element.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setGenerationSettings(prev => ({
+                                ...prev,
+                                includeElements: [...prev.includeElements, element.id]
+                              }));
+                            } else {
+                              setGenerationSettings(prev => ({
+                                ...prev,
+                                includeElements: prev.includeElements.filter(e => e !== element.id)
+                              }));
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`element-${element.id}`}
+                          className="text-sm text-[#E0E0E0] cursor-pointer flex items-center gap-2"
+                        >
+                          <ElementIcon className="h-4 w-4" />
+                          {element.label}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customPrompt">カスタムプロンプト</Label>
+                <Textarea
+                  id="customPrompt"
+                  placeholder="追加で指定したい要件があれば入力してください"
+                  value={generationSettings.customPrompt}
+                  onChange={(e) => setGenerationSettings(prev => ({ ...prev, customPrompt: e.target.value }))}
+                  className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A] min-h-[100px]"
+                />
+                <p className="text-xs text-[#4A4A4A]">
+                  生成時に考慮してほしい追加の要件や指示を入力できます
+                </p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         <Button className="w-full" onClick={handleGenerate} disabled={isGeneratingIdeas}>
           {isGeneratingIdeas ? (
             <>
