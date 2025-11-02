@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2, Play, Pause, Volume2, Gauge, Check, Share2, Copy, Download } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2, Play, Pause, Volume2, Gauge, Check, Share2, Copy, Download, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -266,7 +266,7 @@ interface GenerationHistory {
   createdAt: string; // ISO形式の日時文字列（表示用）
 }
 
-// 保存済み台本のデータ構造（6.7）
+// 保存済み台本のデータ構造（6.7, 6.14）
 interface SavedScript {
   id: string;
   scriptId: number; // currentScript.ideaIdと対応
@@ -277,6 +277,9 @@ interface SavedScript {
   createdAt: number; // 作成タイムスタンプ
   updatedAt: number; // 更新タイムスタンプ
   version: number; // バージョン番号（同一scriptIdの複数バージョン対応）
+  versionName?: string; // バージョン名（オプション）（6.14）
+  templateId?: string; // テンプレートID（6.8）
+  sections?: Record<string, string>; // 動的セクション（6.8）
 }
 
 // 生成ステップ定義（6.9）
@@ -466,6 +469,10 @@ export default function ScriptGeneratorPage() {
     speakingStyle: [] as string[],
     traits: [] as string[],
   });
+  
+  // 台本複製の状態管理（6.14）
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [duplicateVersionName, setDuplicateVersionName] = useState('');
   
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
@@ -1471,6 +1478,99 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
     };
   }, [currentScript, saveStatus, isEditingScript, saveScript]);
 
+  // 台本の複製機能（6.14）
+  const handleDuplicateScript = useCallback(() => {
+    if (!currentScript) {
+      toast.error('複製する台本がありません');
+      return;
+    }
+    
+    setIsDuplicateDialogOpen(true);
+  }, [currentScript]);
+
+  // 複製を確定（6.14）
+  const confirmDuplicateScript = useCallback(() => {
+    if (!currentScript || typeof window === 'undefined') {
+      toast.error('複製する台本がありません');
+      return;
+    }
+    
+    const selectedIdea = generatedIdeas.find(idea => idea.id === currentScript.ideaId);
+    if (!selectedIdea) {
+      // フォールバック: selectedIdeaが見つからない場合でも複製可能
+      const fallbackTitle = `台本 ${currentScript.ideaId}`;
+      
+      const existingScripts = savedScripts.filter(s => s.scriptId === currentScript.ideaId);
+      const maxVersion = existingScripts.length > 0 
+        ? Math.max(...existingScripts.map(s => s.version))
+        : 0;
+      
+      const duplicatedScript: SavedScript = {
+        id: `saved-${currentScript.ideaId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        scriptId: currentScript.ideaId,
+        title: fallbackTitle,
+        introduction: currentScript.introduction || '',
+        body: currentScript.body || '',
+        conclusion: currentScript.conclusion || '',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        version: maxVersion + 1,
+        versionName: duplicateVersionName.trim() || undefined,
+        templateId: currentScript.templateId,
+        sections: currentScript.sections,
+      };
+      
+      const updated = [duplicatedScript, ...savedScripts].slice(0, MAX_SAVED_SCRIPTS);
+      setSavedScripts(updated);
+      try {
+        localStorage.setItem(SAVED_SCRIPTS_STORAGE_KEY, JSON.stringify(updated));
+      } catch (err) {
+        console.error('台本保存失敗', err);
+        toast.error('台本の保存に失敗しました');
+      }
+      
+      toast.success('台本を複製しました');
+      setIsDuplicateDialogOpen(false);
+      setDuplicateVersionName('');
+      return;
+    }
+    
+    // 同一scriptIdの既存保存を検索
+    const existingScripts = savedScripts.filter(s => s.scriptId === currentScript.ideaId);
+    const maxVersion = existingScripts.length > 0 
+      ? Math.max(...existingScripts.map(s => s.version))
+      : 0;
+    
+    const duplicatedScript: SavedScript = {
+      id: `saved-${currentScript.ideaId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      scriptId: currentScript.ideaId,
+      title: selectedIdea.title,
+      introduction: currentScript.introduction || '',
+      body: currentScript.body || '',
+      conclusion: currentScript.conclusion || '',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      version: maxVersion + 1,
+      versionName: duplicateVersionName.trim() || undefined,
+      templateId: currentScript.templateId,
+      sections: currentScript.sections,
+    };
+    
+    const updated = [duplicatedScript, ...savedScripts].slice(0, MAX_SAVED_SCRIPTS);
+    setSavedScripts(updated);
+    try {
+      localStorage.setItem(SAVED_SCRIPTS_STORAGE_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.error('台本保存失敗', err);
+      toast.error('台本の保存に失敗しました');
+      return;
+    }
+    
+    toast.success('台本を複製しました');
+    setIsDuplicateDialogOpen(false);
+    setDuplicateVersionName('');
+  }, [currentScript, generatedIdeas, savedScripts, duplicateVersionName]);
+
   // 保存済み台本の読み込み（6.7）
   const loadSavedScript = useCallback((savedScript: SavedScript) => {
     const script: Script = {
@@ -1479,6 +1579,8 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
       introduction: savedScript.introduction,
       body: savedScript.body,
       conclusion: savedScript.conclusion,
+      templateId: savedScript.templateId,
+      sections: savedScript.sections,
     };
     
     setCurrentScript(script);
@@ -1514,6 +1616,22 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
     });
     toast.success('保存済み台本を削除しました');
   }, []);
+
+  // 保存済み台本をscriptIdでグループ化（6.14）
+  const groupedSavedScripts = useMemo(() => {
+    const groups = new Map<number, SavedScript[]>();
+    savedScripts.forEach(script => {
+      const versions = groups.get(script.scriptId) || [];
+      versions.push(script);
+      groups.set(script.scriptId, versions);
+    });
+    
+    return Array.from(groups.entries()).map(([scriptId, versions]) => ({
+      scriptId,
+      versions: versions.sort((a, b) => b.version - a.version), // 新しいバージョンから順
+      latestVersion: versions[0], // 最新バージョン
+    }));
+  }, [savedScripts]);
 
   // 時間をMM:SS形式にフォーマット（6.11）
   const formatTime = useCallback((seconds: number): string => {
@@ -2522,8 +2640,8 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         )}
       </TabsContent>
       <TabsContent value="saved" className="mt-4 space-y-4">
-        {/* 保存済み台本一覧（6.7） */}
-        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+        {/* 保存済み台本一覧（6.7, 6.14：バージョン履歴タイムライン表示） */}
+        <div className="space-y-3 max-h-[600px] overflow-y-auto">
           {savedScripts.length === 0 ? (
             <div className="text-center py-8 text-[#A0A0A0]">
               <BookOpen className="h-8 w-8 mx-auto mb-2" />
@@ -2531,9 +2649,9 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
               <p className="text-sm mt-1">台本を編集して保存すると、ここに表示されます</p>
             </div>
           ) : (
-            savedScripts.map((saved) => (
+            groupedSavedScripts.map((group) => (
               <Card 
-                key={saved.id}
+                key={group.scriptId}
                 className="bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all"
               >
                 <CardHeader className="pb-3">
@@ -2542,19 +2660,20 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                       <div className="flex items-center gap-2 mb-2">
                         <BookOpen className="h-4 w-4 text-[#A0A0A0]" />
                         <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
-                          {saved.title}
+                          {group.latestVersion.title}
                         </CardTitle>
-                        {saved.version > 1 && (
-                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
-                            v{saved.version}
+                        {group.versions.length > 1 && (
+                          <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">
+                            <GitBranch className="h-3 w-3 mr-1" />
+                            {group.versions.length}バージョン
                           </Badge>
                         )}
                       </div>
                       
-                      {/* タイムスタンプ表示 */}
+                      {/* タイムスタンプ表示（最新バージョン） */}
                       <div className="flex items-center gap-1 text-xs text-[#A0A0A0] mb-2">
                         <Clock className="h-3 w-3" />
-                        更新: {new Date(saved.updatedAt).toLocaleString('ja-JP', {
+                        最新更新: {new Date(group.latestVersion.updatedAt).toLocaleString('ja-JP', {
                           year: 'numeric',
                           month: '2-digit',
                           day: '2-digit',
@@ -2563,10 +2682,63 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                         })}
                       </div>
                       
-                      {/* プレビュー */}
-                      <div className="text-xs text-[#A0A0A0] line-clamp-2">
-                        {saved.introduction.substring(0, 50)}...
+                      {/* プレビュー（最新バージョン） */}
+                      <div className="text-xs text-[#A0A0A0] line-clamp-2 mb-3">
+                        {group.latestVersion.introduction.substring(0, 50)}...
                       </div>
+
+                      {/* バージョン履歴タイムライン（6.14） */}
+                      {group.versions.length > 1 && (
+                        <div className="mt-3 pt-3 border-t border-[#4A4A4A]">
+                          <Label className="text-xs text-[#A0A0A0] mb-2 block">バージョン履歴</Label>
+                          <div className="space-y-2 pl-4 border-l-2 border-blue-500/30">
+                            {group.versions.map((version, index) => (
+                              <div key={version.id} className="relative">
+                                <div className={cn(
+                                  "absolute -left-[9px] top-2 w-2 h-2 rounded-full",
+                                  index === 0 ? "bg-blue-500" : "bg-[#4A4A4A]"
+                                )} />
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-medium text-[#E0E0E0]">
+                                        v{version.version}
+                                      </span>
+                                      {version.versionName && (
+                                        <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                                          {version.versionName}
+                                        </Badge>
+                                      )}
+                                      {index === 0 && (
+                                        <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 border-green-500/30">
+                                          最新
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-[#A0A0A0]">
+                                      {new Date(version.updatedAt).toLocaleString('ja-JP', {
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => loadSavedScript(version)}
+                                    className="h-7 px-2 text-xs text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                  >
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    読み込む
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -2574,19 +2746,19 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => loadSavedScript(saved)}
+                    onClick={() => loadSavedScript(group.latestVersion)}
                     className="flex-1 border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
                   >
                     <FileText className="h-4 w-4 mr-1" />
-                    読み込む
+                    最新版を読み込む
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm('この保存済み台本を削除しますか？')) {
-                        deleteSavedScript(saved.id);
+                      if (confirm('この台本のすべてのバージョンを削除しますか？')) {
+                        group.versions.forEach(v => deleteSavedScript(v.id));
                       }
                     }}
                     className="border-red-500/50 text-red-400 hover:bg-red-500/10"
@@ -2600,7 +2772,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         </div>
       </TabsContent>
     </Tabs>
-  ), [selectedTab, history, filteredHistory, historySearchQuery, historyFilterCategory, loadFromHistory, deleteHistory, clearAllHistory, savedScripts, loadSavedScript, deleteSavedScript, personas, selectedPersonaId, defaultPersonaId, handleEditPersona, setSelectedPersonaId, setDefaultPersona, deletePersona, handleCreatePersona]);
+  ), [selectedTab, history, filteredHistory, historySearchQuery, historyFilterCategory, loadFromHistory, deleteHistory, clearAllHistory, savedScripts, groupedSavedScripts, loadSavedScript, deleteSavedScript, personas, selectedPersonaId, defaultPersonaId, handleEditPersona, setSelectedPersonaId, setDefaultPersona, deletePersona, handleCreatePersona]);
 
   const sidebarContent = useMemo(() => (
     <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
@@ -3182,8 +3354,8 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         )}
       </TabsContent>
       <TabsContent value="saved" className="mt-4 space-y-4">
-        {/* 保存済み台本一覧（6.7） */}
-        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+        {/* 保存済み台本一覧（6.7, 6.14：バージョン履歴タイムライン表示） */}
+        <div className="space-y-3 max-h-[600px] overflow-y-auto">
           {savedScripts.length === 0 ? (
             <div className="text-center py-8 text-[#A0A0A0]">
               <BookOpen className="h-8 w-8 mx-auto mb-2" />
@@ -3191,9 +3363,9 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
               <p className="text-sm mt-1">台本を編集して保存すると、ここに表示されます</p>
             </div>
           ) : (
-            savedScripts.map((saved) => (
+            groupedSavedScripts.map((group) => (
               <Card 
-                key={saved.id}
+                key={group.scriptId}
                 className="bg-[#2D2D2D] border-[#4A4A4A] hover:border-[#4A4A4A]/80 transition-all"
               >
                 <CardHeader className="pb-3">
@@ -3202,19 +3374,20 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                       <div className="flex items-center gap-2 mb-2">
                         <BookOpen className="h-4 w-4 text-[#A0A0A0]" />
                         <CardTitle className="text-sm font-semibold text-[#E0E0E0]">
-                          {saved.title}
+                          {group.latestVersion.title}
                         </CardTitle>
-                        {saved.version > 1 && (
-                          <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
-                            v{saved.version}
+                        {group.versions.length > 1 && (
+                          <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">
+                            <GitBranch className="h-3 w-3 mr-1" />
+                            {group.versions.length}バージョン
                           </Badge>
                         )}
                       </div>
                       
-                      {/* タイムスタンプ表示 */}
+                      {/* タイムスタンプ表示（最新バージョン） */}
                       <div className="flex items-center gap-1 text-xs text-[#A0A0A0] mb-2">
                         <Clock className="h-3 w-3" />
-                        更新: {new Date(saved.updatedAt).toLocaleString('ja-JP', {
+                        最新更新: {new Date(group.latestVersion.updatedAt).toLocaleString('ja-JP', {
                           year: 'numeric',
                           month: '2-digit',
                           day: '2-digit',
@@ -3223,10 +3396,63 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                         })}
                       </div>
                       
-                      {/* プレビュー */}
-                      <div className="text-xs text-[#A0A0A0] line-clamp-2">
-                        {saved.introduction.substring(0, 50)}...
+                      {/* プレビュー（最新バージョン） */}
+                      <div className="text-xs text-[#A0A0A0] line-clamp-2 mb-3">
+                        {group.latestVersion.introduction.substring(0, 50)}...
                       </div>
+
+                      {/* バージョン履歴タイムライン（6.14） */}
+                      {group.versions.length > 1 && (
+                        <div className="mt-3 pt-3 border-t border-[#4A4A4A]">
+                          <Label className="text-xs text-[#A0A0A0] mb-2 block">バージョン履歴</Label>
+                          <div className="space-y-2 pl-4 border-l-2 border-blue-500/30">
+                            {group.versions.map((version, index) => (
+                              <div key={version.id} className="relative">
+                                <div className={cn(
+                                  "absolute -left-[9px] top-2 w-2 h-2 rounded-full",
+                                  index === 0 ? "bg-blue-500" : "bg-[#4A4A4A]"
+                                )} />
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-medium text-[#E0E0E0]">
+                                        v{version.version}
+                                      </span>
+                                      {version.versionName && (
+                                        <Badge variant="outline" className="text-xs bg-[#1A1A1A] text-[#A0A0A0] border-[#4A4A4A]">
+                                          {version.versionName}
+                                        </Badge>
+                                      )}
+                                      {index === 0 && (
+                                        <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 border-green-500/30">
+                                          最新
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-[#A0A0A0]">
+                                      {new Date(version.updatedAt).toLocaleString('ja-JP', {
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => loadSavedScript(version)}
+                                    className="h-7 px-2 text-xs text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                  >
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    読み込む
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -3234,19 +3460,19 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => loadSavedScript(saved)}
+                    onClick={() => loadSavedScript(group.latestVersion)}
                     className="flex-1 border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
                   >
                     <FileText className="h-4 w-4 mr-1" />
-                    読み込む
+                    最新版を読み込む
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm('この保存済み台本を削除しますか？')) {
-                        deleteSavedScript(saved.id);
+                      if (confirm('この台本のすべてのバージョンを削除しますか？')) {
+                        group.versions.forEach(v => deleteSavedScript(v.id));
                       }
                     }}
                     className="border-red-500/50 text-red-400 hover:bg-red-500/10"
@@ -3260,7 +3486,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         </div>
       </TabsContent>
     </Tabs>
-  ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, loadSavedScript, deleteSavedScript, allTemplates, selectedTemplateId, categoryConfig, personas, selectedPersonaId, defaultPersonaId, handleEditPersona, setSelectedPersonaId, setDefaultPersona, deletePersona, handleCreatePersona]);
+  ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, groupedSavedScripts, loadSavedScript, deleteSavedScript, allTemplates, selectedTemplateId, categoryConfig, personas, selectedPersonaId, defaultPersonaId, handleEditPersona, setSelectedPersonaId, setDefaultPersona, deletePersona, handleCreatePersona]);
 
   return (
     <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-4.1rem)] lg:overflow-hidden">
@@ -3842,90 +4068,102 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                   
                   {/* 編集モード */}
                   <TabsContent value="edit" className="mt-4 space-y-4">
-                    {/* ツールバー（デザイナー提案） */}
-                    <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleUndo}
-                      disabled={historyIndex <= 0}
-                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="アンドゥ"
-                    >
-                      <Undo2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRedo}
-                      disabled={historyIndex >= scriptHistory.length - 1}
-                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="リドゥ"
-                    >
-                      <Redo2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (currentScript) {
-                          addToScriptHistory(currentScript);
-                          saveScript(false); // 手動保存（6.7）
-                        }
-                      }}
-                      disabled={!isEditingScript || saveStatus === 'saving'}
-                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="保存"
-                    >
-                      {saveStatus === 'saving' ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          保存中...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-1" />
-                          保存
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  
-                  {/* 統計情報と保存状態（利用者提案 + 6.7） */}
-                  <div className="flex items-center gap-4">
-                    {calculateScriptStats && (
-                      <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
-                        <span>文字数: {calculateScriptStats.total.chars}</span>
-                        <span>行数: {calculateScriptStats.total.lines}</span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          予想時間: {calculateScriptStats.total.estimatedMinutes}分
-                        </span>
+                    {/* ツールバー（デザイナー提案） - 2行レイアウト */}
+                    <div className="space-y-2 pb-2 border-b border-[#4A4A4A]">
+                      {/* 1行目: ボタン群 */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUndo}
+                          disabled={historyIndex <= 0}
+                          className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="アンドゥ"
+                        >
+                          <Undo2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRedo}
+                          disabled={historyIndex >= scriptHistory.length - 1}
+                          className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="リドゥ"
+                        >
+                          <Redo2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (currentScript) {
+                              addToScriptHistory(currentScript);
+                              saveScript(false); // 手動保存（6.7）
+                            }
+                          }}
+                          disabled={!isEditingScript || saveStatus === 'saving'}
+                          className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="保存"
+                        >
+                          {saveStatus === 'saving' ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              保存中...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4 mr-1" />
+                              保存
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDuplicateScript}
+                          disabled={!currentScript}
+                          className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="複製（6.14）"
+                        >
+                          <Copy className="h-4 w-4 mr-1" />
+                          複製
+                        </Button>
                       </div>
-                    )}
-                    {/* 保存状態バッジ（6.7） */}
-                    {currentScript && (
-                      <div className="ml-auto">
-                        {saveStatus === 'saved' && (
-                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
-                            保存済み
-                          </Badge>
+                      
+                      {/* 2行目: 統計情報と保存状態 */}
+                      <div className="flex items-center justify-between gap-4">
+                        {calculateScriptStats && (
+                          <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
+                            <span>文字数: {calculateScriptStats.total.chars}</span>
+                            <span>行数: {calculateScriptStats.total.lines}</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              予想時間: {calculateScriptStats.total.estimatedMinutes}分
+                            </span>
+                          </div>
                         )}
-                        {saveStatus === 'editing' && (
-                          <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
-                            編集中
-                          </Badge>
-                        )}
-                        {saveStatus === 'saving' && (
-                          <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
-                            保存中...
-                          </Badge>
+                        {/* 保存状態バッジ（6.7） */}
+                        {currentScript && (
+                          <div>
+                            {saveStatus === 'saved' && (
+                              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
+                                保存済み
+                              </Badge>
+                            )}
+                            {saveStatus === 'editing' && (
+                              <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
+                                編集中
+                              </Badge>
+                            )}
+                            {saveStatus === 'saving' && (
+                              <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
+                                保存中...
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
 
                 {/* 動的セクション表示（テンプレートベース）（6.8） */}
                 {currentTemplate.sections
@@ -4220,90 +4458,102 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                 
                 {/* 編集モード */}
                 <TabsContent value="edit" className="mt-4 space-y-4">
-                  {/* ツールバー（デザイナー提案） */}
-                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#4A4A4A]">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleUndo}
-                    disabled={historyIndex <= 0}
-                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="アンドゥ"
-                  >
-                    <Undo2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRedo}
-                    disabled={historyIndex >= scriptHistory.length - 1}
-                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="リドゥ"
-                  >
-                    <Redo2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (currentScript) {
-                        addToScriptHistory(currentScript);
-                        saveScript(false); // 手動保存（6.7）
-                      }
-                    }}
-                    disabled={!isEditingScript || saveStatus === 'saving'}
-                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="保存"
-                  >
-                    {saveStatus === 'saving' ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        保存中...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-1" />
-                        保存
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                {/* 統計情報と保存状態（利用者提案 + 6.7） */}
-                <div className="flex items-center gap-4">
-                  {calculateScriptStats && (
-                    <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
-                      <span>文字数: {calculateScriptStats.total.chars}</span>
-                      <span>行数: {calculateScriptStats.total.lines}</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        予想時間: {calculateScriptStats.total.estimatedMinutes}分
-                      </span>
+                  {/* ツールバー（デザイナー提案） - 2行レイアウト */}
+                  <div className="space-y-2 pb-2 border-b border-[#4A4A4A]">
+                    {/* 1行目: ボタン群 */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUndo}
+                        disabled={historyIndex <= 0}
+                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="アンドゥ"
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRedo}
+                        disabled={historyIndex >= scriptHistory.length - 1}
+                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="リドゥ"
+                      >
+                        <Redo2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (currentScript) {
+                            addToScriptHistory(currentScript);
+                            saveScript(false); // 手動保存（6.7）
+                          }
+                        }}
+                        disabled={!isEditingScript || saveStatus === 'saving'}
+                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="保存"
+                      >
+                        {saveStatus === 'saving' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            保存中...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-1" />
+                            保存
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDuplicateScript}
+                        disabled={!currentScript}
+                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="複製（6.14）"
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        複製
+                      </Button>
                     </div>
-                  )}
-                  {/* 保存状態バッジ（6.7） */}
-                  {currentScript && (
-                    <div className="ml-auto">
-                      {saveStatus === 'saved' && (
-                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
-                          保存済み
-                        </Badge>
+                    
+                    {/* 2行目: 統計情報と保存状態 */}
+                    <div className="flex items-center justify-between gap-4">
+                      {calculateScriptStats && (
+                        <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
+                          <span>文字数: {calculateScriptStats.total.chars}</span>
+                          <span>行数: {calculateScriptStats.total.lines}</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            予想時間: {calculateScriptStats.total.estimatedMinutes}分
+                          </span>
+                        </div>
                       )}
-                      {saveStatus === 'editing' && (
-                        <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
-                          編集中
-                        </Badge>
-                      )}
-                      {saveStatus === 'saving' && (
-                        <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
-                          保存中...
-                        </Badge>
+                      {/* 保存状態バッジ（6.7） */}
+                      {currentScript && (
+                        <div>
+                          {saveStatus === 'saved' && (
+                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
+                              保存済み
+                            </Badge>
+                          )}
+                          {saveStatus === 'editing' && (
+                            <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
+                              編集中
+                            </Badge>
+                          )}
+                          {saveStatus === 'saving' && (
+                            <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
+                              保存中...
+                            </Badge>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
               {/* 動的セクション表示（テンプレートベース）（6.8） */}
               {currentTemplate.sections
@@ -4640,6 +4890,48 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
             </Button>
             <Button onClick={handleSavePersona} disabled={!personaFormData.name.trim()}>
               {editingPersona ? '更新' : '作成'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 台本複製ダイアログ（6.14） */}
+      <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+        <DialogContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+          <DialogHeader>
+            <DialogTitle className="text-[#E0E0E0]">台本を複製</DialogTitle>
+            <DialogDescription className="text-[#A0A0A0]">
+              新しいバージョンとして台本を複製します。バージョン名を入力してください（任意）。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="version-name" className="text-[#E0E0E0]">バージョン名（任意）</Label>
+              <Input
+                id="version-name"
+                value={duplicateVersionName}
+                onChange={(e) => setDuplicateVersionName(e.target.value)}
+                placeholder="例: 短縮版、改善版、最終版"
+                className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDuplicateDialogOpen(false);
+                setDuplicateVersionName('');
+              }}
+              className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]"
+            >
+              キャンセル
+            </Button>
+            <Button 
+              onClick={confirmDuplicateScript}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              複製
             </Button>
           </DialogFooter>
         </DialogContent>
