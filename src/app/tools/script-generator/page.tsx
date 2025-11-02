@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -141,6 +141,13 @@ export default function ScriptGeneratorPage() {
   const [currentScript, setCurrentScript] = useState<Script | null>(null);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  
+  // 検索・フィルターの状態管理
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<IdeaCategory[]>([]);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<IdeaDifficulty | 'all'>('all');
+  const [durationFilter, setDurationFilter] = useState<{ min?: number; max?: number }>({});
+  
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
     defaultOpen: false,
     desktopDefaultOpen: true,
@@ -153,6 +160,41 @@ export default function ScriptGeneratorPage() {
     setSelectedTab(isDesktop ? "generate" : "persona");
   }, [isDesktop]);
 
+  // フィルタリングロジック
+  const filteredIdeas = useMemo(() => {
+    return generatedIdeas.filter((idea) => {
+      // 検索クエリ（タイトル・説明文・ポイントで検索）
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          idea.title.toLowerCase().includes(query) ||
+          idea.description.toLowerCase().includes(query) ||
+          idea.points.some(point => point.toLowerCase().includes(query));
+        if (!matchesSearch) return false;
+      }
+      
+      // カテゴリフィルター
+      if (selectedCategories.length > 0 && !selectedCategories.includes(idea.category)) {
+        return false;
+      }
+      
+      // 難易度フィルター
+      if (selectedDifficulty !== 'all' && idea.difficulty !== selectedDifficulty) {
+        return false;
+      }
+      
+      // 予想時間フィルター
+      if (durationFilter.min !== undefined && idea.estimatedDuration < durationFilter.min) {
+        return false;
+      }
+      if (durationFilter.max !== undefined && idea.estimatedDuration > durationFilter.max) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [generatedIdeas, searchQuery, selectedCategories, selectedDifficulty, durationFilter]);
+
   const handleGenerate = useCallback(async () => {
     setIsGeneratingIdeas(true);
     await handleAsyncError(async () => {
@@ -160,6 +202,11 @@ export default function ScriptGeneratorPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
     setGeneratedIdeas(dummyIdeas);
     setSelectedIdeaId(null);
+    // フィルターをリセット
+    setSearchQuery('');
+    setSelectedCategories([]);
+    setSelectedDifficulty('all');
+    setDurationFilter({});
     }, "企画案生成中にエラーが発生しました");
     setIsGeneratingIdeas(false);
   }, [handleAsyncError]);
@@ -429,7 +476,187 @@ export default function ScriptGeneratorPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {generatedIdeas.map((idea) => {
+            {/* 検索・フィルターUI */}
+            {generatedIdeas.length > 0 && (
+              <div className="mb-4 space-y-4 p-4 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
+                {/* 検索バー */}
+                <div className="space-y-2">
+                  <Label htmlFor="idea-search" className="flex items-center gap-2 text-[#E0E0E0]">
+                    <Search className="h-4 w-4" />
+                    検索
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" />
+                    <Input
+                      id="idea-search"
+                      placeholder="タイトル、説明、ポイントで検索..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 hover:bg-[#4A4A4A]"
+                        aria-label="検索をクリア"
+                      >
+                        <X className="h-4 w-4 text-[#A0A0A0]" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* フィルター */}
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2 text-[#E0E0E0]">
+                    <Filter className="h-4 w-4" />
+                    フィルター
+                  </Label>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* カテゴリフィルター */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-[#A0A0A0]">カテゴリ</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {(Object.keys(categoryConfig) as IdeaCategory[]).map((category) => {
+                          const isSelected = selectedCategories.includes(category);
+                          const config = categoryConfig[category];
+                          const CategoryIcon = config.icon;
+                          
+                          return (
+                            <Badge
+                              key={category}
+                              className={cn(
+                                "cursor-pointer transition-all text-xs font-medium",
+                                isSelected 
+                                  ? config.badgeColor + " border-2 shadow-md" 
+                                  : "bg-[#2D2D2D] text-[#A0A0A0] border-[#4A4A4A] hover:border-[#A0A0A0] hover:bg-[#1A1A1A]"
+                              )}
+                              onClick={() => {
+                                setSelectedCategories(prev => 
+                                  isSelected 
+                                    ? prev.filter(c => c !== category)
+                                    : [...prev, category]
+                                );
+                              }}
+                            >
+                              <CategoryIcon className="h-3 w-3 mr-1" />
+                              {config.label}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* 難易度フィルター */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-[#A0A0A0]">難易度</Label>
+                      <Select 
+                        value={selectedDifficulty} 
+                        onValueChange={(value) => setSelectedDifficulty(value as IdeaDifficulty | 'all')}
+                      >
+                        <SelectTrigger className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">すべて</SelectItem>
+                          <SelectItem value="easy">初級</SelectItem>
+                          <SelectItem value="medium">中級</SelectItem>
+                          <SelectItem value="hard">上級</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* 予想時間フィルター */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-[#A0A0A0]">予想時間（分）</Label>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="number"
+                          placeholder="最小"
+                          min="0"
+                          value={durationFilter.min || ''}
+                          onChange={(e) => setDurationFilter(prev => ({
+                            ...prev,
+                            min: e.target.value ? parseInt(e.target.value) : undefined
+                          }))}
+                          className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                        />
+                        <span className="text-[#A0A0A0]">〜</span>
+                        <Input
+                          type="number"
+                          placeholder="最大"
+                          min="0"
+                          value={durationFilter.max || ''}
+                          onChange={(e) => setDurationFilter(prev => ({
+                            ...prev,
+                            max: e.target.value ? parseInt(e.target.value) : undefined
+                          }))}
+                          className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* フィルターリセットボタン */}
+                  {(searchQuery || selectedCategories.length > 0 || selectedDifficulty !== 'all' || durationFilter.min !== undefined || durationFilter.max !== undefined) && (
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSelectedCategories([]);
+                          setSelectedDifficulty('all');
+                          setDurationFilter({});
+                        }}
+                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        フィルターをクリア
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                
+                {/* 検索結果数表示 */}
+                <div className="text-sm text-[#A0A0A0] pt-2 border-t border-[#4A4A4A]">
+                  <span className="font-medium text-[#E0E0E0]">{filteredIdeas.length}</span>件の企画案が見つかりました
+                  {filteredIdeas.length < generatedIdeas.length && (
+                    <span className="ml-2">（全{generatedIdeas.length}件中）</span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* フィルター結果が0件の場合 */}
+            {generatedIdeas.length > 0 && filteredIdeas.length === 0 && (
+              <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px] border border-[#4A4A4A]">
+                <Search className="w-12 h-12 text-[#A0A0A0] mb-4" aria-hidden="true" />
+                <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">検索条件に一致する企画案がありません</h3>
+                <p className="text-[#A0A0A0] mb-4">検索条件やフィルターを変更してお試しください。</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategories([]);
+                    setSelectedDifficulty('all');
+                    setDurationFilter({});
+                  }}
+                  className="border-[#4A4A4A]"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  フィルターをクリア
+                </Button>
+              </div>
+            )}
+            
+            {/* 企画案カード一覧 */}
+            {filteredIdeas.length > 0 && (
+              <div className="space-y-4">
+                {filteredIdeas.map((idea) => {
               const category = categoryConfig[idea.category];
               const CategoryIcon = category.icon;
               
@@ -554,6 +781,8 @@ export default function ScriptGeneratorPage() {
                 </React.Fragment>
               );
             })}
+              </div>
+            )}
           </div>
         )}
       </main>
