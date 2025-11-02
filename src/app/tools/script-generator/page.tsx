@@ -52,9 +52,18 @@ const dummyScript = {
   conclusion: 'というわけで、今日の配信はここまで！たくさんのコメント、スパチャありがとう！次回もまた見てね！おつ〇〇～！',
 };
 
+interface Script {
+  ideaId: number;
+  content: string;
+  introduction: string;
+  body: string;
+  conclusion: string;
+}
+
 export default function ScriptGeneratorPage() {
   const [generatedIdeas, setGeneratedIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<number | null>(null);
+  const [currentScript, setCurrentScript] = useState<Script | null>(null);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const { isOpen: isSidebarOpen, setIsOpen: setIsSidebarOpen, isDesktop } = useSidebar({
@@ -81,17 +90,31 @@ export default function ScriptGeneratorPage() {
   }, [handleAsyncError]);
 
   const handleCardClick = useCallback((id: number) => {
-    setSelectedIdeaId(prevId => prevId === id ? null : id);
-  }, []);
+    setSelectedIdeaId(id);
+    // 選択された企画案に対応する台本がある場合は表示
+    if (currentScript && currentScript.ideaId === id) {
+      // 既に台本が生成されている場合はそのまま表示
+    } else {
+      // 台本が生成されていない場合は、選択のみ行う
+      setCurrentScript(null);
+    }
+  }, [currentScript]);
 
   const handleGenerateScript = useCallback(async (idea: Idea) => {
     setIsGeneratingScript(true);
     await handleAsyncError(async () => {
       // モック処理
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const script = `【${idea.title}】\n\n${dummyScript.introduction}\n\n${idea.description}\n\n${dummyScript.body}\n\n${dummyScript.conclusion}`;
-      // ここで台本を保存または表示する処理を実装
-      logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.length }, 'ScriptGenerator');
+      const script: Script = {
+        ideaId: idea.id,
+        content: `【${idea.title}】\n\n${dummyScript.introduction}\n\n${idea.description}\n\n${dummyScript.body}\n\n${dummyScript.conclusion}`,
+        introduction: dummyScript.introduction,
+        body: dummyScript.body,
+        conclusion: dummyScript.conclusion,
+      };
+      setCurrentScript(script);
+      setSelectedIdeaId(idea.id);
+      logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.content.length }, 'ScriptGenerator');
     }, "台本生成中にエラーが発生しました");
     setIsGeneratingScript(false);
   }, [handleAsyncError]);
@@ -250,9 +273,51 @@ export default function ScriptGeneratorPage() {
   ), [selectedTab, handleGenerate, isGeneratingIdeas]);
 
   return (
-    <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-4.1rem)]">
-      {/* Main Content */}
-      <main className="flex-1 p-4 overflow-y-auto lg:pt-4 pt-20">
+    <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-4.1rem)] lg:overflow-hidden">
+      {/* 左サイドバー (25%) */}
+      <aside className={`
+        ${isDesktop ? (isSidebarOpen ? 'w-1/4' : 'w-0') : 'w-0'}
+        ${isDesktop ? 'border-r border-[#4A4A4A]' : ''}
+        transition-all duration-300
+        overflow-hidden
+        flex-shrink-0
+        bg-[#1A1A1A]
+        relative
+      `}>
+        {isDesktop && isSidebarOpen && (
+          <div className="h-full overflow-y-auto p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[#E0E0E0]">企画・台本サポート</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarOpen(false)}
+                className="h-8 w-8"
+                aria-label="サイドバーを閉じる"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#A0A0A0]"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </Button>
+            </div>
+            {sidebarContent}
+          </div>
+        )}
+      </aside>
+
+      {/* 中央: 企画案エリア (50%) */}
+      <main className="flex-1 lg:w-1/2 p-4 overflow-y-auto lg:pt-4 pt-20 lg:border-r border-[#4A4A4A]">
         {isGeneratingIdeas ? (
           <div className="space-y-4">
             <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
@@ -338,43 +403,95 @@ export default function ScriptGeneratorPage() {
                     </Button>
                   </CardFooter>
                 </Card>
-                {selectedIdeaId === idea.id && (
-                  <Card className="bg-[#2D2D2D]">
-                    <CardHeader>
-                      <CardTitle className="text-lg">台本骨子</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm whitespace-pre-wrap">
-                      <div>
-                        <h5 className="font-bold mb-1">【導入】</h5>
-                        <p className="text-muted-foreground">{dummyScript.introduction}</p>
-                      </div>
-                      <div>
-                        <h5 className="font-bold mb-1">【本題】</h5>
-                        <p className="text-muted-foreground">{dummyScript.body}</p>
-                      </div>
-                      <div>
-                        <h5 className="font-bold mb-1">【結論】</h5>
-                        <p className="text-muted-foreground">{dummyScript.conclusion}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </React.Fragment>
             ))}
           </div>
         )}
       </main>
 
+      {/* 右: 台本プレビューエリア (25%) - デスクトップのみ */}
+      <aside className={`
+        hidden lg:block
+        w-1/4
+        overflow-y-auto
+        bg-[#1A1A1A]
+        border-l border-[#4A4A4A]
+        flex-shrink-0
+      `}>
+        <div className="p-4 h-full">
+          {currentScript && selectedIdeaId === currentScript.ideaId ? (
+            <Card className="bg-[#2D2D2D]">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
+                  <FileText className="h-5 w-5" />
+                  台本プレビュー
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm whitespace-pre-wrap">
+                <div>
+                  <h5 className="font-bold mb-2 text-[#E0E0E0]">【導入】</h5>
+                  <p className="text-[#A0A0A0] leading-relaxed">{currentScript.introduction}</p>
+                </div>
+                <div>
+                  <h5 className="font-bold mb-2 text-[#E0E0E0]">【本題】</h5>
+                  <p className="text-[#A0A0A0] leading-relaxed">{currentScript.body}</p>
+                </div>
+                <div>
+                  <h5 className="font-bold mb-2 text-[#E0E0E0]">【結論】</h5>
+                  <p className="text-[#A0A0A0] leading-relaxed">{currentScript.conclusion}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
+              <FileText className="w-16 h-16 text-[#A0A0A0] mb-4" aria-hidden="true" />
+              <h3 className="text-xl font-semibold text-[#E0E0E0] mb-2">台本プレビュー</h3>
+              <p className="text-[#A0A0A0]">
+                企画案を選択して「台本を生成する」ボタンを押すと、ここに台本が表示されます。
+              </p>
+            </div>
+          )}
+        </div>
+      </aside>
+
       {/* Mobile Controls - Always Visible */}
-      <div className="p-4 border-t lg:hidden">
+      <div className="p-4 border-t border-[#4A4A4A] lg:hidden">
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
-                <Construction className="h-5 w-5" />
+            <Construction className="h-5 w-5" />
             <h3 className="text-lg font-semibold">企画案生成</h3>
-              </div>
-              {renderControlPanel()}
+          </div>
+          {renderControlPanel()}
         </div>
       </div>
+
+      {/* モバイル用台本プレビュー（企画案の下に表示） */}
+      {!isDesktop && currentScript && selectedIdeaId === currentScript.ideaId && (
+        <div className="p-4 border-t border-[#4A4A4A] lg:hidden bg-[#1A1A1A]">
+          <Card className="bg-[#2D2D2D]">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
+                <FileText className="h-5 w-5" />
+                台本プレビュー
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm whitespace-pre-wrap">
+              <div>
+                <h5 className="font-bold mb-2 text-[#E0E0E0]">【導入】</h5>
+                <p className="text-[#A0A0A0] leading-relaxed">{currentScript.introduction}</p>
+              </div>
+              <div>
+                <h5 className="font-bold mb-2 text-[#E0E0E0]">【本題】</h5>
+                <p className="text-[#A0A0A0] leading-relaxed">{currentScript.body}</p>
+              </div>
+              <div>
+                <h5 className="font-bold mb-2 text-[#E0E0E0]">【結論】</h5>
+                <p className="text-[#A0A0A0] leading-relaxed">{currentScript.conclusion}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Overlay for mobile sidebar */}
       {!isDesktop && isSidebarOpen && (
@@ -384,18 +501,20 @@ export default function ScriptGeneratorPage() {
         />
       )}
 
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        title="企画・台本サポート"
-        isDesktop={isDesktop}
-      >
-        {isDesktop ? sidebarContent : mobileSidebarContent}
-      </Sidebar>
+      {/* モバイル用サイドバー */}
+      {!isDesktop && (
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          title="企画・台本サポート"
+          isDesktop={isDesktop}
+        >
+          {mobileSidebarContent}
+        </Sidebar>
+      )}
 
-      {/* Sidebar Toggle Button for Desktop */}
-      {!isSidebarOpen && (
+      {/* デスクトップ用サイドバートグルボタン */}
+      {isDesktop && !isSidebarOpen && (
         <SidebarToggle 
           onOpen={() => setIsSidebarOpen(true)}
           isDesktop={isDesktop}
