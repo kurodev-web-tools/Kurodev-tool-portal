@@ -23,6 +23,15 @@ import { toast } from "sonner";
 type IdeaCategory = 'gaming' | 'singing' | 'talk' | 'collaboration' | 'event' | 'other';
 type IdeaDifficulty = 'easy' | 'medium' | 'hard';
 
+// 生成ステップの型定義（6.9）
+interface GenerationStep {
+  id: string;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}
+
+type GenerationType = 'ideas' | 'script';
+
 interface Idea {
   id: number;
   title: string;
@@ -245,12 +254,122 @@ interface SavedScript {
   version: number; // バージョン番号（同一scriptIdの複数バージョン対応）
 }
 
+// 生成ステップ定義（6.9）
+const ideaGenerationSteps: GenerationStep[] = [
+  { id: 'analyze', label: 'キーワード分析中...' },
+  { id: 'brainstorm', label: 'アイデア発想中...' },
+  { id: 'organize', label: '企画案を整理中...' },
+  { id: 'complete', label: '完成！' },
+];
+
+const scriptGenerationSteps: GenerationStep[] = [
+  { id: 'analyze', label: '企画案を分析中...' },
+  { id: 'structure', label: '台本構造を作成中...' },
+  { id: 'generate', label: 'セクションを生成中...' },
+  { id: 'adjust', label: '最終調整中...' },
+  { id: 'complete', label: '完成！' },
+];
+
+// プログレスバーコンポーネント（6.9）
+interface ProgressBarProps {
+  steps: GenerationStep[];
+  currentStepId: string | null;
+  type: GenerationType;
+}
+
+const ProgressBar: React.FC<ProgressBarProps> = ({ steps, currentStepId, type }) => {
+  const currentIndex = currentStepId ? steps.findIndex(s => s.id === currentStepId) : -1;
+  const progress = currentIndex >= 0 ? ((currentIndex + 1) / steps.length) * 100 : 0;
+  
+  return (
+    <div className="w-full space-y-6">
+      {/* メインのローディング表示 */}
+      <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+        <Loader2 className="w-16 h-16 text-primary mb-6 animate-spin" aria-hidden="true" />
+        <h3 className="text-xl font-semibold text-[#E0E0E0] mb-2">
+          {type === 'ideas' ? '企画案を生成中...' : '台本を生成中...'}
+        </h3>
+        
+        {/* プログレスバー */}
+        <div className="w-full max-w-md mt-6">
+          <div className="w-full h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-sm text-[#A0A0A0] mt-2 text-center">
+            {currentIndex >= 0 && currentIndex < steps.length ? steps[currentIndex].label : '準備中...'}
+          </p>
+        </div>
+        
+        {/* ステップ表示 */}
+        <div className="w-full max-w-2xl mt-8">
+          <div className="flex items-center justify-between relative">
+            {/* 接続線 */}
+            <div className="absolute top-5 left-0 right-0 h-0.5 bg-[#4A4A4A] -z-10" />
+            <div
+              className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500 ease-out -z-10"
+              style={{ width: `${progress}%` }}
+            />
+            
+            {/* ステップアイコン */}
+            {steps.map((step, index) => {
+              const isActive = currentIndex >= index;
+              const isCurrent = currentIndex === index;
+              
+              return (
+                <div key={step.id} className="flex flex-col items-center relative z-10">
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                      isCurrent
+                        ? "bg-primary border-primary scale-110 shadow-lg shadow-primary/50"
+                        : isActive
+                        ? "bg-primary/20 border-primary"
+                        : "bg-[#1A1A1A] border-[#4A4A4A]"
+                    )}
+                  >
+                    {isCurrent ? (
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    ) : isActive ? (
+                      <div className="w-3 h-3 rounded-full bg-primary" />
+                    ) : (
+                      <div className="w-3 h-3 rounded-full bg-[#4A4A4A]" />
+                    )}
+                  </div>
+                  <p
+                    className={cn(
+                      "text-xs mt-2 text-center max-w-[100px] transition-colors duration-300",
+                      isCurrent
+                        ? "text-primary font-semibold"
+                        : isActive
+                        ? "text-[#E0E0E0]"
+                        : "text-[#4A4A4A]"
+                    )}
+                  >
+                    {step.label}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ScriptGeneratorPage() {
   const [generatedIdeas, setGeneratedIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<number | null>(null);
   const [currentScript, setCurrentScript] = useState<Script | null>(null);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  
+  // 生成プロセスの可視化（6.9）
+  const [ideaGenerationStep, setIdeaGenerationStep] = useState<string | null>(null);
+  const [scriptGenerationStep, setScriptGenerationStep] = useState<string | null>(null);
   
   // 検索・フィルターの状態管理
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -623,26 +742,43 @@ export default function ScriptGeneratorPage() {
 
   const handleGenerate = useCallback(async () => {
     setIsGeneratingIdeas(true);
-    await handleAsyncError(async () => {
-      // モック処理
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    const generated = dummyIdeas.map(idea => ({
-      ...idea,
-      isFavorite: favoriteIds.has(idea.id)
-    }));
-    setGeneratedIdeas(generated);
-    setSelectedIdeaId(null);
-    // フィルターをリセット
-    setSearchQuery('');
-    setSelectedCategories([]);
-    setSelectedDifficulty('all');
-    setDurationFilter({});
-    setIdeaViewMode('all');
+    setIdeaGenerationStep(ideaGenerationSteps[0].id); // 最初のステップを設定
     
-    // 履歴を保存（キーワードと方向性は実際の入力から取得）
-    saveHistory(generated);
+    await handleAsyncError(async () => {
+      // ステップ1: キーワード分析中
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setIdeaGenerationStep(ideaGenerationSteps[1].id);
+      
+      // ステップ2: アイデア発想中
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setIdeaGenerationStep(ideaGenerationSteps[2].id);
+      
+      // ステップ3: 企画案を整理中
+      await new Promise(resolve => setTimeout(resolve, 400));
+      setIdeaGenerationStep(ideaGenerationSteps[3].id);
+      
+      const generated = dummyIdeas.map(idea => ({
+        ...idea,
+        isFavorite: favoriteIds.has(idea.id)
+      }));
+      setGeneratedIdeas(generated);
+      setSelectedIdeaId(null);
+      // フィルターをリセット
+      setSearchQuery('');
+      setSelectedCategories([]);
+      setSelectedDifficulty('all');
+      setDurationFilter({});
+      setIdeaViewMode('all');
+      
+      // 履歴を保存（キーワードと方向性は実際の入力から取得）
+      saveHistory(generated);
+      
+      // 完成ステップを少し表示してから終了
+      await new Promise(resolve => setTimeout(resolve, 200));
     }, "企画案生成中にエラーが発生しました");
+    
     setIsGeneratingIdeas(false);
+    setIdeaGenerationStep(null);
   }, [handleAsyncError, favoriteIds, saveHistory]);
 
   const handleCardClick = useCallback((id: number) => {
@@ -1016,9 +1152,24 @@ export default function ScriptGeneratorPage() {
 
   const handleGenerateScript = useCallback(async (idea: Idea) => {
     setIsGeneratingScript(true);
+    setScriptGenerationStep(scriptGenerationSteps[0].id); // 最初のステップを設定
+    
     await handleAsyncError(async () => {
-      // モック処理
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // ステップ1: 企画案を分析中
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setScriptGenerationStep(scriptGenerationSteps[1].id);
+      
+      // ステップ2: 台本構造を作成中
+      await new Promise(resolve => setTimeout(resolve, 400));
+      setScriptGenerationStep(scriptGenerationSteps[2].id);
+      
+      // ステップ3: セクションを生成中
+      await new Promise(resolve => setTimeout(resolve, 400));
+      setScriptGenerationStep(scriptGenerationSteps[3].id);
+      
+      // ステップ4: 最終調整中
+      await new Promise(resolve => setTimeout(resolve, 400));
+      setScriptGenerationStep(scriptGenerationSteps[4].id);
       
       // 選択されたテンプレートに基づいて台本を生成（6.8）
       const template = selectedTemplate;
@@ -1073,8 +1224,13 @@ export default function ScriptGeneratorPage() {
       setSaveStatus('saved'); // 初期状態は保存済み（6.7）
       
       logger.debug('台本生成完了', { ideaTitle: idea.title, scriptLength: script.content.length, templateId: template.id }, 'ScriptGenerator');
+      
+      // 完成ステップを少し表示してから終了
+      await new Promise(resolve => setTimeout(resolve, 200));
     }, "台本生成中にエラーが発生しました");
+    
     setIsGeneratingScript(false);
+    setScriptGenerationStep(null);
   }, [handleAsyncError, selectedTemplate]);
 
   // 印刷処理（デザイナー提案 + 利用者提案）
@@ -2143,33 +2299,11 @@ export default function ScriptGeneratorPage() {
       {/* 中央: 企画案エリア (50%) */}
       <main className="flex-1 lg:w-1/2 p-4 overflow-y-auto lg:pt-4 pt-20 lg:border-r border-[#4A4A4A]">
         {isGeneratingIdeas ? (
-          <div className="space-y-4">
-            <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
-              <Loader2 className="w-16 h-16 text-[#A0A0A0] mb-4 animate-spin" aria-hidden="true" />
-              <h3 className="text-xl font-semibold text-[#E0E0E0]">企画案を生成中...</h3>
-              <p className="text-[#A0A0A0] mt-2">AIがあなたにぴったりの企画案を考えています。しばらくお待ちください。</p>
-            </div>
-            {/* ローディング中のスケルトン */}
-            <div className="space-y-4" role="status" aria-label="企画案を生成中">
-              {[1, 2, 3].map((i) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-4 w-1/4 mb-2" />
-                    <div className="flex flex-wrap gap-2">
-                      <Skeleton className="h-6 w-20" />
-                      <Skeleton className="h-6 w-24" />
-                      <Skeleton className="h-6 w-16" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+          <ProgressBar
+            steps={ideaGenerationSteps}
+            currentStepId={ideaGenerationStep}
+            type="ideas"
+          />
         ) : generatedIdeas.length === 0 ? (
           <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
             <Lightbulb className="w-16 h-16 text-[#A0A0A0] mb-4" aria-hidden="true" />
@@ -2574,7 +2708,15 @@ export default function ScriptGeneratorPage() {
         flex-shrink-0
       `}>
         <div className="p-4 h-full">
-          {currentScript && selectedIdeaId === currentScript.ideaId ? (
+          {isGeneratingScript ? (
+            <div className="h-full flex items-center justify-center">
+              <ProgressBar
+                steps={scriptGenerationSteps}
+                currentStepId={scriptGenerationStep}
+                type="script"
+              />
+            </div>
+          ) : currentScript && selectedIdeaId === currentScript.ideaId ? (
             <Card className="bg-[#2D2D2D]">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -2755,9 +2897,19 @@ export default function ScriptGeneratorPage() {
       </div>
 
       {/* モバイル用台本プレビュー（企画案の下に表示） */}
-      {!isDesktop && currentScript && selectedIdeaId === currentScript.ideaId && (
-        <div className="p-4 border-t border-[#4A4A4A] lg:hidden bg-[#1A1A1A]">
-          <Card className="bg-[#2D2D2D]">
+      {!isDesktop && (
+        <>
+          {isGeneratingScript ? (
+            <div className="p-4 border-t border-[#4A4A4A] lg:hidden bg-[#1A1A1A]">
+              <ProgressBar
+                steps={scriptGenerationSteps}
+                currentStepId={scriptGenerationStep}
+                type="script"
+              />
+            </div>
+          ) : currentScript && selectedIdeaId === currentScript.ideaId && (
+            <div className="p-4 border-t border-[#4A4A4A] lg:hidden bg-[#1A1A1A]">
+              <Card className="bg-[#2D2D2D]">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
@@ -2914,6 +3066,8 @@ export default function ScriptGeneratorPage() {
             </CardContent>
           </Card>
         </div>
+          )}
+        </>
       )}
 
       {/* Overlay for mobile sidebar */}
