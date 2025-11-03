@@ -82,7 +82,15 @@ import {
   RotateCcw,
   Calendar,
   ImagePlus,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Folder,
+  FolderPlus,
+  Tag,
+  Tags,
+  Plus,
+  Edit2,
+  FolderOpen,
+  Package
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -328,6 +336,35 @@ export default function VirtualBackgroundGeneratorPage() {
   const [historySearchKeyword, setHistorySearchKeyword] = useState(''); // 履歴検索キーワード（7.1.4）
   const [maxHistoryCount, setMaxHistoryCount] = useState(DEFAULT_MAX_HISTORY); // 履歴保存数上限（7.1.4）
   
+  // コレクション・整理機能（7.1.7）
+  interface Collection {
+    id: string;
+    name: string;
+    description?: string;
+    imageIds: string[]; // GeneratedImageのID配列
+    tags?: string[]; // コレクションタグ
+    createdAt: number;
+    updatedAt: number;
+  }
+  
+  interface ImageTag {
+    id: string;
+    label: string;
+    color?: string;
+  }
+  
+  const COLLECTIONS_STORAGE_KEY = 'virtual-bg-collections';
+  const IMAGE_TAGS_STORAGE_KEY = 'virtual-bg-image-tags';
+  
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [imageTags, setImageTags] = useState<Map<string, string[]>>(new Map()); // imageId -> tagIds[]
+  const [allTags, setAllTags] = useState<ImageTag[]>([]); // 全タグ一覧
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [newCollectionDescription, setNewCollectionDescription] = useState('');
+  
   const { handleAsyncError } = useErrorHandler();
 
   const categories = [
@@ -488,6 +525,47 @@ export default function VirtualBackgroundGeneratorPage() {
     toast.info('生成をキャンセルしました');
   }, []);
 
+  // 自動タグ付け（生成パラメータから）（7.1.7）
+  const handleAutoTagImage = useCallback((imageId: string, img: GeneratedImage) => {
+    const autoTags: string[] = [];
+    
+    if (img.category) {
+      autoTags.push(`category:${img.category}`);
+    }
+    if (img.style) {
+      autoTags.push(`style:${img.style}`);
+    }
+    if (img.color) {
+      autoTags.push(`color:${img.color}`);
+    }
+    if (img.resolution) {
+      autoTags.push(`resolution:${img.resolution}`);
+    }
+    
+    if (autoTags.length > 0) {
+      setImageTags(prev => {
+        const next = new Map(prev);
+        const existingTags = next.get(imageId) || [];
+        const newTags = [...new Set([...existingTags, ...autoTags])];
+        next.set(imageId, newTags);
+        return next;
+      });
+      
+      // 全タグ一覧を更新
+      setAllTags(prev => {
+        const tagMap = new Map(prev.map(t => [t.id, t]));
+        autoTags.forEach(tagId => {
+          if (!tagMap.has(tagId)) {
+            tagMap.set(tagId, { id: tagId, label: tagId, color: undefined });
+          }
+        });
+        return Array.from(tagMap.values());
+      });
+      
+      toast.success(`${autoTags.length}個のタグを自動追加しました`);
+    }
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     const promptError = validatePrompt(prompt);
     if (promptError) {
@@ -576,6 +654,11 @@ export default function VirtualBackgroundGeneratorPage() {
         }, 'generated');
       });
       
+      // 自動タグ付け（7.1.7）
+      newImages.forEach(img => {
+        handleAutoTagImage(img.id, img);
+      });
+      
       // 生成完了通知（7.1.6）
       toast.success(`${imageCount}枚の背景を生成しました`, {
         description: '生成が完了しました',
@@ -592,7 +675,7 @@ export default function VirtualBackgroundGeneratorPage() {
     
     setIsLoading(false);
     isCancelledRef.current = false; // リセット
-  }, [prompt, imageCount, handleAsyncError, isDesktop]);
+  }, [prompt, imageCount, handleAsyncError, isDesktop, handleAutoTagImage]);
 
   const handleCopyPrompt = useCallback(async () => {
     try {
@@ -820,6 +903,187 @@ export default function VirtualBackgroundGeneratorPage() {
     }
   }, [searchResults]);
 
+  // コレクション操作関数（7.1.7）
+  const handleCreateCollection = useCallback(() => {
+    setEditingCollection(null);
+    setNewCollectionName('');
+    setNewCollectionDescription('');
+    setIsCollectionDialogOpen(true);
+  }, []);
+
+  const handleSaveCollection = useCallback(() => {
+    if (!newCollectionName.trim()) {
+      toast.error('コレクション名を入力してください');
+      return;
+    }
+
+    if (editingCollection) {
+      // 編集
+      setCollections(prev => prev.map(col =>
+        col.id === editingCollection.id
+          ? {
+              ...col,
+              name: newCollectionName.trim(),
+              description: newCollectionDescription.trim() || undefined,
+              updatedAt: Date.now(),
+            }
+          : col
+      ));
+      toast.success('コレクションを更新しました');
+    } else {
+      // 新規作成
+      const newCollection: Collection = {
+        id: `collection-${Date.now()}`,
+        name: newCollectionName.trim(),
+        description: newCollectionDescription.trim() || undefined,
+        imageIds: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      setCollections(prev => [...prev, newCollection]);
+      toast.success('コレクションを作成しました');
+    }
+    setIsCollectionDialogOpen(false);
+  }, [newCollectionName, newCollectionDescription, editingCollection]);
+
+  const handleDeleteCollection = useCallback((collectionId: string) => {
+    if (window.confirm('このコレクションを削除しますか？')) {
+      setCollections(prev => prev.filter(col => col.id !== collectionId));
+      if (selectedCollectionId === collectionId) {
+        setSelectedCollectionId(null);
+      }
+      toast.success('コレクションを削除しました');
+    }
+  }, [selectedCollectionId]);
+
+  const handleEditCollection = useCallback((collection: Collection) => {
+    setEditingCollection(collection);
+    setNewCollectionName(collection.name);
+    setNewCollectionDescription(collection.description || '');
+    setIsCollectionDialogOpen(true);
+  }, []);
+
+  // 画像をコレクションに追加（7.1.7）
+  const handleAddImageToCollection = useCallback((imageId: string, collectionId: string) => {
+    setCollections(prev => prev.map(col => {
+      if (col.id === collectionId) {
+        if (!col.imageIds.includes(imageId)) {
+          return {
+            ...col,
+            imageIds: [...col.imageIds, imageId],
+            updatedAt: Date.now(),
+          };
+        }
+      }
+      return col;
+    }));
+    toast.success('コレクションに追加しました');
+  }, []);
+
+  // 画像をコレクションから削除（7.1.7）
+  const handleRemoveImageFromCollection = useCallback((imageId: string, collectionId: string) => {
+    setCollections(prev => prev.map(col => {
+      if (col.id === collectionId) {
+        return {
+          ...col,
+          imageIds: col.imageIds.filter(id => id !== imageId),
+          updatedAt: Date.now(),
+        };
+      }
+      return col;
+    }));
+    toast.success('コレクションから削除しました');
+  }, []);
+
+  // 手動タグ追加（7.1.7）
+  const handleAddTagToImage = useCallback((imageId: string, tagLabel: string) => {
+    const tagId = tagLabel.trim().toLowerCase();
+    if (!tagId) return;
+
+    setImageTags(prev => {
+      const next = new Map(prev);
+      const existingTags = next.get(imageId) || [];
+      if (!existingTags.includes(tagId)) {
+        next.set(imageId, [...existingTags, tagId]);
+      }
+      return next;
+    });
+
+    // 全タグ一覧を更新
+    setAllTags(prev => {
+      if (!prev.find(t => t.id === tagId)) {
+        return [...prev, { id: tagId, label: tagLabel.trim(), color: undefined }];
+      }
+      return prev;
+    });
+
+    toast.success('タグを追加しました');
+  }, []);
+
+  // タグ削除（7.1.7）
+  const handleRemoveTagFromImage = useCallback((imageId: string, tagId: string) => {
+    setImageTags(prev => {
+      const next = new Map(prev);
+      const existingTags = next.get(imageId) || [];
+      next.set(imageId, existingTags.filter(id => id !== tagId));
+      return next;
+    });
+    toast.success('タグを削除しました');
+  }, []);
+
+  // 選択中のコレクションの画像一覧（7.1.7）
+  const collectionImages = useMemo(() => {
+    if (!selectedCollectionId) return [];
+    const collection = collections.find(col => col.id === selectedCollectionId);
+    if (!collection) return [];
+    return generatedImages.filter(img => collection.imageIds.includes(img.id));
+  }, [selectedCollectionId, collections, generatedImages]);
+
+  // コレクションのエクスポート（ZIP形式の準備）（7.1.7）
+  const handleExportCollection = useCallback(async (collectionId: string) => {
+    const collection = collections.find(col => col.id === collectionId);
+    if (!collection) return;
+
+    try {
+      // URLリストをエクスポート（ZIP生成は複雑なため、まずはURLリスト）
+      const collectionImages = generatedImages.filter(img => collection.imageIds.includes(img.id));
+      const urls = collectionImages.map(img => img.url).join('\n');
+      const metadata = {
+        collectionName: collection.name,
+        description: collection.description,
+        imageCount: collectionImages.length,
+        exportedAt: new Date().toISOString(),
+        images: collectionImages.map(img => ({
+          id: img.id,
+          url: img.url,
+          prompt: img.prompt,
+          category: img.category,
+          style: img.style,
+          resolution: img.resolution,
+        })),
+      };
+
+      const content = `コレクション: ${collection.name}\n` +
+        `${collection.description ? `説明: ${collection.description}\n` : ''}` +
+        `画像数: ${collectionImages.length}\n` +
+        `エクスポート日時: ${new Date().toLocaleString('ja-JP')}\n\n` +
+        `=== メタデータ ===\n${JSON.stringify(metadata, null, 2)}\n\n` +
+        `=== URL一覧 ===\n${urls}`;
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `collection-${collection.name}-${new Date().toISOString().split('T')[0]}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('コレクションをエクスポートしました');
+    } catch (error) {
+      logger.error('コレクションエクスポートエラー', error, 'VirtualBgGenerator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, [collections, generatedImages]);
+
   // カテゴリフィルターの切り替え
   const toggleCategory = (categoryValue: string) => {
     setSelectedCategories(prev => 
@@ -927,6 +1191,57 @@ export default function VirtualBackgroundGeneratorPage() {
         return 'grid-cols-2 gap-2';
     }
   }, [searchThumbnailSize]);
+
+  // コレクションとタグの読み込み（7.1.7）
+  useEffect(() => {
+    try {
+      const storedCollections = localStorage.getItem(COLLECTIONS_STORAGE_KEY);
+      if (storedCollections) {
+        const parsed = JSON.parse(storedCollections);
+        setCollections(parsed);
+      }
+      
+      const storedTags = localStorage.getItem(IMAGE_TAGS_STORAGE_KEY);
+      if (storedTags) {
+        const parsed = JSON.parse(storedTags);
+        // Map形式に変換
+        const tagsMap = new Map<string, string[]>();
+        Object.entries(parsed).forEach(([imageId, tagIds]) => {
+          tagsMap.set(imageId, tagIds as string[]);
+        });
+        setImageTags(tagsMap);
+        
+        // 全タグ一覧を読み込み（画像タグから自動生成）
+        const tagMap = new Map<string, ImageTag>();
+        tagsMap.forEach((tagIds) => {
+          tagIds.forEach((tagId) => {
+            if (!tagMap.has(tagId)) {
+              tagMap.set(tagId, { id: tagId, label: tagId, color: undefined });
+            }
+          });
+        });
+        setAllTags(Array.from(tagMap.values()));
+      }
+    } catch (error) {
+      logger.error('コレクション・タグの読み込みエラー', error, 'VirtualBgGenerator');
+    }
+  }, []);
+
+  // コレクションとタグの保存（7.1.7）
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLECTIONS_STORAGE_KEY, JSON.stringify(collections));
+      
+      // Map形式をオブジェクトに変換して保存
+      const tagsObject: Record<string, string[]> = {};
+      imageTags.forEach((tagIds, imageId) => {
+        tagsObject[imageId] = tagIds;
+      });
+      localStorage.setItem(IMAGE_TAGS_STORAGE_KEY, JSON.stringify(tagsObject));
+    } catch (error) {
+      logger.error('コレクション・タグの保存エラー', error, 'VirtualBgGenerator');
+    }
+  }, [collections, imageTags]);
 
   // 保存済み検索条件の読み込み（7.1.3）
   useEffect(() => {
@@ -1124,10 +1439,11 @@ export default function VirtualBackgroundGeneratorPage() {
       <Separator />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="generate">生成</TabsTrigger>
           <TabsTrigger value="search">検索</TabsTrigger>
           <TabsTrigger value="history">履歴</TabsTrigger>
+          <TabsTrigger value="collections">コレクション</TabsTrigger>
         </TabsList>
         
         <TabsContent value="generate" className="flex-grow space-y-4 mt-4">
@@ -1959,6 +2275,141 @@ export default function VirtualBackgroundGeneratorPage() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="collections" className="flex-grow space-y-4 mt-4 overflow-hidden flex flex-col">
+          {/* コレクション管理（7.1.7） */}
+          <div className="space-y-3 flex-shrink-0">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Label>コレクション</Label>
+                <Badge variant="secondary">{collections.length}件</Badge>
+              </div>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleCreateCollection}
+              >
+                <FolderPlus className="h-4 w-4 mr-2" />
+                新規作成
+              </Button>
+            </div>
+          </div>
+          
+          {/* コレクション一覧（7.1.7） */}
+          <div className="flex-grow overflow-y-auto space-y-2">
+            {collections.length > 0 ? (
+              collections.map((collection) => (
+                <Card 
+                  key={collection.id}
+                  className={cn(
+                    "hover:shadow-md transition-all cursor-pointer",
+                    selectedCollectionId === collection.id && 'ring-2 ring-primary'
+                  )}
+                  onClick={() => setSelectedCollectionId(
+                    selectedCollectionId === collection.id ? null : collection.id
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Folder className="h-4 w-4 text-primary" />
+                          <h4 className="font-medium truncate">{collection.name}</h4>
+                          <Badge variant="outline" className="text-xs">
+                            {collection.imageIds.length}枚
+                          </Badge>
+                        </div>
+                        {collection.description && (
+                          <p className="text-xs text-muted-foreground truncate mb-1">
+                            {collection.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>作成: {new Date(collection.createdAt).toLocaleDateString('ja-JP')}</span>
+                          {collection.updatedAt !== collection.createdAt && (
+                            <span>更新: {new Date(collection.updatedAt).toLocaleDateString('ja-JP')}</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditCollection(collection);
+                          }}
+                          className="h-8 w-8 p-0"
+                          title="編集"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportCollection(collection.id);
+                          }}
+                          className="h-8 w-8 p-0"
+                          title="エクスポート"
+                        >
+                          <DownloadIcon2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCollection(collection.id);
+                          }}
+                          className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                          title="削除"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                <Folder className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>コレクションを作成して画像を整理できます</p>
+              </div>
+            )}
+          </div>
+          
+          {/* 選択中のコレクションの画像一覧（7.1.7） */}
+          {selectedCollectionId && collectionImages.length > 0 && (
+            <div className="flex-shrink-0 pt-2 border-t space-y-2 max-h-64 overflow-y-auto">
+              <Label className="text-xs text-muted-foreground">
+                {collections.find(c => c.id === selectedCollectionId)?.name} の画像
+              </Label>
+              <div className="grid grid-cols-4 gap-2">
+                {collectionImages.map((img) => (
+                  <div key={img.id} className="relative aspect-video rounded overflow-hidden">
+                    <img
+                      src={img.url}
+                      alt={img.id}
+                      className="w-full h-full object-cover"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveImageFromCollection(img.id, selectedCollectionId)}
+                      className="absolute top-1 right-1 h-6 w-6 p-0 bg-black/50 hover:bg-black/70 text-white"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -2549,6 +3000,50 @@ export default function VirtualBackgroundGeneratorPage() {
                       />
                       <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
                       <div className="absolute top-2 right-2 flex gap-2">
+                        {/* コレクションへの追加（7.1.7） */}
+                        {collections.length > 0 && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-8 w-8 p-0"
+                                title="コレクションに追加"
+                              >
+                                <FolderPlus className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-[#2D2D2D] border-[#4A4A4A]" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuLabel>コレクションに追加</DropdownMenuLabel>
+                              {collections.map((collection) => (
+                                <DropdownMenuItem
+                                  key={collection.id}
+                                  onClick={() => {
+                                    if (!collection.imageIds.includes(img.id)) {
+                                      handleAddImageToCollection(img.id, collection.id);
+                                    } else {
+                                      toast.info('この画像は既にコレクションに含まれています');
+                                    }
+                                  }}
+                                  disabled={collection.imageIds.includes(img.id)}
+                                >
+                                  <Folder className="h-4 w-4 mr-2" />
+                                  {collection.name}
+                                  {collection.imageIds.includes(img.id) && ' ✓'}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => {
+                                handleCreateCollection();
+                                // コレクション作成後、自動で追加する処理は後で実装
+                              }}>
+                                <FolderPlus className="h-4 w-4 mr-2" />
+                                新しいコレクションを作成
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                         <Button
                           variant="secondary"
                           size="sm"
@@ -2681,6 +3176,47 @@ export default function VirtualBackgroundGeneratorPage() {
                           
                           {/* アクションボタン */}
                           <div className="flex gap-2 flex-shrink-0">
+                            {/* コレクションへの追加（7.1.7） */}
+                            {collections.length > 0 && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="h-8 w-8 p-0"
+                                    title="コレクションに追加"
+                                  >
+                                    <FolderPlus className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="bg-[#2D2D2D] border-[#4A4A4A]" onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuLabel>コレクションに追加</DropdownMenuLabel>
+                                  {collections.map((collection) => (
+                                    <DropdownMenuItem
+                                      key={collection.id}
+                                      onClick={() => {
+                                        if (!collection.imageIds.includes(img.id)) {
+                                          handleAddImageToCollection(img.id, collection.id);
+                                        } else {
+                                          toast.info('この画像は既にコレクションに含まれています');
+                                        }
+                                      }}
+                                      disabled={collection.imageIds.includes(img.id)}
+                                    >
+                                      <Folder className="h-4 w-4 mr-2" />
+                                      {collection.name}
+                                      {collection.imageIds.includes(img.id) && ' ✓'}
+                                    </DropdownMenuItem>
+                                  ))}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleCreateCollection()}>
+                                    <FolderPlus className="h-4 w-4 mr-2" />
+                                    新しいコレクションを作成
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -2867,7 +3403,8 @@ export default function VirtualBackgroundGeneratorPage() {
               tabs={[
                 { id: "generate", label: "生成", icon: <Sparkles className="h-4 w-4" /> },
                 { id: "search", label: "検索", icon: <Search className="h-4 w-4" /> },
-                { id: "history", label: "履歴", icon: <History className="h-4 w-4" /> }
+                { id: "history", label: "履歴", icon: <History className="h-4 w-4" /> },
+                { id: "collections", label: "コレクション", icon: <Folder className="h-4 w-4" /> }
               ]}
               onTabClick={(tabId) => {
                 setActiveTab(tabId);
@@ -2907,6 +3444,59 @@ export default function VirtualBackgroundGeneratorPage() {
           </div>
         </div>
       )}
+      
+      {/* コレクション作成・編集ダイアログ（7.1.7） */}
+      <Dialog open={isCollectionDialogOpen} onOpenChange={setIsCollectionDialogOpen}>
+        <DialogContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCollection ? 'コレクションを編集' : '新しいコレクションを作成'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCollection 
+                ? 'コレクションの名前と説明を変更できます'
+                : '画像を整理するためのコレクションを作成します'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="collection-name">コレクション名 *</Label>
+              <Input
+                id="collection-name"
+                value={newCollectionName}
+                onChange={(e) => setNewCollectionName(e.target.value)}
+                placeholder="例: 配信用背景セット1"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="collection-description">説明（任意）</Label>
+              <Textarea
+                id="collection-description"
+                value={newCollectionDescription}
+                onChange={(e) => setNewCollectionDescription(e.target.value)}
+                placeholder="このコレクションについての説明を入力..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCollectionDialogOpen(false)}
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleSaveCollection}
+              disabled={!newCollectionName.trim()}
+            >
+              {editingCollection ? '更新' : '作成'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
