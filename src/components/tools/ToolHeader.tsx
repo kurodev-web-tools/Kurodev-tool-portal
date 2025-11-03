@@ -165,25 +165,26 @@ export function ToolHeader() {
           : 'bg-[#2D2D2D]/95 backdrop-blur-sm border-b border-[#3A3A3A]'
       }`}
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-3 sm:px-4">
         {/* 左側: ロゴと現在のツール表示 */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
           <Button
             variant="ghost"
             onClick={handleHomeClick}
-            className="flex items-center space-x-2 hover:bg-[#3A3A3A] transition-colors"
+            className="flex items-center space-x-2 hover:bg-[#3A3A3A] transition-colors shrink-0"
+            aria-label="ホーム"
           >
             <div className="w-8 h-8 bg-[#20B2AA] rounded-sm flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200">
               <Wrench className="h-5 w-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-[#20B2AA] tracking-wider hidden md:inline">
+            <span className="text-xl sm:text-2xl font-bold text-[#20B2AA] tracking-wider hidden sm:inline">
               {siteConfig.name}
             </span>
           </Button>
           
           {/* 現在のツール表示 */}
           {currentTool && (
-            <div className="hidden md:flex items-center space-x-2 text-sm">
+            <div className="hidden md:flex items-center space-x-2 text-sm shrink-0">
               <ChevronDown className="h-4 w-4 text-[#A0A0A0] rotate-[-90deg]" />
               <currentTool.icon className="h-4 w-4 text-[#20B2AA]" />
               <span className="font-medium">{currentTool.title}</span>
@@ -198,23 +199,23 @@ export function ToolHeader() {
         </div>
 
         {/* 右側: ツール切替、通知、プロフィール */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           {/* ツール切り替えドロップダウン */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="hidden md:flex bg-[#2D2D2D] border-[#4A4A4A] hover:bg-[#3A3A3A] text-[#E0E0E0]"
+                size="sm"
+                className="bg-[#2D2D2D] border-[#4A4A4A] hover:bg-[#3A3A3A] text-[#E0E0E0]"
               >
-                <Wrench className="h-4 w-4 mr-2" />
-                ツール切替
-                <ChevronDown className="h-4 w-4 ml-2" />
+                <Wrench className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">ツール切替</span>
+                <ChevronDown className="h-4 w-4 sm:ml-2 hidden sm:block" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="end" 
-              className="w-80 bg-[#2D2D2D]/95 backdrop-blur-md border-[#4A4A4A] max-h-[60vh] overflow-y-auto"
+              className="w-[calc(100vw-2rem)] sm:w-80 bg-[#2D2D2D]/95 backdrop-blur-md border-[#4A4A4A] max-h-[60vh] overflow-y-auto"
             >
               {filteredTools.map((tool) => (
                 <DropdownMenuItem key={tool.id} asChild>
