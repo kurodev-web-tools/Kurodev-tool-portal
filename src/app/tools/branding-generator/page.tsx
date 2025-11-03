@@ -343,7 +343,7 @@ export default function BrandingGeneratorPage() {
 
   // コントロールパネルコンテンツ
   const controlPanelContent = (
-    <div className="flex flex-col h-full p-6 space-y-4 relative">
+    <div className="flex flex-col h-full p-4 sm:p-6 space-y-4 relative">
       <Separator />
       <div className="flex-grow space-y-4 overflow-auto">
         {activityStatus === "active" && (
@@ -502,7 +502,7 @@ export default function BrandingGeneratorPage() {
         {currentStep === "analysis-results" && analysisResults && (
           <div className="space-y-4 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pr-2 sm:pr-0">
-              <h2 className="text-2xl font-semibold text-[#E0E0E0]">分析結果</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-[#E0E0E0]">分析結果</h2>
               <Button
                 onClick={handleGenerateConcepts}
                 className="bg-[#0070F3] hover:bg-[#0051CC] text-white shrink-0 w-full sm:w-auto focus:ring-2 focus:ring-[#00D4FF] focus:ring-offset-2 focus:ring-offset-[#1A1A1A]"
@@ -684,7 +684,7 @@ export default function BrandingGeneratorPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                          className="text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEditPalette(palette.id);

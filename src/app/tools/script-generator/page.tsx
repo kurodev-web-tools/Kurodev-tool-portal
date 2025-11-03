@@ -314,7 +314,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ steps, currentStepId, type })
       {/* メインのローディング表示 */}
       <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
         <Loader2 className="w-16 h-16 text-primary mb-6 animate-spin" aria-hidden="true" />
-        <h3 className="text-xl font-semibold text-[#E0E0E0] mb-2">
+        <h3 className="text-lg sm:text-xl font-semibold text-[#E0E0E0] mb-2">
           {type === 'ideas' ? '企画案を生成中...' : '台本を生成中...'}
         </h3>
         
@@ -3501,14 +3501,13 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         relative
       `}>
         {isDesktop && isSidebarOpen && (
-          <div className="h-full overflow-y-auto p-4">
+          <div className="h-full overflow-y-auto p-3 sm:p-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[#E0E0E0]">企画・台本サポート</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-[#E0E0E0]">企画・台本サポート</h2>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsSidebarOpen(false)}
-                className="h-8 w-8"
                 aria-label="サイドバーを閉じる"
               >
                 <svg
@@ -3533,7 +3532,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
       </aside>
 
       {/* 中央: 企画案エリア (50%) */}
-      <main className="flex-1 lg:w-1/2 p-4 overflow-y-auto lg:pt-4 pt-20 lg:border-r border-[#4A4A4A]">
+      <main className="flex-1 lg:w-1/2 p-3 sm:p-4 overflow-y-auto lg:pt-4 pt-20 lg:border-r border-[#4A4A4A]">
         {isGeneratingIdeas ? (
           <ProgressBar
             steps={ideaGenerationSteps}
@@ -3543,7 +3542,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         ) : generatedIdeas.length === 0 ? (
           <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[600px]">
             <Lightbulb className="w-16 h-16 text-[#A0A0A0] mb-4" aria-hidden="true" />
-            <h3 className="text-xl font-semibold text-[#E0E0E0]">企画案を生成しよう！</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#E0E0E0]">企画案を生成しよう！</h3>
             <p className="text-[#A0A0A0] mt-2">サイドパネルからキーワードや企画の方向性を入力して、「企画案を生成する」ボタンを押してください。</p>
           </div>
         ) : (
@@ -4372,7 +4371,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
           ) : (
             <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
               <FileText className="w-16 h-16 text-[#A0A0A0] mb-4" aria-hidden="true" />
-              <h3 className="text-xl font-semibold text-[#E0E0E0] mb-2">台本プレビュー</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-[#E0E0E0] mb-2">台本プレビュー</h3>
               <p className="text-[#A0A0A0]">
                 企画案を選択して「台本を生成する」ボタンを押すと、ここに台本が表示されます。
               </p>

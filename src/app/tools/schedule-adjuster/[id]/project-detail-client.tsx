@@ -90,7 +90,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
             戻る
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#E0E0E0] break-words">{project.name}</h1>
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#E0E0E0] break-words">{project.name}</h1>
             {project.description && (
               <p className="text-sm sm:text-base text-[#A0A0A0] mt-1 break-words">{project.description}</p>
             )}

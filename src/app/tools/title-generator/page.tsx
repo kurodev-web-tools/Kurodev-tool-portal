@@ -1093,7 +1093,7 @@ export default function TitleGeneratorPage() {
   }, []);
 
   const controlPanelContent = (
-    <div className="flex flex-col h-full p-6 space-y-4 relative">
+    <div className="flex flex-col h-full p-4 sm:p-6 space-y-4 relative">
       <Tabs value={leftPanelTab} onValueChange={setLeftPanelTab} className="flex-1 flex flex-col min-w-0">
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="input">入力</TabsTrigger>
@@ -1420,7 +1420,7 @@ export default function TitleGeneratorPage() {
   );
 
   const resultsDisplayContent = (
-    <div className="flex flex-col h-full p-6 space-y-4 relative">
+    <div className="flex flex-col h-full p-4 sm:p-6 space-y-4 relative">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-semibold">生成結果</h2>
         {/* 再生成ボタンセクション（5.10対応） */}
@@ -2248,12 +2248,12 @@ export default function TitleGeneratorPage() {
           </aside>
 
           {/* 右側: 生成結果（50%） */}
-          <main className="w-full lg:w-1/2 p-4 bg-[#1A1A1A] overflow-y-auto">
+          <main className="w-full lg:w-1/2 p-3 sm:p-4 bg-[#1A1A1A] overflow-y-auto">
             {resultsDisplayContent}
           </main>
         </>
       ) : (
-        <div className="border-b bg-background p-4">
+        <div className="border-b bg-background p-3 sm:p-4">
           <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="settings">設定</TabsTrigger>

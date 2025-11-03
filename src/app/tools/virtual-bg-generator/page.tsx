@@ -1529,9 +1529,9 @@ export default function VirtualBackgroundGeneratorPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteSavedPrompt(saved.id)}
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </div>
                       ))}
@@ -1897,9 +1897,9 @@ export default function VirtualBackgroundGeneratorPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeleteSearchCondition(condition.id)}
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   ))}
@@ -2244,24 +2244,23 @@ export default function VirtualBackgroundGeneratorPage() {
                                 <div className="flex gap-1 flex-shrink-0">
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       restoreHistoryItem(item);
                                     }}
-                                    className="h-8 w-8 p-0"
                                     title="復元"
                                   >
                                     <RotateCcw className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       deleteHistoryItem(item.id);
                                     }}
-                                    className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                                    className="text-red-400 hover:text-red-300"
                                     title="削除"
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -2371,36 +2370,34 @@ export default function VirtualBackgroundGeneratorPage() {
                       <div className="flex gap-1 flex-shrink-0">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEditCollection(collection);
                           }}
-                          className="h-8 w-8 p-0"
                           title="編集"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleExportCollection(collection.id);
                           }}
-                          className="h-8 w-8 p-0"
                           title="エクスポート"
                         >
                           <DownloadIcon2 className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteCollection(collection.id);
                           }}
-                          className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300"
                           title="削除"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -2438,9 +2435,9 @@ export default function VirtualBackgroundGeneratorPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveImageFromCollection(img.id, selectedCollectionId)}
-                      className="absolute top-1 right-1 h-6 w-6 p-0 bg-black/50 hover:bg-black/70 text-white"
+                      className="absolute top-1 right-1 sm:h-9 h-11 sm:w-9 w-11 bg-black/50 hover:bg-black/70 text-white"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 ))}
@@ -2454,7 +2451,7 @@ export default function VirtualBackgroundGeneratorPage() {
 
   // モバイル用の生成タブ内容（7.1.1対応）
   const mobileGenerateContent = (
-    <div className="flex flex-col h-full space-y-4 p-4">
+      <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
       <Separator />
       
       <Accordion type="multiple" defaultValue={["basic"]} className="w-full space-y-2">
@@ -2507,9 +2504,9 @@ export default function VirtualBackgroundGeneratorPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeleteSavedPrompt(saved.id)}
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   ))}
@@ -2714,7 +2711,7 @@ export default function VirtualBackgroundGeneratorPage() {
 
   // モバイル用の検索タブ内容
   const mobileSearchContent = (
-    <div className="flex flex-col h-full space-y-4 p-4">
+      <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
       <Separator />
       
       <div className="space-y-4">
@@ -2921,7 +2918,7 @@ export default function VirtualBackgroundGeneratorPage() {
   );
 
   const previewContent = (
-    <div className="h-full p-4 lg:p-6">
+    <div className="h-full p-3 sm:p-4 lg:p-6">
       {isLoading && generationStep ? (
         // 生成プロセスの可視化（7.1.6）
         <ProgressBar
@@ -2935,7 +2932,7 @@ export default function VirtualBackgroundGeneratorPage() {
           {/* ツールバー（7.1.2） */}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 space-y-2 lg:space-y-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg lg:text-xl font-semibold">生成された背景</h3>
+              <h3 className="text-base sm:text-lg lg:text-xl font-semibold">生成された背景</h3>
               <Badge variant="secondary">{sortedImages.length}枚</Badge>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -3048,9 +3045,8 @@ export default function VirtualBackgroundGeneratorPage() {
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="secondary"
-                                size="sm"
+                                size="icon"
                                 onClick={(e) => e.stopPropagation()}
-                                className="h-8 w-8 p-0"
                                 title="コレクションに追加"
                               >
                                 <FolderPlus className="h-4 w-4" />
@@ -3088,12 +3084,11 @@ export default function VirtualBackgroundGeneratorPage() {
                         )}
                         <Button
                           variant="secondary"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleFavorite(img.url);
                           }}
-                          className="h-8 w-8 p-0"
                           aria-label={favoriteImages.includes(img.url) ? "お気に入りから削除" : "お気に入りに追加"}
                         >
                           <Heart 
@@ -3106,24 +3101,22 @@ export default function VirtualBackgroundGeneratorPage() {
                         </Button>
                         <Button
                           variant="secondary"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDownload(img.url);
                           }}
-                          className="h-8 w-8 p-0"
                           aria-label="画像をダウンロード"
                         >
                           <DownloadIcon className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="secondary"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             setExpandedImageId(img.id);
                           }}
-                          className="h-8 w-8 p-0"
                           aria-label="拡大表示"
                         >
                           <Maximize2 className="h-4 w-4" />

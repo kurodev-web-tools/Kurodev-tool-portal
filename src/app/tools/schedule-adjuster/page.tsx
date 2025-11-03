@@ -282,7 +282,7 @@ const ScheduleAdjusterPage: React.FC = () => {
   const mobileAddForm = (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h3 className="text-xl font-semibold text-[#E0E0E0] mb-2">新しいプロジェクト</h3>
+        <h3 className="text-lg sm:text-xl font-semibold text-[#E0E0E0] mb-2">新しいプロジェクト</h3>
         <p className="text-sm text-[#A0A0A0]">コラボ配信のスケジュール調整を開始します</p>
       </div>
       
@@ -501,7 +501,7 @@ const ScheduleAdjusterPage: React.FC = () => {
                                   variant="ghost"
                                   size="icon"
                                   onClick={(e) => e.stopPropagation()}
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
                                   aria-label="プロジェクト操作"
                                 >
                                   <MoreVertical className="h-4 w-4" />
