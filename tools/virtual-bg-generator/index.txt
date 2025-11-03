@@ -4,7 +4,7 @@
 :HL["/Kurodev-tool-portal/_next/static/media/904be59b21bd51cb-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/Kurodev-tool-portal/_next/static/media/e4af272ccee01ff0-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/Kurodev-tool-portal/_next/static/media/f2dba9fbcf2f771b-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/Kurodev-tool-portal/_next/static/css/c67298da000fc5ac.css","style"]
+:HL["/Kurodev-tool-portal/_next/static/css/50777c236de7742f.css","style"]
 :HL["/Kurodev-tool-portal/_next/static/css/9c0d7c36b7dd2417.css","style"]
 3:Tb33,{
   "@context": "https://schema.org",
@@ -90,7 +90,7 @@
       }
     ]
   }
-}0:{"P":null,"b":"build-1762174655754","p":"/Kurodev-tool-portal","c":["","tools","virtual-bg-generator",""],"i":false,"f":[[["",{"children":["tools",{"children":["virtual-bg-generator",{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/c67298da000fc5ac.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/9c0d7c36b7dd2417.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["tools","$L12",{"children":["virtual-bg-generator","$L13",{"children":["__PAGE__","$L14",{},null,false]},null,false]},null,false]},["$L15",[],[]],false],"$L16",false]],"m":"$undefined","G":["$17",[]],"s":false,"S":true}
+}0:{"P":null,"b":"build-1762177147530","p":"/Kurodev-tool-portal","c":["","tools","virtual-bg-generator",""],"i":false,"f":[[["",{"children":["tools",{"children":["virtual-bg-generator",{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/50777c236de7742f.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/Kurodev-tool-portal/_next/static/css/9c0d7c36b7dd2417.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"ja","suppressHydrationWarning":true,"className":"dark","children":[["$","head",null,{"children":[["$","$L2",null,{"id":"structured-data","type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$3"}}],["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"rel":"dns-prefetch","href":"https://fonts.googleapis.com"}],"$L4","$L5","$L6","$L7","$L8","$L9","$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10"]}],"$L11"]}]]}],{"children":["tools","$L12",{"children":["virtual-bg-generator","$L13",{"children":["__PAGE__","$L14",{},null,false]},null,false]},null,false]},["$L15",[],[]],false],"$L16",false]],"m":"$undefined","G":["$17",[]],"s":false,"S":true}
 18:I[28697,["177","static/chunks/app/layout-31a0b58d5cc32187.js"],"ThemeProvider"]
 19:I[99781,["177","static/chunks/app/layout-31a0b58d5cc32187.js"],"CustomThemeProvider"]
 1a:I[34924,["177","static/chunks/app/layout-31a0b58d5cc32187.js"],"AuthProvider"]
@@ -104,7 +104,7 @@
 22:I[75534,[],""]
 23:I[9169,["177","static/chunks/app/layout-31a0b58d5cc32187.js"],"Toaster"]
 24:I[93527,[],"ClientSegmentRoot"]
-25:I[98687,["93","static/chunks/app/tools/layout-d9a5976174500a80.js"],"default"]
+25:I[98687,["93","static/chunks/app/tools/layout-280a36d7cbf53b92.js"],"default"]
 27:I[27173,[],"ClientPageRoot"]
 28:I[31173,["762","static/chunks/app/tools/virtual-bg-generator/page-b361123e85989f1c.js"],"default"]
 2b:I[22325,[],"OutletBoundary"]
