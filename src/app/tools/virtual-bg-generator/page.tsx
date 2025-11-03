@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -55,7 +55,141 @@ import {
   X,
   Trash2
 } from "lucide-react";
-import { useEffect } from "react";
+import { cn } from "@/lib/utils";
+
+// 生成ステップの型定義（7.1.6）
+interface GenerationStep {
+  id: string;
+  label: string;
+  estimatedSeconds?: number; // 推定所要時間（秒）
+}
+
+// 生成ステップ定義（7.1.6）
+const bgGenerationSteps: GenerationStep[] = [
+  { id: 'analyze', label: 'プロンプトを分析中...', estimatedSeconds: 3 },
+  { id: 'prepare', label: '生成パラメータを設定中...', estimatedSeconds: 2 },
+  { id: 'generate', label: '画像を生成中...', estimatedSeconds: 10 },
+  { id: 'process', label: '画像を処理中...', estimatedSeconds: 3 },
+  { id: 'complete', label: '完成！', estimatedSeconds: 0 },
+];
+
+// プログレスバーコンポーネント（7.1.6）
+interface ProgressBarProps {
+  steps: GenerationStep[];
+  currentStepId: string | null;
+  estimatedTimeRemaining?: number; // 残り推定時間（秒）
+  onCancel?: () => void; // キャンセル関数
+}
+
+const ProgressBar: React.FC<ProgressBarProps> = ({ steps, currentStepId, estimatedTimeRemaining, onCancel }) => {
+  const currentIndex = currentStepId ? steps.findIndex(s => s.id === currentStepId) : -1;
+  const progress = currentIndex >= 0 ? ((currentIndex + 1) / steps.length) * 100 : 0;
+  
+  const formatTime = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${Math.ceil(seconds)}秒`;
+    }
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.ceil(seconds % 60);
+    return `${mins}分${secs}秒`;
+  };
+  
+  return (
+    <div className="w-full space-y-6">
+      <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[300px]">
+        <Loader2 className="w-16 h-16 text-primary mb-6 animate-spin" aria-hidden="true" />
+        <h3 className="text-xl font-semibold text-[#E0E0E0] mb-2">
+          背景を生成中...
+        </h3>
+        
+        {/* プログレスバー */}
+        <div className="w-full max-w-md mt-6">
+          <div className="w-full h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-[#A0A0A0] text-center flex-1">
+              {currentIndex >= 0 && currentIndex < steps.length ? steps[currentIndex].label : '準備中...'}
+            </p>
+            {estimatedTimeRemaining !== undefined && estimatedTimeRemaining > 0 && (
+              <p className="text-sm text-[#A0A0A0] ml-4">
+                残り約{formatTime(estimatedTimeRemaining)}
+              </p>
+            )}
+          </div>
+        </div>
+        
+        {/* ステップ表示 */}
+        <div className="w-full max-w-2xl mt-8">
+          <div className="flex items-center justify-between relative">
+            {/* 接続線 */}
+            <div className="absolute top-5 left-0 right-0 h-0.5 bg-[#4A4A4A] -z-10" />
+            <div
+              className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500 ease-out -z-10"
+              style={{ width: `${progress}%` }}
+            />
+            
+            {/* ステップアイコン */}
+            {steps.map((step, index) => {
+              const isActive = currentIndex >= index;
+              const isCurrent = currentIndex === index;
+              
+              return (
+                <div key={step.id} className="flex flex-col items-center relative z-10 flex-1">
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                      isCurrent
+                        ? "bg-primary border-primary scale-110 shadow-lg shadow-primary/50"
+                        : isActive
+                        ? "bg-primary/20 border-primary"
+                        : "bg-[#1A1A1A] border-[#4A4A4A]"
+                    )}
+                  >
+                    {isCurrent ? (
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    ) : isActive ? (
+                      <div className="w-3 h-3 rounded-full bg-primary" />
+                    ) : (
+                      <div className="w-3 h-3 rounded-full bg-[#4A4A4A]" />
+                    )}
+                  </div>
+                  <p
+                    className={cn(
+                      "text-xs mt-2 text-center max-w-[100px] transition-colors duration-300",
+                      isCurrent
+                        ? "text-primary font-semibold"
+                        : isActive
+                        ? "text-[#E0E0E0]"
+                        : "text-[#4A4A4A]"
+                    )}
+                  >
+                    {step.label}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* キャンセルボタン（7.1.6） */}
+        {onCancel && currentIndex >= 0 && currentIndex < steps.length - 1 && (
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="mt-6 border-red-500/50 text-red-400 hover:bg-red-500/10"
+          >
+            <X className="h-4 w-4 mr-2" />
+            生成をキャンセル
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function VirtualBackgroundGeneratorPage() {
   const { isOpen: isRightPanelOpen, setIsOpen: setIsRightPanelOpen, isDesktop } = useSidebar({
@@ -64,6 +198,9 @@ export default function VirtualBackgroundGeneratorPage() {
   });
   const [activeTab, setActiveTab] = useState("generate");
   const [isLoading, setIsLoading] = useState(false);
+  const [generationStep, setGenerationStep] = useState<string | null>(null); // 生成ステップ（7.1.6）
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number>(0); // 残り推定時間（7.1.6）
+  const isCancelledRef = useRef(false); // キャンセルフラグ（7.1.6 - useRefで管理）
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState(""); // ネガティブプロンプト（7.1.1）
   const [category, setCategory] = useState("");
@@ -248,6 +385,15 @@ export default function VirtualBackgroundGeneratorPage() {
     toast.success('テンプレートを適用しました');
   }, []);
 
+  // 生成キャンセル処理（7.1.6）
+  const handleCancelGeneration = useCallback(() => {
+    isCancelledRef.current = true;
+    setIsLoading(false);
+    setGenerationStep(null);
+    setEstimatedTimeRemaining(0);
+    toast.info('生成をキャンセルしました');
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     const promptError = validatePrompt(prompt);
     if (promptError) {
@@ -259,10 +405,53 @@ export default function VirtualBackgroundGeneratorPage() {
     }
 
     setIsLoading(true);
+    isCancelledRef.current = false;
+    setGenerationStep(null);
+    setEstimatedTimeRemaining(0);
+
     await handleAsyncError(async () => {
-      // モック処理：実際のAI生成をシミュレート
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // 各ステップを順次実行（7.1.6）
+      for (let i = 0; i < bgGenerationSteps.length; i++) {
+        if (isCancelledRef.current) {
+          return; // キャンセルされた場合は処理を中断
+        }
+
+        const step = bgGenerationSteps[i];
+        setGenerationStep(step.id);
+
+        // 残り推定時間を計算（7.1.6）
+        const remainingSteps = bgGenerationSteps.slice(i);
+        const totalRemaining = remainingSteps.reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0);
+        setEstimatedTimeRemaining(totalRemaining);
+
+        // ステップごとの処理時間をシミュレート
+        const stepDuration = (step.estimatedSeconds || 1) * 1000;
+        const startTime = Date.now();
+        
+        // 残り時間のカウントダウン（7.1.6）
+        const countdownInterval = setInterval(() => {
+          if (isCancelledRef.current) {
+            clearInterval(countdownInterval);
+            return;
+          }
+          const elapsed = (Date.now() - startTime) / 1000;
+          const remaining = Math.max(0, (step.estimatedSeconds || 1) - elapsed + 
+            remainingSteps.slice(1).reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0));
+          setEstimatedTimeRemaining(remaining);
+        }, 100);
+
+        await new Promise(resolve => setTimeout(resolve, stepDuration));
+        clearInterval(countdownInterval);
+
+        if (isCancelledRef.current) {
+          return;
+        }
+      }
+
+      if (isCancelledRef.current) {
+        return;
+      }
+
       // プレースホルダー画像を生成
       const mockImages = Array.from({ length: parseInt(imageCount) }, (_, i) => 
         `https://picsum.photos/800/600?random=${Date.now() + i}`
@@ -271,14 +460,25 @@ export default function VirtualBackgroundGeneratorPage() {
       setGeneratedImages(mockImages);
       setSelectedImage(mockImages[0]);
       
-      // 履歴に追加
+      // 履歴に追加（自動保存）（7.1.6）
       addToHistory({ url: mockImages[0], prompt });
       
+      // 生成完了通知（7.1.6）
+      toast.success(`${imageCount}枚の背景を生成しました`, {
+        description: '生成が完了しました',
+      });
+
       if (!isDesktop) {
         setActiveTab("preview");
       }
+
+      // ステップをリセット
+      setGenerationStep(null);
+      setEstimatedTimeRemaining(0);
     }, "背景生成中にエラーが発生しました");
+    
     setIsLoading(false);
+    isCancelledRef.current = false; // リセット
   }, [prompt, imageCount, handleAsyncError, isDesktop]);
 
   const handleCopyPrompt = useCallback(async () => {
@@ -1349,7 +1549,15 @@ export default function VirtualBackgroundGeneratorPage() {
 
   const previewContent = (
     <div className="h-full p-4 lg:p-6">
-      {generatedImages.length > 0 ? (
+      {isLoading && generationStep ? (
+        // 生成プロセスの可視化（7.1.6）
+        <ProgressBar
+          steps={bgGenerationSteps}
+          currentStepId={generationStep}
+          estimatedTimeRemaining={estimatedTimeRemaining}
+          onCancel={handleCancelGeneration}
+        />
+      ) : generatedImages.length > 0 ? (
         <div className="h-full flex flex-col">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 space-y-2 lg:space-y-0">
             <h3 className="text-lg lg:text-xl font-semibold">生成された背景</h3>
