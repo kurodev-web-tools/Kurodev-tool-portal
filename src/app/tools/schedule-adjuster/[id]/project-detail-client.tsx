@@ -56,20 +56,20 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
     switch (status) {
       case 'linked':
         return (
-          <Badge className="bg-green-600 text-white text-xs">
+          <Badge className="bg-[#0070F3] text-white text-xs font-medium">
             連携済み
           </Badge>
         );
       case 'manual':
         return (
-          <Badge className="bg-blue-600 text-white text-xs">
+          <Badge className="bg-[#0070F3] text-white text-xs font-medium">
             入力済み
           </Badge>
         );
       case 'not_linked':
       default:
         return (
-          <Badge className="bg-[#4A4A4A] text-[#E0E0E0] text-xs">
+          <Badge className="bg-[#4A4A4A] text-[#E0E0E0] text-xs font-medium">
             未連携
           </Badge>
         );
@@ -84,7 +84,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
           <Button 
             variant="ghost" 
             onClick={() => router.back()}
-            className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
+            className="text-[#E0E0E0] hover:bg-[#2D2D2D] hover:text-[#E0E0E0]"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             戻る
@@ -98,11 +98,10 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
         </div>
         <div className="flex items-center gap-2">
           <Badge 
-            variant={project.status === 'active' ? 'default' : 'secondary'}
             className={
               project.status === 'active'
-                ? 'bg-green-600 text-white'
-                : 'bg-[#4A4A4A] text-[#E0E0E0]'
+                ? 'bg-[#0070F3] text-white text-xs font-medium'
+                : 'bg-[#4A4A4A] text-[#E0E0E0] text-xs font-medium'
             }
           >
             {project.status === 'active' ? '進行中' : '完了'}
@@ -110,7 +109,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
           <Button 
             variant="outline"
             onClick={() => toast.info('この機能は今後実装予定です')}
-            className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+            className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
           >
             <Edit className="h-4 w-4 mr-2" />
             編集
@@ -137,7 +136,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                 <div className="flex items-start gap-3 p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
                   <Clock className="h-5 w-5 text-[#0070F3] mt-0.5" />
                   <div>
-                    <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">配信時間</label>
+                    <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">配信時間</label>
                     <p className="text-base font-semibold text-[#E0E0E0]">
                       {project.duration}分
                     </p>
@@ -146,7 +145,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                 <div className="flex items-start gap-3 p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
                   <Users className="h-5 w-5 text-[#0070F3] mt-0.5" />
                   <div>
-                    <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">参加者数</label>
+                    <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">参加者数</label>
                     <p className="text-base font-semibold text-[#E0E0E0]">
                       {project.participants}人
                     </p>
@@ -155,11 +154,11 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#4A4A4A]">
                 <div>
-                  <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">作成日</label>
+                  <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">作成日</label>
                   <p className="text-sm text-[#E0E0E0]">{project.createdAt}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">更新日</label>
+                  <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">更新日</label>
                   <p className="text-sm text-[#E0E0E0]">
                     {project.updatedAt !== project.createdAt ? project.updatedAt : '-'}
                   </p>
@@ -187,7 +186,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                 size="sm"
                 variant="outline"
                 onClick={() => toast.info('この機能は今後実装予定です')}
-                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 追加
@@ -202,7 +201,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                     size="sm"
                     variant="outline"
                     onClick={handleCopyInviteLink}
-                    className="h-7 px-2 border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                    className="h-7 px-2 border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
                   >
                     <Copy className={`h-3 w-3 mr-1 ${inviteLinkCopied ? 'text-green-400' : ''}`} />
                     {inviteLinkCopied ? 'コピー済み' : 'コピー'}
@@ -225,7 +224,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                   {participantList.map((participant: any) => (
                     <div
                       key={participant.id}
-                      className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A] hover:bg-[#222222] transition-colors"
+                      className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A] hover:bg-[#2D2D2D] transition-colors"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         {/* アバター（アイコン） */}
@@ -267,7 +266,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                   <Button
                     variant="outline"
                     onClick={() => toast.info('この機能は今後実装予定です')}
-                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     参加者を追加
@@ -290,7 +289,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                 size="sm"
                 variant="outline"
                 onClick={() => toast.info('この機能は今後実装予定です')}
-                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 追加
@@ -319,7 +318,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                         )}
                         
                         {/* スケジュールカード */}
-                        <div className="relative border border-[#4A4A4A] rounded-lg p-4 bg-[#1A1A1A] hover:bg-[#222222] transition-colors">
+                        <div className="relative border border-[#4A4A4A] rounded-lg p-4 bg-[#1A1A1A] hover:bg-[#2D2D2D] transition-colors">
                           <div className="flex items-start gap-3">
                             {/* タイムラインドット */}
                             <div className={`w-6 h-6 rounded-full ${dotColor} flex-shrink-0 flex items-center justify-center mt-1 z-10 relative`}>
@@ -376,7 +375,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                   <Button
                     variant="outline"
                     onClick={() => toast.info('この機能は今後実装予定です')}
-                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     スケジュールを追加
@@ -402,34 +401,34 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
-                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">タイムゾーン</label>
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">タイムゾーン</label>
                 <p className="text-sm font-medium text-[#E0E0E0]">{project.settings.timezone}</p>
               </div>
               <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
-                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">バッファ時間</label>
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">バッファ時間</label>
                 <p className="text-sm font-medium text-[#E0E0E0]">{project.settings.bufferTime}分</p>
               </div>
               <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
-                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">自動調整</label>
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">自動調整</label>
                 <Badge 
                   variant={project.settings.autoAdjust ? 'default' : 'secondary'}
                   className={
                     project.settings.autoAdjust
-                      ? 'bg-green-600 text-white mt-1'
-                      : 'bg-[#4A4A4A] text-[#E0E0E0] mt-1'
+                      ? 'bg-[#0070F3] text-white mt-1 font-medium'
+                      : 'bg-[#4A4A4A] text-[#E0E0E0] mt-1 font-medium'
                   }
                 >
                   {project.settings.autoAdjust ? '有効' : '無効'}
                 </Badge>
               </div>
               <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
-                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">通知</label>
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1.5 block">通知</label>
                 <Badge 
                   variant={project.settings.notifications ? 'default' : 'secondary'}
                   className={
                     project.settings.notifications
-                      ? 'bg-green-600 text-white mt-1'
-                      : 'bg-[#4A4A4A] text-[#E0E0E0] mt-1'
+                      ? 'bg-[#0070F3] text-white mt-1 font-medium'
+                      : 'bg-[#4A4A4A] text-[#E0E0E0] mt-1 font-medium'
                   }
                 >
                   {project.settings.notifications ? '有効' : '無効'}
@@ -456,7 +455,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                      className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
                 onClick={() => toast.info('この機能は今後実装予定です')}
               >
                 <Users className="h-4 w-4 mr-2" />
@@ -464,7 +463,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                      className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
                 onClick={() => toast.info('この機能は今後実装予定です')}
               >
                 <Settings className="h-4 w-4 mr-2" />

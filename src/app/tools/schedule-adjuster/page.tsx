@@ -203,11 +203,11 @@ const ScheduleAdjusterPage: React.FC = () => {
                   <SelectValue placeholder="配信時間を選択" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#2D2D2D] border-[#4A4A4A]">
-                  <SelectItem value="30" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">30分</SelectItem>
-                  <SelectItem value="60" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">60分</SelectItem>
-                  <SelectItem value="90" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">90分</SelectItem>
-                  <SelectItem value="120" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">120分</SelectItem>
-                  <SelectItem value="180" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">180分</SelectItem>
+                  <SelectItem value="30" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">30分</SelectItem>
+                  <SelectItem value="60" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">60分</SelectItem>
+                  <SelectItem value="90" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">90分</SelectItem>
+                  <SelectItem value="120" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">120分</SelectItem>
+                  <SelectItem value="180" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">180分</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -289,11 +289,11 @@ const ScheduleAdjusterPage: React.FC = () => {
                   <SelectValue placeholder="配信時間を選択" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#2D2D2D] border-[#4A4A4A]">
-                  <SelectItem value="30" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">30分</SelectItem>
-                  <SelectItem value="60" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">60分</SelectItem>
-                  <SelectItem value="90" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">90分</SelectItem>
-                  <SelectItem value="120" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">120分</SelectItem>
-                  <SelectItem value="180" className="text-[#E0E0E0] focus:bg-[#3A3A3A]">180分</SelectItem>
+                  <SelectItem value="30" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">30分</SelectItem>
+                  <SelectItem value="60" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">60分</SelectItem>
+                  <SelectItem value="90" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">90分</SelectItem>
+                  <SelectItem value="120" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">120分</SelectItem>
+                  <SelectItem value="180" className="text-[#E0E0E0] focus:bg-[#2D2D2D]">180分</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -401,8 +401,11 @@ const ScheduleAdjusterPage: React.FC = () => {
                             {project.name}
                           </CardTitle>
                           <Badge 
-                            variant={project.status === 'active' ? 'default' : 'secondary'}
-                            className="flex-shrink-0 self-start sm:self-auto text-xs"
+                            className={
+                              project.status === 'active'
+                                ? 'bg-[#0070F3] text-white flex-shrink-0 self-start sm:self-auto text-xs font-medium'
+                                : 'bg-[#4A4A4A] text-[#E0E0E0] flex-shrink-0 self-start sm:self-auto text-xs font-medium'
+                            }
                           >
                             {project.status === 'active' ? '進行中' : '完了'}
                           </Badge>
