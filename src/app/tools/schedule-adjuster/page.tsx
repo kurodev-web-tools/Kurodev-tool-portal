@@ -326,32 +326,42 @@ const ScheduleAdjusterPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
         {/* モバイル表示用のタブ */}
         {!isDesktop && (
-          <div className="border-b bg-background p-4">
-            <Tabs value={mobileTab} onValueChange={(value) => setMobileTab(value as 'projects' | 'add')} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="projects">
+          <div className="border-b border-[#4A4A4A] bg-[#1A1A1A] p-3 sm:p-4 sticky top-0 z-20">
+            <Tabs 
+              value={mobileTab} 
+              onValueChange={(value) => setMobileTab(value as 'projects' | 'add')} 
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 bg-[#2D2D2D] border border-[#4A4A4A] h-auto">
+                <TabsTrigger 
+                  value="projects"
+                  className="data-[state=active]:bg-[#0070F3] data-[state=active]:text-white data-[state=inactive]:text-[#A0A0A0] transition-all duration-200 py-2.5"
+                >
                   <Calendar className="mr-2 h-4 w-4" />
-                  プロジェクト一覧
+                  <span className="text-sm font-medium">プロジェクト一覧</span>
                 </TabsTrigger>
-                <TabsTrigger value="add">
+                <TabsTrigger 
+                  value="add"
+                  className="data-[state=active]:bg-[#0070F3] data-[state=active]:text-white data-[state=inactive]:text-[#A0A0A0] transition-all duration-200 py-2.5"
+                >
                   <Plus className="mr-2 h-4 w-4" />
-                  プロジェクト追加
+                  <span className="text-sm font-medium">プロジェクト追加</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-2 lg:p-4">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
           {/* PC表示またはモバイルのプロジェクト一覧タブ */}
           {(isDesktop || mobileTab === 'projects') && (
             <>
               {/* プロジェクト一覧が空の場合 */}
               {projects.length === 0 ? (
-                <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px] border border-[#4A4A4A]">
+                <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-6 sm:p-8 min-h-[400px] border border-[#4A4A4A]">
                   <Calendar className="w-12 h-12 text-[#A0A0A0] mb-4" aria-hidden="true" />
                   <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">プロジェクトがありません</h3>
-                  <p className="text-[#A0A0A0] mb-4">
+                  <p className="text-sm sm:text-base text-[#A0A0A0] mb-4 px-4">
                     新しいプロジェクトを作成して、コラボ配信のスケジュール調整を始めましょう。
                   </p>
                   {isDesktop ? (
@@ -375,57 +385,57 @@ const ScheduleAdjusterPage: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {projects.map((project) => (
                     <Card 
                       key={project.id} 
-                      className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer border-[#4A4A4A] bg-[#2D2D2D]"
+                      className="hover:shadow-lg hover:scale-[1.01] sm:hover:scale-[1.02] transition-all duration-200 cursor-pointer border-[#4A4A4A] bg-[#2D2D2D]"
                       onClick={() => {
                         // プロジェクト詳細ページに遷移
                         router.push(`/tools/schedule-adjuster/${project.id}`);
                       }}
                     >
-                      <CardHeader>
-                        <div className="flex justify-between items-start mb-2">
-                          <CardTitle className="text-lg text-[#E0E0E0] line-clamp-2 flex-1 pr-2">
+                      <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                          <CardTitle className="text-base sm:text-lg text-[#E0E0E0] line-clamp-2 flex-1 pr-2">
                             {project.name}
                           </CardTitle>
                           <Badge 
                             variant={project.status === 'active' ? 'default' : 'secondary'}
-                            className="flex-shrink-0"
+                            className="flex-shrink-0 self-start sm:self-auto text-xs"
                           >
                             {project.status === 'active' ? '進行中' : '完了'}
                           </Badge>
                         </div>
                         {project.description && (
-                          <CardDescription className="text-[#A0A0A0] line-clamp-2">
+                          <CardDescription className="text-sm sm:text-base text-[#A0A0A0] line-clamp-2">
                             {project.description}
                           </CardDescription>
                         )}
                       </CardHeader>
-                      <CardContent className="space-y-3">
+                      <CardContent className="p-4 sm:p-6 pt-0 space-y-3">
                         {/* 主要情報 */}
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-4 text-[#A0A0A0]">
+                        <div className="flex items-center justify-between text-xs sm:text-sm">
+                          <div className="flex items-center gap-3 sm:gap-4 text-[#A0A0A0]">
                             <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
+                              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                               <span>{project.duration}分</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
+                              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                               <span>{project.participants}人</span>
                             </div>
                           </div>
                         </div>
                         
                         {/* 日付情報 */}
-                        <div className="flex items-center justify-between text-xs text-[#808080] pt-2 border-t border-[#4A4A4A]">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs text-[#808080] pt-2 border-t border-[#4A4A4A]">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             <span>作成: {project.createdAt}</span>
                           </div>
                           {project.updatedAt !== project.createdAt && (
-                            <span>更新: {project.updatedAt}</span>
+                            <span className="text-[#707070]">更新: {project.updatedAt}</span>
                           )}
                         </div>
                       </CardContent>
@@ -438,7 +448,7 @@ const ScheduleAdjusterPage: React.FC = () => {
 
           {/* モバイル表示のプロジェクト追加タブ */}
           {!isDesktop && mobileTab === 'add' && (
-            <div className="max-w-md mx-auto">
+            <div className="max-w-2xl mx-auto w-full px-4 sm:px-6">
               {mobileAddForm}
             </div>
           )}

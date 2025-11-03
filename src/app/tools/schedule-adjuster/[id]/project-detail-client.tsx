@@ -77,9 +77,9 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
   };
 
   return (
-    <div className="container mx-auto p-4 lg:p-6">
+    <div className="container mx-auto p-3 sm:p-4 lg:p-6">
       {/* ヘッダー */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -89,10 +89,10 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
             <ArrowLeft className="h-4 w-4 mr-2" />
             戻る
           </Button>
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-[#E0E0E0]">{project.name}</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#E0E0E0] break-words">{project.name}</h1>
             {project.description && (
-              <p className="text-[#A0A0A0] mt-1">{project.description}</p>
+              <p className="text-sm sm:text-base text-[#A0A0A0] mt-1 break-words">{project.description}</p>
             )}
           </div>
         </div>
@@ -118,9 +118,9 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* メインコンテンツ */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* プロジェクト情報 */}
           <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
             <CardHeader>
@@ -388,7 +388,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
         </div>
 
         {/* サイドバー */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* 設定 */}
           <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
             <CardHeader>
