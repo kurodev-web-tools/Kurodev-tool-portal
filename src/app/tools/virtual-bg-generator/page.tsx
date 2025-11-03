@@ -31,6 +31,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useErrorHandler } from "@/hooks/use-error-handler";
 import { validatePrompt } from "@/lib/validation";
@@ -43,8 +49,13 @@ import {
   Image as ImageIcon,
   Settings,
   Palette,
-  Monitor
+  Monitor,
+  Save,
+  BookOpen,
+  X,
+  Trash2
 } from "lucide-react";
+import { useEffect } from "react";
 
 export default function VirtualBackgroundGeneratorPage() {
   const { isOpen: isRightPanelOpen, setIsOpen: setIsRightPanelOpen, isDesktop } = useSidebar({
@@ -54,14 +65,22 @@ export default function VirtualBackgroundGeneratorPage() {
   const [activeTab, setActiveTab] = useState("generate");
   const [isLoading, setIsLoading] = useState(false);
   const [prompt, setPrompt] = useState("");
+  const [negativePrompt, setNegativePrompt] = useState(""); // ネガティブプロンプト（7.1.1）
   const [category, setCategory] = useState("");
   const [style, setStyle] = useState("");
   const [resolution, setResolution] = useState("");
   const [imageCount, setImageCount] = useState("1");
+  const [selectedColor, setSelectedColor] = useState<string>(""); // カラーパレット（7.1.1）
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [favoriteImages, setFavoriteImages] = useState<string[]>([]);
+  
+  // よく使うプロンプトの保存（7.1.1）
+  const [savedPrompts, setSavedPrompts] = useState<Array<{ id: string; prompt: string; negativePrompt?: string; createdAt: number }>>([]);
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+  const SAVED_PROMPTS_STORAGE_KEY = 'virtual-bg-saved-prompts';
+  const MAX_SAVED_PROMPTS = 20;
   
   // 検索関連の状態
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -112,6 +131,122 @@ export default function VirtualBackgroundGeneratorPage() {
     { value: "4", label: "4枚" },
     { value: "8", label: "8枚" },
   ];
+
+  // カラーパレット（7.1.1）
+  const colorPalette = [
+    { value: "", label: "指定なし", color: "bg-gray-500" },
+    { value: "red", label: "赤", color: "bg-red-500" },
+    { value: "orange", label: "オレンジ", color: "bg-orange-500" },
+    { value: "yellow", label: "黄", color: "bg-yellow-500" },
+    { value: "green", label: "緑", color: "bg-green-500" },
+    { value: "blue", label: "青", color: "bg-blue-500" },
+    { value: "purple", label: "紫", color: "bg-purple-500" },
+    { value: "pink", label: "ピンク", color: "bg-pink-500" },
+    { value: "brown", label: "茶", color: "bg-amber-700" },
+    { value: "black", label: "黒", color: "bg-gray-900" },
+    { value: "white", label: "白", color: "bg-gray-100" },
+  ];
+
+  // プロンプトテンプレート（7.1.1）
+  const promptTemplates = useMemo(() => ({
+    fantasy: [
+      "魔法の森、妖精が舞い踊る神秘的な場所",
+      "中世の城、石造りの壮麗な建築物",
+      "空に浮かぶ島、雲海の上に広がる異世界",
+    ],
+    "sci-fi": [
+      "サイバーパンク都市の夜景、ネオンライトが輝く未来都市",
+      "宇宙ステーション、星々を見下ろす軌道上の施設",
+      "ロボット工場、機械が稼働する未来的な施設",
+    ],
+    daily: [
+      "コーヒーショップ、温かみのある日常の空間",
+      "図書館、本棚が並ぶ静かな読書空間",
+      "リビングルーム、くつろぎの家庭空間",
+    ],
+    nature: [
+      "山頂からの眺め、雲海に浮かぶ山々",
+      "森の中の小道、陽光が差し込む緑豊かな道",
+      "海辺の夕日、オレンジに染まる水平線",
+    ],
+    urban: [
+      "大都市の摩天楼、高層ビルが林立する街",
+      "商店街の夜景、看板が輝く賑やかな通り",
+      "公園のベンチ、都会の中の憩いの場所",
+    ],
+    space: [
+      "銀河系の中心、星雲が渦巻く宇宙空間",
+      "惑星の表面、異世界の風景が広がる大地",
+      "星間空間、無数の星が輝く深宇宙",
+    ],
+  }), []);
+
+  // よく使うプロンプトの読み込み（7.1.1）
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(SAVED_PROMPTS_STORAGE_KEY);
+        if (saved) {
+          setSavedPrompts(JSON.parse(saved));
+        }
+      } catch (err) {
+        console.error('保存済みプロンプトの読み込み失敗', err);
+      }
+    }
+  }, []);
+
+  // よく使うプロンプトの保存（7.1.1）
+  const handleSavePrompt = useCallback(() => {
+    if (!prompt.trim()) {
+      toast.error('プロンプトが空です');
+      return;
+    }
+
+    setIsSavingPrompt(true);
+    const newPrompt = {
+      id: Date.now().toString(),
+      prompt: prompt.trim(),
+      negativePrompt: negativePrompt.trim() || undefined,
+      createdAt: Date.now(),
+    };
+
+    const updated = [newPrompt, ...savedPrompts].slice(0, MAX_SAVED_PROMPTS);
+    setSavedPrompts(updated);
+    
+    try {
+      localStorage.setItem(SAVED_PROMPTS_STORAGE_KEY, JSON.stringify(updated));
+      toast.success('プロンプトを保存しました');
+    } catch (err) {
+      console.error('プロンプト保存失敗', err);
+      toast.error('プロンプトの保存に失敗しました');
+    }
+    setIsSavingPrompt(false);
+  }, [prompt, negativePrompt, savedPrompts]);
+
+  // 保存済みプロンプトの読み込み（7.1.1）
+  const handleLoadSavedPrompt = useCallback((savedPrompt: { prompt: string; negativePrompt?: string }) => {
+    setPrompt(savedPrompt.prompt);
+    setNegativePrompt(savedPrompt.negativePrompt || '');
+    toast.success('プロンプトを読み込みました');
+  }, []);
+
+  // 保存済みプロンプトの削除（7.1.1）
+  const handleDeleteSavedPrompt = useCallback((id: string) => {
+    const updated = savedPrompts.filter(p => p.id !== id);
+    setSavedPrompts(updated);
+    try {
+      localStorage.setItem(SAVED_PROMPTS_STORAGE_KEY, JSON.stringify(updated));
+      toast.success('プロンプトを削除しました');
+    } catch (err) {
+      console.error('プロンプト削除失敗', err);
+    }
+  }, [savedPrompts]);
+
+  // テンプレートの適用（7.1.1）
+  const handleApplyTemplate = useCallback((templatePrompt: string) => {
+    setPrompt(templatePrompt);
+    toast.success('テンプレートを適用しました');
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     const promptError = validatePrompt(prompt);
@@ -281,125 +416,270 @@ export default function VirtualBackgroundGeneratorPage() {
         </TabsList>
         
         <TabsContent value="generate" className="flex-grow space-y-4 mt-4">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="prompt">テキストプロンプト</Label>
-              <div className="space-y-2">
-                <Textarea
-                  id="prompt"
-                  placeholder="サイバーパンク都市の夜景、ネオンライトが輝く未来都市..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="min-h-[100px]"
-                />
-                {prompt && (
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyPrompt}
-                      aria-label="プロンプトをコピー"
-                    >
-                      {copiedPrompt ? (
-                        <>
-                          <Check className="h-4 w-4 mr-1" />
-                          コピー済み
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-1" />
-                          コピー
-                        </>
-                      )}
-                    </Button>
+          <Accordion type="multiple" defaultValue={["basic"]} className="w-full space-y-2">
+            {/* 基本設定 */}
+            <AccordionItem value="basic" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>基本設定</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-4">
+                {/* プロンプトテンプレート（7.1.1） */}
+                {category && promptTemplates[category as keyof typeof promptTemplates] && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">プロンプトテンプレート</Label>
+                    <div className="space-y-1">
+                      {promptTemplates[category as keyof typeof promptTemplates].map((template, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleApplyTemplate(template)}
+                          className="w-full justify-start text-left h-auto py-2 px-3 text-xs"
+                        >
+                          <BookOpen className="h-3 w-3 mr-2 flex-shrink-0" />
+                          <span className="truncate">{template}</span>
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
 
-            <div>
-              <Label>カテゴリ</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {categories.map((cat) => (
-                  <Badge
-                    key={cat.value}
-                    variant={category === cat.value ? "default" : "outline"}
-                    className="cursor-pointer hover:bg-primary/10"
-                    onClick={() => setCategory(cat.value)}
-                  >
-                    {cat.icon} {cat.label}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+                {/* よく使うプロンプト（7.1.1） */}
+                {savedPrompts.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">保存済みプロンプト</Label>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {savedPrompts.slice(0, 5).map((saved) => (
+                        <div key={saved.id} className="flex items-center gap-1 p-2 border rounded hover:bg-accent group">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleLoadSavedPrompt(saved)}
+                            className="flex-1 justify-start text-left h-auto p-0 text-xs"
+                          >
+                            <span className="truncate">{saved.prompt}</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteSavedPrompt(saved.id)}
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            <div>
-              <Label htmlFor="style">スタイル</Label>
-              <Select value={style} onValueChange={setStyle}>
-                <SelectTrigger>
-                  <SelectValue placeholder="スタイルを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {styles.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <Label htmlFor="prompt">テキストプロンプト</Label>
+                  <div className="space-y-2">
+                    <Textarea
+                      id="prompt"
+                      placeholder="サイバーパンク都市の夜景、ネオンライトが輝く未来都市..."
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                    <div className="flex justify-between items-center">
+                      {prompt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyPrompt}
+                          aria-label="プロンプトをコピー"
+                        >
+                          {copiedPrompt ? (
+                            <>
+                              <Check className="h-4 w-4 mr-1" />
+                              コピー済み
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-1" />
+                              コピー
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {prompt.trim() && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSavePrompt}
+                          disabled={isSavingPrompt}
+                          className="ml-auto"
+                        >
+                          <Save className="h-4 w-4 mr-1" />
+                          保存
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-            <div>
-              <Label htmlFor="resolution">解像度・アスペクト比</Label>
-              <Select value={resolution} onValueChange={setResolution}>
-                <SelectTrigger>
-                  <SelectValue placeholder="解像度を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {resolutions.map((res) => (
-                    <SelectItem key={res.value} value={res.value}>
-                      {res.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <Label>カテゴリ</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {categories.map((cat) => (
+                      <Badge
+                        key={cat.value}
+                        variant={category === cat.value ? "default" : "outline"}
+                        className="cursor-pointer hover:bg-primary/10"
+                        onClick={() => setCategory(cat.value)}
+                      >
+                        {cat.icon} {cat.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
 
-            <div>
-              <Label htmlFor="imageCount">生成枚数</Label>
-              <Select value={imageCount} onValueChange={setImageCount}>
-                <SelectTrigger>
-                  <SelectValue placeholder="枚数を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {imageCounts.map((count) => (
-                    <SelectItem key={count.value} value={count.value}>
-                      {count.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <Label htmlFor="style">スタイル</Label>
+                  <Select value={style} onValueChange={setStyle}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="スタイルを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {styles.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-            <Button 
-              onClick={handleGenerate} 
-              disabled={isLoading || !prompt.trim()}
-              className="w-full"
-              size="lg"
-            >
-              {isLoading ? (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  背景を生成
-                </>
-              )}
-            </Button>
-          </div>
+            {/* 詳細設定 */}
+            <AccordionItem value="advanced" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>詳細設定</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-4">
+                {/* ネガティブプロンプト（7.1.1） */}
+                <div>
+                  <Label htmlFor="negativePrompt">ネガティブプロンプト</Label>
+                  <Textarea
+                    id="negativePrompt"
+                    placeholder="除外したい要素を入力（例: 人物、文字、ロゴ...）"
+                    value={negativePrompt}
+                    onChange={(e) => setNegativePrompt(e.target.value)}
+                    className="min-h-[80px] text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    生成時に除外したい要素を指定できます
+                  </p>
+                </div>
+
+                {/* カラーパレット（7.1.1） */}
+                <div>
+                  <Label>主色（カラーパレット）</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {colorPalette.map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => setSelectedColor(color.value)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md border transition-all ${
+                          selectedColor === color.value
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:bg-accent"
+                        }`}
+                        title={color.label}
+                      >
+                        <div className={`w-4 h-4 rounded-full ${color.color} ${color.value === "white" ? "border border-gray-300" : ""}`} />
+                        <span className="text-xs">{color.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* アスペクト比プレビュー（7.1.1） */}
+                <div>
+                  <Label htmlFor="resolution">解像度・アスペクト比</Label>
+                  <Select value={resolution} onValueChange={setResolution}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="解像度を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {resolutions.map((res) => (
+                        <SelectItem key={res.value} value={res.value}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{res.label}</span>
+                            {resolution === res.value && (
+                              <Monitor className="h-3 w-3 ml-2" />
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {resolution && (
+                    <div className="mt-2 p-3 bg-muted rounded-md">
+                      <div className="text-xs text-muted-foreground mb-2">プレビュー</div>
+                      <div
+                        className={`mx-auto border-2 border-primary rounded ${
+                          resolutions.find(r => r.value === resolution)?.aspectRatio === "9:16"
+                            ? "w-12 h-20"
+                            : "w-20 h-12"
+                        }`}
+                        style={{
+                          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        }}
+                      />
+                      <p className="text-xs text-center text-muted-foreground mt-2">
+                        {resolutions.find(r => r.value === resolution)?.aspectRatio || "16:9"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="imageCount">生成枚数</Label>
+                  <Select value={imageCount} onValueChange={setImageCount}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="枚数を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {imageCounts.map((count) => (
+                        <SelectItem key={count.value} value={count.value}>
+                          {count.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          <Button 
+            onClick={handleGenerate} 
+            disabled={isLoading || !prompt.trim()}
+            className="w-full"
+            size="lg"
+          >
+            {isLoading ? (
+              <>
+                <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                背景を生成
+              </>
+            )}
+          </Button>
         </TabsContent>
 
         <TabsContent value="search" className="flex-grow space-y-4 mt-4">
@@ -655,108 +935,263 @@ export default function VirtualBackgroundGeneratorPage() {
     </div>
   );
 
-  // モバイル用の生成タブ内容
+  // モバイル用の生成タブ内容（7.1.1対応）
   const mobileGenerateContent = (
     <div className="flex flex-col h-full space-y-4 p-4">
       <Separator />
       
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="prompt-mobile">テキストプロンプト</Label>
-          <Textarea
-            id="prompt-mobile"
-            placeholder="サイバーパンク都市の夜景、ネオンライトが輝く未来都市..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-[80px]"
-          />
-        </div>
+      <Accordion type="multiple" defaultValue={["basic"]} className="w-full space-y-2">
+        {/* 基本設定 */}
+        <AccordionItem value="basic" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>基本設定</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pt-4">
+            {/* プロンプトテンプレート（7.1.1） */}
+            {category && promptTemplates[category as keyof typeof promptTemplates] && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">プロンプトテンプレート</Label>
+                <div className="space-y-1">
+                  {promptTemplates[category as keyof typeof promptTemplates].map((template, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleApplyTemplate(template)}
+                      className="w-full justify-start text-left h-auto py-2 px-3 text-xs"
+                    >
+                      <BookOpen className="h-3 w-3 mr-2 flex-shrink-0" />
+                      <span className="truncate">{template}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        <div>
-          <Label>カテゴリ</Label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {categories.map((cat) => (
-              <Badge
-                key={cat.value}
-                variant={category === cat.value ? "default" : "outline"}
-                className="cursor-pointer hover:bg-primary/10 text-xs"
-                onClick={() => setCategory(cat.value)}
-              >
-                {cat.icon} {cat.label}
-              </Badge>
-            ))}
-          </div>
-        </div>
+            {/* よく使うプロンプト（7.1.1） */}
+            {savedPrompts.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">保存済みプロンプト</Label>
+                <div className="space-y-1 max-h-24 overflow-y-auto">
+                  {savedPrompts.slice(0, 3).map((saved) => (
+                    <div key={saved.id} className="flex items-center gap-1 p-2 border rounded hover:bg-accent group">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleLoadSavedPrompt(saved)}
+                        className="flex-1 justify-start text-left h-auto p-0 text-xs"
+                      >
+                        <span className="truncate">{saved.prompt}</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteSavedPrompt(saved.id)}
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="style-mobile">スタイル</Label>
-            <Select value={style} onValueChange={setStyle}>
-              <SelectTrigger>
-                <SelectValue placeholder="スタイル" />
-              </SelectTrigger>
-              <SelectContent>
-                {styles.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
+            <div>
+              <Label htmlFor="prompt-mobile">テキストプロンプト</Label>
+              <div className="space-y-2">
+                <Textarea
+                  id="prompt-mobile"
+                  placeholder="サイバーパンク都市の夜景、ネオンライトが輝く未来都市..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <div className="flex justify-between items-center">
+                  {prompt && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyPrompt}
+                      aria-label="プロンプトをコピー"
+                    >
+                      {copiedPrompt ? (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          コピー済み
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-1" />
+                          コピー
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {prompt.trim() && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSavePrompt}
+                      disabled={isSavingPrompt}
+                      className="ml-auto"
+                    >
+                      <Save className="h-4 w-4 mr-1" />
+                      保存
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label>カテゴリ</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {categories.map((cat) => (
+                  <Badge
+                    key={cat.value}
+                    variant={category === cat.value ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-primary/10 text-xs"
+                    onClick={() => setCategory(cat.value)}
+                  >
+                    {cat.icon} {cat.label}
+                  </Badge>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </div>
+            </div>
 
-          <div>
-            <Label htmlFor="resolution-mobile">解像度</Label>
-            <Select value={resolution} onValueChange={setResolution}>
-              <SelectTrigger>
-                <SelectValue placeholder="解像度" />
-              </SelectTrigger>
-              <SelectContent>
-                {resolutions.map((res) => (
-                  <SelectItem key={res.value} value={res.value}>
-                    {res.label}
-                  </SelectItem>
+            <div>
+              <Label htmlFor="style-mobile">スタイル</Label>
+              <Select value={style} onValueChange={setStyle}>
+                <SelectTrigger>
+                  <SelectValue placeholder="スタイル" />
+                </SelectTrigger>
+                <SelectContent>
+                  {styles.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 詳細設定 */}
+        <AccordionItem value="advanced" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>詳細設定</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pt-4">
+            {/* ネガティブプロンプト（7.1.1） */}
+            <div>
+              <Label htmlFor="negativePrompt-mobile">ネガティブプロンプト</Label>
+              <Textarea
+                id="negativePrompt-mobile"
+                placeholder="除外したい要素を入力..."
+                value={negativePrompt}
+                onChange={(e) => setNegativePrompt(e.target.value)}
+                className="min-h-[60px] text-sm"
+              />
+            </div>
+
+            {/* カラーパレット（7.1.1） */}
+            <div>
+              <Label>主色（カラーパレット）</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {colorPalette.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={() => setSelectedColor(color.value)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-md border transition-all text-xs ${
+                      selectedColor === color.value
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:bg-accent"
+                    }`}
+                    title={color.label}
+                  >
+                    <div className={`w-3 h-3 rounded-full ${color.color} ${color.value === "white" ? "border border-gray-300" : ""}`} />
+                    <span>{color.label}</span>
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+              </div>
+            </div>
 
-        <div>
-          <Label htmlFor="imageCount-mobile">生成枚数</Label>
-          <Select value={imageCount} onValueChange={setImageCount}>
-            <SelectTrigger>
-              <SelectValue placeholder="枚数" />
-            </SelectTrigger>
-            <SelectContent>
-              {imageCounts.map((count) => (
-                <SelectItem key={count.value} value={count.value}>
-                  {count.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div>
+              <Label htmlFor="resolution-mobile">解像度</Label>
+              <Select value={resolution} onValueChange={setResolution}>
+                <SelectTrigger>
+                  <SelectValue placeholder="解像度" />
+                </SelectTrigger>
+                <SelectContent>
+                  {resolutions.map((res) => (
+                    <SelectItem key={res.value} value={res.value}>
+                      {res.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {resolution && (
+                <div className="mt-2 p-2 bg-muted rounded-md">
+                  <div className="text-xs text-muted-foreground mb-1">プレビュー</div>
+                  <div
+                    className={`mx-auto border-2 border-primary rounded ${
+                      resolutions.find(r => r.value === resolution)?.aspectRatio === "9:16"
+                        ? "w-8 h-14"
+                        : "w-14 h-8"
+                    }`}
+                    style={{
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
-        <Button 
-          onClick={handleGenerate} 
-          disabled={isLoading || !prompt.trim()}
-          className="w-full"
-          size="lg"
-        >
-          {isLoading ? (
-            <>
-              <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-              生成中...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              背景を生成
-            </>
-          )}
-        </Button>
-      </div>
+            <div>
+              <Label htmlFor="imageCount-mobile">生成枚数</Label>
+              <Select value={imageCount} onValueChange={setImageCount}>
+                <SelectTrigger>
+                  <SelectValue placeholder="枚数" />
+                </SelectTrigger>
+                <SelectContent>
+                  {imageCounts.map((count) => (
+                    <SelectItem key={count.value} value={count.value}>
+                      {count.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <Button 
+        onClick={handleGenerate} 
+        disabled={isLoading || !prompt.trim()}
+        className="w-full"
+        size="lg"
+      >
+        {isLoading ? (
+          <>
+            <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+            生成中...
+          </>
+        ) : (
+          <>
+            <Sparkles className="mr-2 h-4 w-4" />
+            背景を生成
+          </>
+        )}
+      </Button>
     </div>
   );
 
