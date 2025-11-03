@@ -75,7 +75,13 @@ import {
   List,
   Maximize2,
   ArrowUpDown,
-  Filter
+  Filter,
+  FileText,
+  Download as DownloadIcon2,
+  RotateCcw,
+  Calendar,
+  ImagePlus,
+  Search as SearchIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -274,8 +280,34 @@ export default function VirtualBackgroundGeneratorPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   
-  // 履歴関連の状態
-  const [history, setHistory] = useState<any[]>([]);
+  // 履歴関連の状態（7.1.4）
+  interface HistoryItem {
+    id: string;
+    imageUrl: string;
+    prompt?: string;
+    negativePrompt?: string;
+    category?: string;
+    style?: string;
+    resolution?: string;
+    color?: string;
+    timestamp: string;
+    type: 'generated' | 'search';
+    searchKeyword?: string; // 検索履歴の場合
+    searchParams?: {
+      categories?: string[];
+      colors?: string[];
+      resolution?: string;
+      license?: string;
+    }; // 検索パラメータ
+  }
+  
+  const HISTORY_STORAGE_KEY = 'virtual-bg-history';
+  const DEFAULT_MAX_HISTORY = 100; // デフォルトの履歴保存数上限
+  
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'generated' | 'search'>('all'); // 履歴フィルター（7.1.4）
+  const [historySearchKeyword, setHistorySearchKeyword] = useState(''); // 履歴検索キーワード（7.1.4）
+  const [maxHistoryCount, setMaxHistoryCount] = useState(DEFAULT_MAX_HISTORY); // 履歴保存数上限（7.1.4）
   
   const { handleAsyncError } = useErrorHandler();
 
@@ -514,7 +546,15 @@ export default function VirtualBackgroundGeneratorPage() {
       
       // 履歴に追加（自動保存）（7.1.6）
       newImages.forEach(img => {
-        addToHistory({ url: img.url, prompt: img.prompt });
+        addToHistory({
+          url: img.url,
+          prompt: img.prompt,
+          negativePrompt: img.negativePrompt,
+          category: img.category,
+          style: img.style,
+          resolution: img.resolution,
+          color: img.color,
+        }, 'generated');
       });
       
       // 生成完了通知（7.1.6）
@@ -678,6 +718,11 @@ export default function VirtualBackgroundGeneratorPage() {
       setSearchResults(mockResults);
       setTotalPages(Math.ceil(mockResults.length / 8));
       setCurrentPage(1);
+      
+      // 検索履歴に追加（7.1.4）
+      if (mockResults.length > 0) {
+        addToHistory({ url: mockResults[0].url }, 'search');
+      }
     }, "検索中にエラーが発生しました");
     setIsSearching(false);
   };
@@ -722,17 +767,173 @@ export default function VirtualBackgroundGeneratorPage() {
     setCurrentPage(page);
   };
 
-  // 履歴に追加
-  const addToHistory = (imageData: any) => {
-    const historyItem = {
-      id: Date.now().toString(),
+  // 履歴の読み込み（7.1.4）
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setHistory(parsed);
+      }
+    } catch (error) {
+      logger.error('履歴の読み込みエラー', error, 'VirtualBgGenerator');
+    }
+  }, []);
+
+  // 履歴の保存（7.1.4）
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+    } catch (error) {
+      logger.error('履歴の保存エラー', error, 'VirtualBgGenerator');
+    }
+  }, [history]);
+
+  // 履歴に追加（7.1.4: 拡張）
+  const addToHistory = useCallback((imageData: any, type: 'generated' | 'search' = 'generated') => {
+    // ユニークなIDを生成（タイムスタンプ + ランダム文字列）（7.1.4）
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const historyItem: HistoryItem = {
+      id: uniqueId,
       imageUrl: imageData.url || imageData,
-      prompt: prompt,
+      prompt: imageData.prompt || prompt,
+      negativePrompt: imageData.negativePrompt || negativePrompt,
+      category: imageData.category || category || undefined,
+      style: imageData.style || style || undefined,
+      resolution: imageData.resolution || resolution || undefined,
+      color: imageData.color || selectedColor || undefined,
       timestamp: new Date().toISOString(),
-      type: 'generated'
+      type: type,
+      searchKeyword: type === 'search' ? searchKeyword : undefined,
+      searchParams: type === 'search' ? {
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+        colors: selectedColors.length > 0 ? selectedColors : undefined,
+        resolution: selectedResolution || undefined,
+        license: selectedLicense || undefined,
+      } : undefined,
     };
-    setHistory(prev => [historyItem, ...prev.slice(0, 9)]); // 最新10件まで保持
-  };
+    setHistory(prev => {
+      const newHistory = [historyItem, ...prev];
+      // 上限を超えた場合は古いものから削除（7.1.4）
+      return newHistory.slice(0, maxHistoryCount);
+    });
+  }, [prompt, negativePrompt, category, style, resolution, selectedColor, searchKeyword, selectedCategories, selectedColors, selectedResolution, selectedLicense, maxHistoryCount]);
+
+  // 履歴の削除（7.1.4）
+  const deleteHistoryItem = useCallback((id: string) => {
+    setHistory(prev => prev.filter(item => item.id !== id));
+    toast.success('履歴を削除しました');
+  }, []);
+
+  // 履歴の全削除（7.1.4）
+  const clearHistory = useCallback(() => {
+    if (confirm('すべての履歴を削除しますか？')) {
+      setHistory([]);
+      toast.success('すべての履歴を削除しました');
+    }
+  }, []);
+
+  // 履歴の復元（7.1.4）
+  const restoreHistoryItem = useCallback((item: HistoryItem) => {
+    if (item.type === 'generated') {
+      // 生成履歴の復元
+      setPrompt(item.prompt || '');
+      setNegativePrompt(item.negativePrompt || '');
+      setCategory(item.category || '');
+      setStyle(item.style || '');
+      setResolution(item.resolution || '');
+      setSelectedColor(item.color || '');
+      setGeneratedImages([{
+        id: `history-${item.id}`,
+        url: item.imageUrl,
+        prompt: item.prompt || '',
+        negativePrompt: item.negativePrompt,
+        category: item.category,
+        style: item.style,
+        resolution: item.resolution,
+        color: item.color,
+        createdAt: new Date(item.timestamp).getTime(),
+        downloadCount: 0,
+      }]);
+      setSelectedImage(item.imageUrl);
+      toast.success('履歴を復元しました');
+    } else if (item.type === 'search') {
+      // 検索履歴の復元
+      setSearchKeyword(item.searchKeyword || '');
+      setSelectedCategories(item.searchParams?.categories || []);
+      setSelectedColors(item.searchParams?.colors || []);
+      setSelectedResolution(item.searchParams?.resolution || '');
+      setSelectedLicense(item.searchParams?.license || '');
+      toast.success('検索条件を復元しました');
+      // 検索を実行
+      handleSearch();
+    }
+  }, [handleSearch]);
+
+  // フィルター済み・検索済み履歴（7.1.4）
+  const filteredHistory = useMemo(() => {
+    let filtered = [...history];
+    
+    // タイプフィルター
+    if (historyFilter !== 'all') {
+      filtered = filtered.filter(item => item.type === historyFilter);
+    }
+    
+    // キーワード検索
+    if (historySearchKeyword.trim()) {
+      const keyword = historySearchKeyword.toLowerCase();
+      filtered = filtered.filter(item => 
+        item.prompt?.toLowerCase().includes(keyword) ||
+        item.searchKeyword?.toLowerCase().includes(keyword) ||
+        item.category?.toLowerCase().includes(keyword) ||
+        item.style?.toLowerCase().includes(keyword)
+      );
+    }
+    
+    return filtered;
+  }, [history, historyFilter, historySearchKeyword]);
+
+  // 履歴のエクスポート（CSV/JSON）（7.1.4）
+  const exportHistory = useCallback((format: 'csv' | 'json') => {
+    try {
+      if (format === 'csv') {
+        // CSV形式
+        const headers = ['ID', 'タイプ', '画像URL', 'プロンプト', 'カテゴリ', 'スタイル', '解像度', '生成日時'];
+        const rows = filteredHistory.map(item => [
+          item.id,
+          item.type === 'generated' ? '生成' : '検索',
+          item.imageUrl,
+          item.prompt || '',
+          item.category || '',
+          item.style || '',
+          item.resolution || '',
+          new Date(item.timestamp).toLocaleString('ja-JP'),
+        ]);
+        const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `virtual-bg-history-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // JSON形式
+        const jsonContent = JSON.stringify(filteredHistory, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `virtual-bg-history-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+      toast.success(`${format.toUpperCase()}形式でエクスポートしました`);
+    } catch (error) {
+      logger.error('エクスポートエラー', error, 'VirtualBgGenerator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, [filteredHistory]);
 
   // デスクトップ用のコントロールパネル
   const desktopControlPanelContent = (
@@ -1208,59 +1409,271 @@ export default function VirtualBackgroundGeneratorPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="history" className="flex-grow space-y-4 mt-4">
-          <div className="space-y-3">
+        <TabsContent value="history" className="flex-grow space-y-4 mt-4 overflow-hidden flex flex-col">
+          {/* 履歴ツールバー（7.1.4） */}
+          <div className="space-y-3 flex-shrink-0">
             <div className="flex justify-between items-center">
-              <Label>生成履歴</Label>
-              <Badge variant="secondary">{history.length}件</Badge>
+              <div className="flex items-center gap-2">
+                <Label>履歴</Label>
+                <Badge variant="secondary">{filteredHistory.length}件</Badge>
+                {history.length !== filteredHistory.length && (
+                  <Badge variant="outline" className="text-xs">
+                    全{history.length}件
+                  </Badge>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="default" size="sm">
+                      <DownloadIcon2 className="h-4 w-4 mr-2" />
+                      エクスポート
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+                    <DropdownMenuItem onClick={() => exportHistory('csv')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      CSV形式
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportHistory('json')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      JSON形式
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {history.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearHistory}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    全削除
+                  </Button>
+                )}
+              </div>
             </div>
             
-            {history.length > 0 ? (
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {history.map((item) => (
-                  <Card 
-                    key={item.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => {
-                      setSelectedImage(item.imageUrl);
-                      setGeneratedImages([item.imageUrl]);
-                      if (!isDesktop) {
-                        setActiveTab("preview");
-                      }
-                    }}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex space-x-3">
-                        <div className="w-16 h-12 relative overflow-hidden rounded">
-                          <img
-                            src={item.imageUrl}
-                            alt="履歴画像"
-                            className="w-full h-full object-cover"
-                          />
+            {/* フィルターと検索（7.1.4） */}
+            <div className="flex gap-2">
+              <div className="flex border rounded-md flex-1">
+                <Button
+                  variant={historyFilter === 'all' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setHistoryFilter('all')}
+                  className="rounded-r-none flex-1"
+                >
+                  すべて
+                </Button>
+                <Button
+                  variant={historyFilter === 'generated' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setHistoryFilter('generated')}
+                  className="rounded-none border-x"
+                >
+                  <ImagePlus className="h-3 w-3 mr-1" />
+                  生成
+                </Button>
+                <Button
+                  variant={historyFilter === 'search' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setHistoryFilter('search')}
+                  className="rounded-l-none flex-1"
+                >
+                  <SearchIcon className="h-3 w-3 mr-1" />
+                  検索
+                </Button>
+              </div>
+            </div>
+            
+            {/* 履歴検索（7.1.4） */}
+            <div className="relative">
+              <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="履歴を検索..."
+                value={historySearchKeyword}
+                onChange={(e) => setHistorySearchKeyword(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+          
+          {/* 履歴リスト（7.1.4: タイムライン表示） */}
+          <div className="flex-grow overflow-y-auto space-y-3 pr-1">
+            {filteredHistory.length > 0 ? (
+              <div className="space-y-3">
+                {filteredHistory.map((item, index) => {
+                  const prevDate = index > 0 ? new Date(filteredHistory[index - 1].timestamp) : null;
+                  const currentDate = new Date(item.timestamp);
+                  const showDateSeparator = !prevDate || 
+                    prevDate.toDateString() !== currentDate.toDateString();
+                  
+                  return (
+                    <div key={item.id} className="space-y-2">
+                      {/* 日付セパレーター（タイムライン表示）（7.1.4） */}
+                      {showDateSeparator && (
+                        <div className="flex items-center gap-2 py-1 sticky top-0 bg-[#1A1A1A] z-10">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {currentDate.toLocaleDateString('ja-JP', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </span>
                         </div>
-                        <div className="flex-grow min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {item.prompt || "プロンプトなし"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(item.timestamp).toLocaleString()}
-                          </p>
-                          <Badge variant="outline" className="text-xs mt-1">
-                            {item.type === 'generated' ? 'AI生成' : '検索'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      )}
+                      
+                      <Card 
+                        className={cn(
+                          "hover:shadow-md transition-all relative",
+                          item.type === 'generated' ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-blue-500'
+                        )}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex gap-3">
+                            {/* サムネイル（拡大表示）（7.1.4） */}
+                            <div 
+                              className="w-24 h-16 relative overflow-hidden rounded flex-shrink-0 cursor-pointer group"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const historyImage: GeneratedImage = {
+                                  id: `history-${item.id}`,
+                                  url: item.imageUrl,
+                                  prompt: item.prompt || '',
+                                  negativePrompt: item.negativePrompt,
+                                  category: item.category,
+                                  style: item.style,
+                                  resolution: item.resolution,
+                                  color: item.color,
+                                  createdAt: new Date(item.timestamp).getTime(),
+                                  downloadCount: 0,
+                                };
+                                setGeneratedImages([historyImage]);
+                                setExpandedImageId(`history-${item.id}`);
+                              }}
+                            >
+                              <img
+                                src={item.imageUrl}
+                                alt="履歴画像"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </div>
+                            
+                            {/* 情報 */}
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-grow min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant={item.type === 'generated' ? 'default' : 'secondary'} className="text-xs">
+                                      {item.type === 'generated' ? 'AI生成' : '検索'}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {currentDate.toLocaleTimeString('ja-JP', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                      })}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-medium truncate mb-1">
+                                    {item.type === 'generated' 
+                                      ? (item.prompt || "プロンプトなし")
+                                      : (item.searchKeyword || "検索キーワードなし")
+                                    }
+                                  </p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {item.category && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {categories.find(c => c.value === item.category)?.label || item.category}
+                                      </Badge>
+                                    )}
+                                    {item.style && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {styles.find(s => s.value === item.style)?.label || item.style}
+                                      </Badge>
+                                    )}
+                                    {item.resolution && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {item.resolution}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* アクションボタン（7.1.4） */}
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      restoreHistoryItem(item);
+                                    }}
+                                    className="h-8 w-8 p-0"
+                                    title="復元"
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteHistoryItem(item.id);
+                                    }}
+                                    className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                                    title="削除"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-          <div className="text-center text-muted-foreground py-8">
-            <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>生成履歴がここに表示されます</p>
+              <div className="text-center text-muted-foreground py-8">
+                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>
+                  {historySearchKeyword || historyFilter !== 'all' 
+                    ? '検索条件に一致する履歴が見つかりませんでした' 
+                    : '履歴がここに表示されます'}
+                </p>
               </div>
             )}
           </div>
+          
+          {/* 履歴保存数上限設定（7.1.4） */}
+          {history.length > 0 && (
+            <div className="flex-shrink-0 pt-2 border-t space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">履歴保存数上限</Label>
+                <Input
+                  type="number"
+                  min="10"
+                  max="1000"
+                  value={maxHistoryCount}
+                  onChange={(e) => {
+                    const value = Math.max(10, Math.min(1000, parseInt(e.target.value) || DEFAULT_MAX_HISTORY));
+                    setMaxHistoryCount(value);
+                  }}
+                  className="w-20 h-8 text-xs"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                現在 {history.length}件保存中（上限: {maxHistoryCount}件）
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
@@ -1725,7 +2138,7 @@ export default function VirtualBackgroundGeneratorPage() {
                     並び替え
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="bg-[#2D2D2D] border-[#4A4A4A]">
                   <DropdownMenuLabel>並び替え</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setSortOrder('newest')}>
@@ -1979,14 +2392,16 @@ export default function VirtualBackgroundGeneratorPage() {
             </div>
           )}
           
-          {/* 拡大プレビューダイアログ（7.1.2） */}
+          {/* 拡大プレビューダイアログ（7.1.2 / 7.1.4: 履歴からも表示可能） */}
           <Dialog open={expandedImageId !== null} onOpenChange={(open) => !open && setExpandedImageId(null)}>
             <DialogContent className="max-w-4xl w-full">
               <DialogHeader>
                 <DialogTitle>画像プレビュー</DialogTitle>
               </DialogHeader>
               {expandedImageId && (() => {
-                const img = sortedImages.find(i => i.id === expandedImageId);
+                // sortedImagesまたはgeneratedImagesから検索（履歴からの拡大表示にも対応）（7.1.4）
+                const img = sortedImages.find(i => i.id === expandedImageId) || 
+                            generatedImages.find(i => i.id === expandedImageId);
                 if (!img) return null;
                 return (
                   <div className="space-y-4">
