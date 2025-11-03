@@ -461,11 +461,15 @@ export default function BrandingGeneratorPage() {
 
   // 結果表示コンテンツ
   const resultsDisplayContent = (
-    <div className="flex flex-col h-full p-6 space-y-4 relative">
-      {/* ステップインジケーター */}
-      {currentStep !== "input" && <StepIndicator currentStep={currentStep} />}
+    <div className="flex flex-col h-full relative">
+      {/* ステップインジケーター（固定） */}
+      {currentStep !== "input" && (
+        <div className="sticky top-0 z-10 bg-[#1A1A1A] border-b border-[#4A4A4A] p-4 sm:p-6 pb-4">
+          <StepIndicator currentStep={currentStep} />
+        </div>
+      )}
       
-      <div className="flex-grow space-y-4 overflow-auto">
+      <div className="flex-grow space-y-4 overflow-auto p-4 sm:p-6 pr-2 sm:pr-6">
         {/* 分析中 */}
         {currentStep === "analyzing" && (
           <div className="space-y-4">
@@ -496,12 +500,12 @@ export default function BrandingGeneratorPage() {
 
         {/* 分析結果表示 */}
         {currentStep === "analysis-results" && analysisResults && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
+          <div className="space-y-4 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pr-2 sm:pr-0">
               <h2 className="text-2xl font-semibold text-[#E0E0E0]">分析結果</h2>
               <Button
                 onClick={handleGenerateConcepts}
-                className="bg-[#0070F3] hover:bg-[#0051CC] text-white"
+                className="bg-[#0070F3] hover:bg-[#0051CC] text-white shrink-0 w-full sm:w-auto focus:ring-2 focus:ring-[#00D4FF] focus:ring-offset-2 focus:ring-offset-[#1A1A1A]"
               >
                 コンセプトを提案する
                 <ChevronRight className="ml-2 h-4 w-4" />
