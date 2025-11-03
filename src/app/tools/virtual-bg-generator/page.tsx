@@ -54,6 +54,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useErrorHandler } from "@/hooks/use-error-handler";
 import { validatePrompt } from "@/lib/validation";
@@ -279,6 +280,24 @@ export default function VirtualBackgroundGeneratorPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // 検索機能の強化（7.1.3）
+  const [searchThumbnailSize, setSearchThumbnailSize] = useState<'small' | 'medium' | 'large'>('medium'); // サムネイルサイズ
+  const [searchSortOrder, setSearchSortOrder] = useState<'relevance' | 'popular' | 'newest' | 'oldest'>('relevance'); // 検索結果のソート順
+  const [useInfiniteScroll, setUseInfiniteScroll] = useState(true); // 無限スクロールを使用するか
+  const [savedSearchConditions, setSavedSearchConditions] = useState<Array<{
+    id: string;
+    name: string;
+    keyword?: string;
+    categories?: string[];
+    colors?: string[];
+    resolution?: string;
+    license?: string;
+    createdAt: number;
+  }>>([]); // 保存済み検索条件（7.1.3）
+  const SAVED_SEARCH_CONDITIONS_STORAGE_KEY = 'virtual-bg-saved-search-conditions';
+  const searchObserverRef = useRef<IntersectionObserver | null>(null); // 無限スクロール用（7.1.3）
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null); // 無限スクロール用（7.1.3）
   
   // 履歴関連の状態（7.1.4）
   interface HistoryItem {
@@ -696,16 +715,16 @@ export default function VirtualBackgroundGeneratorPage() {
     }
   }, [selectedImageIds.size, sortedImages]);
 
-  // 検索機能のハンドラー
+  // 検索機能のハンドラー（7.1.3: 拡張）
   const handleSearch = async () => {
     setIsSearching(true);
     await handleAsyncError(async () => {
       // モック検索処理
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // モック検索結果を生成
-      const mockResults = Array.from({ length: 12 }, (_, i) => ({
-        id: `search-${i}`,
+      // モック検索結果を生成（より多くの結果を生成して無限スクロール対応）（7.1.3）
+      const allMockResults = Array.from({ length: 50 }, (_, i) => ({
+        id: `search-${Date.now()}-${i}`,
         url: `https://picsum.photos/400/300?random=${Date.now() + i}`,
         title: `検索結果 ${i + 1}`,
         category: categories[i % categories.length].value,
@@ -713,19 +732,93 @@ export default function VirtualBackgroundGeneratorPage() {
         resolution: '1920x1080',
         license: 'free',
         downloads: Math.floor(Math.random() * 1000),
+        createdAt: Date.now() - (i * 1000 * 60 * 60), // 時間差を付ける
+        relevanceScore: Math.random(), // 関連度スコア
       }));
       
-      setSearchResults(mockResults);
-      setTotalPages(Math.ceil(mockResults.length / 8));
+      // ソート（7.1.3）
+      let sortedResults = [...allMockResults];
+      switch (searchSortOrder) {
+        case 'relevance':
+          sortedResults.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+          break;
+        case 'popular':
+          sortedResults.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+          break;
+        case 'newest':
+          sortedResults.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          break;
+        case 'oldest':
+          sortedResults.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+          break;
+      }
+      
+      // 検索結果を設定（無限スクロールの場合は常にリセット）
+      setSearchResults(sortedResults);
       setCurrentPage(1);
+      setTotalPages(Math.ceil(sortedResults.length / 8));
       
       // 検索履歴に追加（7.1.4）
-      if (mockResults.length > 0) {
-        addToHistory({ url: mockResults[0].url }, 'search');
+      if (sortedResults.length > 0) {
+        addToHistory({ url: sortedResults[0].url }, 'search');
       }
     }, "検索中にエラーが発生しました");
     setIsSearching(false);
   };
+
+  // 保存済み検索条件の保存（7.1.3）
+  const handleSaveSearchCondition = useCallback(() => {
+    const name = window.prompt('検索条件の名前を入力してください:');
+    if (!name || !name.trim()) return;
+    
+    const condition = {
+      id: `search-condition-${Date.now()}`,
+      name: name.trim(),
+      keyword: searchKeyword || undefined,
+      categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+      colors: selectedColors.length > 0 ? selectedColors : undefined,
+      resolution: selectedResolution || undefined,
+      license: selectedLicense || undefined,
+      createdAt: Date.now(),
+    };
+    
+    setSavedSearchConditions(prev => [...prev, condition].slice(-10)); // 最新10件まで
+    toast.success('検索条件を保存しました');
+  }, [searchKeyword, selectedCategories, selectedColors, selectedResolution, selectedLicense]);
+
+  // 保存済み検索条件の適用（7.1.3）
+  const handleLoadSearchCondition = useCallback((condition: typeof savedSearchConditions[0]) => {
+    setSearchKeyword(condition.keyword || '');
+    setSelectedCategories(condition.categories || []);
+    setSelectedColors(condition.colors || []);
+    setSelectedResolution(condition.resolution || '');
+    setSelectedLicense(condition.license || '');
+    toast.success('検索条件を適用しました');
+  }, []);
+
+  // 保存済み検索条件の削除（7.1.3）
+  const handleDeleteSearchCondition = useCallback((id: string) => {
+    setSavedSearchConditions(prev => prev.filter(c => c.id !== id));
+    toast.success('検索条件を削除しました');
+  }, []);
+
+  // 検索結果のエクスポート（7.1.3）
+  const handleExportSearchResults = useCallback(() => {
+    try {
+      const urls = searchResults.map(r => r.url).join('\n');
+      const blob = new Blob([urls], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `virtual-bg-search-results-${new Date().toISOString().split('T')[0]}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('検索結果をエクスポートしました');
+    } catch (error) {
+      logger.error('エクスポートエラー', error, 'VirtualBgGenerator');
+      toast.error('エクスポートに失敗しました');
+    }
+  }, [searchResults]);
 
   // カテゴリフィルターの切り替え
   const toggleCategory = (categoryValue: string) => {
@@ -766,6 +859,96 @@ export default function VirtualBackgroundGeneratorPage() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
+
+  // 無限スクロールの設定（7.1.3）
+  useEffect(() => {
+    if (!useInfiniteScroll || !loadMoreTriggerRef.current) {
+      // Observerをクリーンアップ
+      if (searchObserverRef.current && loadMoreTriggerRef.current) {
+        searchObserverRef.current.unobserve(loadMoreTriggerRef.current);
+        searchObserverRef.current = null;
+      }
+      return;
+    }
+    
+    // Intersection Observerを設定
+    searchObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && !isSearching && searchResults.length > 0) {
+          // 追加の検索結果を生成（無限スクロール用）
+          setIsSearching(true);
+          handleAsyncError(async () => {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 追加のモック検索結果を生成
+            const additionalResults = Array.from({ length: 10 }, (_, i) => ({
+              id: `search-${Date.now()}-${searchResults.length + i}`,
+              url: `https://picsum.photos/400/300?random=${Date.now() + searchResults.length + i}`,
+              title: `検索結果 ${searchResults.length + i + 1}`,
+              category: categories[(searchResults.length + i) % categories.length].value,
+              color: ['red', 'blue', 'green', 'purple', 'orange'][(searchResults.length + i) % 5],
+              resolution: '1920x1080',
+              license: 'free',
+              downloads: Math.floor(Math.random() * 1000),
+              createdAt: Date.now() - ((searchResults.length + i) * 1000 * 60 * 60),
+              relevanceScore: Math.random(),
+            }));
+            
+            setSearchResults(prev => [...prev, ...additionalResults]);
+            setIsSearching(false);
+          }, "追加読み込み中にエラーが発生しました");
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    if (loadMoreTriggerRef.current) {
+      searchObserverRef.current.observe(loadMoreTriggerRef.current);
+    }
+    
+    return () => {
+      if (searchObserverRef.current && loadMoreTriggerRef.current) {
+        searchObserverRef.current.unobserve(loadMoreTriggerRef.current);
+      }
+    };
+  }, [useInfiniteScroll, isSearching, searchResults.length, handleAsyncError, categories]);
+
+  // サムネイルサイズのスタイル（7.1.3）
+  const thumbnailSizeClasses = useMemo(() => {
+    switch (searchThumbnailSize) {
+      case 'small':
+        return 'grid-cols-3 gap-1.5';
+      case 'medium':
+        return 'grid-cols-2 gap-2';
+      case 'large':
+        return 'grid-cols-1 gap-3';
+      default:
+        return 'grid-cols-2 gap-2';
+    }
+  }, [searchThumbnailSize]);
+
+  // 保存済み検索条件の読み込み（7.1.3）
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SAVED_SEARCH_CONDITIONS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setSavedSearchConditions(parsed);
+      }
+    } catch (error) {
+      logger.error('保存済み検索条件の読み込みエラー', error, 'VirtualBgGenerator');
+    }
+  }, []);
+
+  // 保存済み検索条件の保存（7.1.3）
+  useEffect(() => {
+    try {
+      localStorage.setItem(SAVED_SEARCH_CONDITIONS_STORAGE_KEY, JSON.stringify(savedSearchConditions));
+    } catch (error) {
+      logger.error('保存済み検索条件の保存エラー', error, 'VirtualBgGenerator');
+    }
+  }, [savedSearchConditions]);
 
   // 履歴の読み込み（7.1.4）
   useEffect(() => {
@@ -1322,35 +1505,115 @@ export default function VirtualBackgroundGeneratorPage() {
               </div>
             </div>
 
-            {/* ソート */}
+            {/* ソート（7.1.3: 検索結果のソート順と統合） */}
             <div>
               <Label className="text-sm text-muted-foreground">並び順</Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={searchSortOrder} onValueChange={(value: typeof searchSortOrder) => {
+                setSearchSortOrder(value);
+                // ソート順変更時に再検索（7.1.3）
+                if (searchResults.length > 0) {
+                  handleSearch();
+                }
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="並び順を選択" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#2D2D2D] border-[#4A4A4A]">
                   <SelectItem value="relevance">関連度順</SelectItem>
-                  <SelectItem value="newest">新着順</SelectItem>
                   <SelectItem value="popular">人気順</SelectItem>
-                  <SelectItem value="downloads">ダウンロード数順</SelectItem>
+                  <SelectItem value="newest">新着順</SelectItem>
+                  <SelectItem value="oldest">古い順</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* 検索結果エリア */}
+            {/* 保存済み検索条件（7.1.3） */}
+            {savedSearchConditions.length > 0 && (
+              <div>
+                <Label className="text-sm text-muted-foreground">保存済み検索条件</Label>
+                <div className="space-y-1 max-h-24 overflow-y-auto">
+                  {savedSearchConditions.map((condition) => (
+                    <div key={condition.id} className="flex items-center gap-1 p-2 border rounded hover:bg-accent group">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          handleLoadSearchCondition(condition);
+                          handleSearch();
+                        }}
+                        className="flex-1 justify-start text-left h-auto p-0 text-xs"
+                      >
+                        <span className="truncate">{condition.name}</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteSearchCondition(condition.id)}
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 検索結果エリア（7.1.3: 強化） */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label>検索結果</Label>
-                <Badge variant="secondary">{searchResults.length}件</Badge>
+                <div className="flex items-center gap-2">
+                  <Label>検索結果</Label>
+                  <Badge variant="secondary">{searchResults.length}件</Badge>
+                </div>
+                <div className="flex gap-2">
+                  {/* サムネイルサイズ調整（7.1.3） */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Grid3x3 className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+                      <DropdownMenuItem onClick={() => setSearchThumbnailSize('small')}>
+                        {searchThumbnailSize === 'small' && '✓ '}小
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSearchThumbnailSize('medium')}>
+                        {searchThumbnailSize === 'medium' && '✓ '}中
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSearchThumbnailSize('large')}>
+                        {searchThumbnailSize === 'large' && '✓ '}大
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  {/* 検索結果のエクスポート（7.1.3） */}
+                  {searchResults.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportSearchResults}
+                    >
+                      <DownloadIcon2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
+                  {/* 検索条件の保存（7.1.3） */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSaveSearchCondition}
+                  >
+                    <Save className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               
-              {/* 検索結果グリッド */}
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+              {/* 検索結果グリッド（7.1.3: サムネイルサイズ対応、無限スクロール対応） */}
+              <div className={`grid ${thumbnailSizeClasses} max-h-96 overflow-y-auto`}>
                 {searchResults.length > 0 ? (
-                  searchResults
-                    .slice((currentPage - 1) * 8, currentPage * 8)
-                    .map((result, i) => (
+                  <>
+                    {searchResults.map((result, i) => (
                       <Card 
                         key={result.id} 
                         className="cursor-pointer hover:shadow-md transition-shadow"
@@ -1364,25 +1627,37 @@ export default function VirtualBackgroundGeneratorPage() {
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
-                            <div className="absolute bottom-1 left-1 right-1">
+                            <div className="absolute bottom-1 left-1 right-1 flex gap-1">
                               <Badge variant="secondary" className="text-xs">
                                 {result.downloads} DL
                               </Badge>
+                              {result.category && (
+                                <Badge variant="outline" className="text-xs">
+                                  {categories.find(c => c.value === result.category)?.label || result.category}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </CardContent>
                       </Card>
-                    ))
+                    ))}
+                    {/* 無限スクロール用トリガー（7.1.3） */}
+                    {useInfiniteScroll && (
+                      <div ref={loadMoreTriggerRef} className="col-span-full h-4 flex items-center justify-center">
+                        {isSearching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div className="col-span-2 text-center text-muted-foreground py-8">
-              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <div className="col-span-full text-center text-muted-foreground py-8">
+                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>検索キーワードを入力して検索してください</p>
                   </div>
                 )}
               </div>
 
-              {/* ページネーション */}
-              {searchResults.length > 8 && (
+              {/* ページネーション（無限スクロール無効時のみ表示）（7.1.3） */}
+              {!useInfiniteScroll && searchResults.length > 8 && (
                 <div className="flex justify-center space-x-2">
                   <Button 
                     variant="outline" 
@@ -1393,7 +1668,7 @@ export default function VirtualBackgroundGeneratorPage() {
                     前へ
                   </Button>
                   <Button variant="outline" size="sm">
-                    {currentPage}
+                    {currentPage} / {totalPages}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -1405,6 +1680,15 @@ export default function VirtualBackgroundGeneratorPage() {
                   </Button>
                 </div>
               )}
+              
+              {/* 無限スクロールの切り替え（7.1.3） */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">無限スクロール</Label>
+                <Switch
+                  checked={useInfiniteScroll}
+                  onCheckedChange={setUseInfiniteScroll}
+                />
+              </div>
             </div>
           </div>
         </TabsContent>
@@ -2019,19 +2303,52 @@ export default function VirtualBackgroundGeneratorPage() {
           </div>
         </div>
 
-        {/* 検索結果エリア */}
+        {/* 検索結果エリア（7.1.3: 強化） */}
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <Label>検索結果</Label>
-            <Badge variant="secondary">{searchResults.length}件</Badge>
+            <div className="flex items-center gap-2">
+              <Label>検索結果</Label>
+              <Badge variant="secondary">{searchResults.length}件</Badge>
+            </div>
+            <div className="flex gap-2">
+              {/* サムネイルサイズ調整（7.1.3） */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Grid3x3 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-[#2D2D2D] border-[#4A4A4A]">
+                  <DropdownMenuItem onClick={() => setSearchThumbnailSize('small')}>
+                    {searchThumbnailSize === 'small' && '✓ '}小
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSearchThumbnailSize('medium')}>
+                    {searchThumbnailSize === 'medium' && '✓ '}中
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSearchThumbnailSize('large')}>
+                    {searchThumbnailSize === 'large' && '✓ '}大
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* 検索結果のエクスポート（7.1.3） */}
+              {searchResults.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportSearchResults}
+                >
+                  <DownloadIcon2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
           
-          {/* 検索結果グリッド */}
-          <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+          {/* 検索結果グリッド（7.1.3: サムネイルサイズ対応、無限スクロール対応） */}
+          <div className={`grid ${thumbnailSizeClasses} max-h-96 overflow-y-auto`}>
             {searchResults.length > 0 ? (
-              searchResults
-                .slice((currentPage - 1) * 8, currentPage * 8)
-                .map((result, i) => (
+              <>
+                {searchResults.map((result, i) => (
                   <Card 
                     key={result.id} 
                     className="cursor-pointer hover:shadow-md transition-shadow"
@@ -2045,25 +2362,37 @@ export default function VirtualBackgroundGeneratorPage() {
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
-                        <div className="absolute bottom-1 left-1 right-1">
+                        <div className="absolute bottom-1 left-1 right-1 flex gap-1">
                           <Badge variant="secondary" className="text-xs">
                             {result.downloads} DL
                           </Badge>
+                          {result.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {categories.find(c => c.value === result.category)?.label || result.category}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))
+                ))}
+                {/* 無限スクロール用トリガー（7.1.3） */}
+                {useInfiniteScroll && (
+                  <div ref={loadMoreTriggerRef} className="col-span-full h-4 flex items-center justify-center">
+                    {isSearching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="col-span-2 text-center text-muted-foreground py-8">
+              <div className="col-span-full text-center text-muted-foreground py-8">
                 <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>検索キーワードを入力して検索してください</p>
               </div>
             )}
           </div>
 
-          {/* ページネーション */}
-          {searchResults.length > 8 && (
+          {/* ページネーション（無限スクロール無効時のみ表示）（7.1.3） */}
+          {!useInfiniteScroll && searchResults.length > 8 && (
             <div className="flex justify-center space-x-2">
               <Button 
                 variant="outline" 
@@ -2074,7 +2403,7 @@ export default function VirtualBackgroundGeneratorPage() {
                 前へ
               </Button>
               <Button variant="outline" size="sm">
-                {currentPage}
+                {currentPage} / {totalPages}
               </Button>
               <Button 
                 variant="outline" 
@@ -2086,6 +2415,15 @@ export default function VirtualBackgroundGeneratorPage() {
               </Button>
             </div>
           )}
+          
+          {/* 無限スクロールの切り替え（7.1.3） */}
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">無限スクロール</Label>
+            <Switch
+              checked={useInfiniteScroll}
+              onCheckedChange={setUseInfiniteScroll}
+            />
+          </div>
         </div>
       </div>
     </div>
