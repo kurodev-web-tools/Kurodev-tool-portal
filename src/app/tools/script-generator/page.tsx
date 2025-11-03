@@ -3532,7 +3532,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
       </aside>
 
       {/* 中央: 企画案エリア */}
-      <main className="flex-1 p-3 sm:p-4 overflow-y-auto md:pt-4 pt-20 md:border-r border-[#4A4A4A]">
+      <main className="flex-1 p-3 sm:p-4 overflow-y-auto md:pt-4 md:border-r border-[#4A4A4A]">
         {isGeneratingIdeas ? (
           <ProgressBar
             steps={ideaGenerationSteps}

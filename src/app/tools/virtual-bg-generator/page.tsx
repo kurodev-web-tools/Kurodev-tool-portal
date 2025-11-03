@@ -3007,7 +3007,7 @@ export default function VirtualBackgroundGeneratorPage() {
           
           {/* 画像一覧（7.1.2: グリッドビューとリストビュー） */}
           {viewMode === 'grid' ? (
-            <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-y-auto">
+            <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto">
               {sortedImages.map((img) => (
                 <Card 
                   key={img.id} 
@@ -3405,7 +3405,7 @@ export default function VirtualBackgroundGeneratorPage() {
                 <p className="text-[#A0A0A0] mt-2">AIがあなたにぴったりの背景画像を生成しています。しばらくお待ちください。</p>
               </div>
               {/* ローディング中のスケルトン */}
-              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4" role="status" aria-label="バーチャル背景生成中">
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4" role="status" aria-label="バーチャル背景生成中">
                 <Skeleton className="aspect-video w-full" />
                 <Skeleton className="aspect-video w-full" />
               </div>
