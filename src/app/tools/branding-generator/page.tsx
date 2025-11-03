@@ -753,10 +753,10 @@ export default function BrandingGeneratorPage() {
   );
 
   return (
-    <div className="h-full flex flex-col lg:flex-row lg:h-screen">
+    <div className="h-full flex flex-col md:flex-row md:h-screen">
       {isDesktop ? (
         <>
-          <main className="flex-grow p-4 w-full lg:w-auto overflow-y-auto">
+          <main className="flex-grow p-4 w-full md:w-auto overflow-y-auto">
             {resultsDisplayContent}
           </main>
 

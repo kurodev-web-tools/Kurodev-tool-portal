@@ -3489,10 +3489,10 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
   ), [selectedTab, handleGenerate, isGeneratingIdeas, savedScripts, groupedSavedScripts, loadSavedScript, deleteSavedScript, allTemplates, selectedTemplateId, categoryConfig, personas, selectedPersonaId, defaultPersonaId, handleEditPersona, setSelectedPersonaId, setDefaultPersona, deletePersona, handleCreatePersona]);
 
   return (
-    <div className="relative flex flex-col lg:flex-row lg:h-[calc(100vh-4.1rem)] lg:overflow-hidden">
-      {/* 左サイドバー (25%) */}
+    <div className="relative flex flex-col md:flex-row md:h-[calc(100vh-4.1rem)] md:overflow-hidden">
+      {/* 左サイドバー */}
       <aside className={`
-        ${isDesktop ? (isSidebarOpen ? 'w-1/4' : 'w-0') : 'w-0'}
+        ${isDesktop ? (isSidebarOpen ? 'w-0 md:w-72 lg:w-80 xl:w-96' : 'w-0') : 'w-0'}
         ${isDesktop ? 'border-r border-[#4A4A4A]' : ''}
         transition-all duration-300
         overflow-hidden
@@ -3531,8 +3531,8 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         )}
       </aside>
 
-      {/* 中央: 企画案エリア (50%) */}
-      <main className="flex-1 lg:w-1/2 p-3 sm:p-4 overflow-y-auto lg:pt-4 pt-20 lg:border-r border-[#4A4A4A]">
+      {/* 中央: 企画案エリア */}
+      <main className="flex-1 p-3 sm:p-4 overflow-y-auto md:pt-4 pt-20 md:border-r border-[#4A4A4A]">
         {isGeneratingIdeas ? (
           <ProgressBar
             steps={ideaGenerationSteps}
@@ -3995,10 +3995,10 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         )}
       </main>
 
-      {/* 右: 台本プレビューエリア (25%) - デスクトップのみ */}
+      {/* 右: 台本プレビューエリア - デスクトップのみ */}
       <aside className={`
-        hidden lg:block
-        w-1/4
+        hidden md:block
+        w-0 md:w-72 lg:w-80 xl:w-96
         overflow-y-auto
         bg-[#1A1A1A]
         border-l border-[#4A4A4A]

@@ -2930,7 +2930,7 @@ export default function VirtualBackgroundGeneratorPage() {
       ) : sortedImages.length > 0 ? (
         <div className="h-full flex flex-col">
           {/* ツールバー（7.1.2） */}
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 space-y-2 lg:space-y-0">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 space-y-2 md:space-y-0">
             <div className="flex items-center gap-2">
               <h3 className="text-base sm:text-lg lg:text-xl font-semibold">生成された背景</h3>
               <Badge variant="secondary">{sortedImages.length}枚</Badge>
@@ -3429,10 +3429,10 @@ export default function VirtualBackgroundGeneratorPage() {
   );
 
   return (
-    <div className="h-full flex flex-col lg:flex-row lg:h-screen">
+    <div className="h-full flex flex-col md:flex-row md:h-screen">
       {isDesktop ? (
         <>
-          <main className="flex-grow p-4 w-full lg:w-auto">
+          <main className="flex-grow p-4 w-full md:w-auto">
                 {previewContent}
           </main>
           {!isRightPanelOpen && (

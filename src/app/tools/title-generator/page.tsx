@@ -2239,16 +2239,16 @@ export default function TitleGeneratorPage() {
   );
 
   return (
-    <div className="h-full flex flex-col lg:flex-row lg:h-screen">
+    <div className="h-full flex flex-col md:flex-row md:h-screen">
       {isDesktop ? (
         <>
-          {/* 左側: 入力フォーム（50%） */}
-          <aside className="w-full lg:w-1/2 border-r border-[#4A4A4A] bg-[#1A1A1A] overflow-y-auto">
+          {/* 左側: 入力フォーム */}
+          <aside className="w-full md:w-72 lg:w-80 xl:w-96 border-r border-[#4A4A4A] bg-[#1A1A1A] overflow-y-auto">
             {controlPanelContent}
           </aside>
 
-          {/* 右側: 生成結果（50%） */}
-          <main className="w-full lg:w-1/2 p-3 sm:p-4 bg-[#1A1A1A] overflow-y-auto">
+          {/* 右側: 生成結果 */}
+          <main className="flex-1 p-3 sm:p-4 bg-[#1A1A1A] overflow-y-auto">
             {resultsDisplayContent}
           </main>
         </>
