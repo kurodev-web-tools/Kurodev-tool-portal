@@ -432,28 +432,37 @@ const ScheduleAdjusterPage: React.FC = () => {
                   ))}
                 </div>
               ) : projects.length === 0 ? (
-                <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-6 sm:p-8 min-h-[400px] border border-[#4A4A4A]">
-                  <Calendar className="w-12 h-12 text-[#A0A0A0] mb-4" aria-hidden="true" />
-                  <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">プロジェクトがありません</h3>
-                  <p className="text-sm sm:text-base text-[#A0A0A0] mb-4 px-4">
-                    新しいプロジェクトを作成して、コラボ配信のスケジュール調整を始めましょう。
-                  </p>
+                <div className="w-full bg-[#2D2D2D] rounded-lg flex flex-col items-center justify-center text-center p-8 sm:p-12 min-h-[500px] border border-dashed border-[#4A4A4A]">
+                  <div className="mb-6">
+                    <div className="w-20 h-20 rounded-full bg-[#1A1A1A] border-2 border-[#4A4A4A] flex items-center justify-center mb-4 mx-auto">
+                      <Calendar className="w-10 h-10 text-[#0070F3]" aria-hidden="true" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-[#E0E0E0] mb-2">プロジェクトがありません</h3>
+                    <p className="text-sm sm:text-base text-[#A0A0A0] mb-1 px-4 max-w-md mx-auto">
+                      新しいプロジェクトを作成して、コラボ配信のスケジュール調整を始めましょう
+                    </p>
+                    <p className="text-xs text-[#808080] px-4 max-w-md mx-auto">
+                      複数人の日程を調整し、最適な配信時間を見つけることができます
+                    </p>
+                  </div>
                   {isDesktop ? (
                     <Button
                       variant="default"
                       onClick={() => setIsSidebarOpen(true)}
-                      className="mt-2"
+                      size="lg"
+                      className="bg-[#0070F3] hover:bg-[#0051CC] text-white"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-5 w-5 mr-2" />
                       プロジェクトを作成
                     </Button>
                   ) : (
                     <Button
                       variant="default"
                       onClick={() => setMobileTab('add')}
-                      className="mt-2"
+                      size="lg"
+                      className="bg-[#0070F3] hover:bg-[#0051CC] text-white"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-5 w-5 mr-2" />
                       プロジェクトを作成
                     </Button>
                   )}

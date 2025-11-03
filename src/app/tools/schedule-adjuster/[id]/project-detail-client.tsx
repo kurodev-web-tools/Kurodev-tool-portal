@@ -257,18 +257,26 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-[#4A4A4A] rounded-lg bg-[#1A1A1A]">
-                  <Users className="w-12 h-12 text-[#808080] mb-4" />
-                  <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">参加者がいません</h3>
-                  <p className="text-sm text-[#A0A0A0] mb-4">
-                    招待リンクを共有するか、参加者を追加してください
-                  </p>
+                <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-[#4A4A4A] rounded-lg bg-[#1A1A1A]">
+                  <div className="mb-6">
+                    <div className="w-16 h-16 rounded-full bg-[#2D2D2D] border-2 border-[#4A4A4A] flex items-center justify-center mb-4 mx-auto">
+                      <Users className="w-8 h-8 text-[#0070F3]" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">参加者がいません</h3>
+                    <p className="text-sm text-[#A0A0A0] mb-1 max-w-sm mx-auto px-4">
+                      招待リンクを共有するか、参加者を手動で追加してください
+                    </p>
+                    <p className="text-xs text-[#808080] max-w-sm mx-auto px-4">
+                      コラボ配信には参加者の登録が必要です
+                    </p>
+                  </div>
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={() => toast.info('この機能は今後実装予定です')}
-                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
+                    size="lg"
+                    className="bg-[#0070F3] hover:bg-[#0051CC] text-white"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-5 w-5 mr-2" />
                     参加者を追加
                   </Button>
                 </div>
@@ -366,18 +374,26 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-[#4A4A4A] rounded-lg bg-[#1A1A1A]">
-                  <Calendar className="w-12 h-12 text-[#808080] mb-4" />
-                  <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">スケジュールがありません</h3>
-                  <p className="text-sm text-[#A0A0A0] mb-4">
-                    最初のスケジュールを追加して配信の準備を始めましょう
-                  </p>
+                <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-[#4A4A4A] rounded-lg bg-[#1A1A1A]">
+                  <div className="mb-6">
+                    <div className="w-16 h-16 rounded-full bg-[#2D2D2D] border-2 border-[#4A4A4A] flex items-center justify-center mb-4 mx-auto">
+                      <Calendar className="w-8 h-8 text-[#0070F3]" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">スケジュールがありません</h3>
+                    <p className="text-sm text-[#A0A0A0] mb-1 max-w-sm mx-auto px-4">
+                      最初のスケジュールを追加して配信の準備を始めましょう
+                    </p>
+                    <p className="text-xs text-[#808080] max-w-sm mx-auto px-4">
+                      配信準備やメイン配信などのスケジュールを追加できます
+                    </p>
+                  </div>
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={() => toast.info('この機能は今後実装予定です')}
-                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
+                    size="lg"
+                    className="bg-[#0070F3] hover:bg-[#0051CC] text-white"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-5 w-5 mr-2" />
                     スケジュールを追加
                   </Button>
                 </div>
