@@ -265,44 +265,95 @@ const ScheduleAdjusterPage: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-2 lg:p-4">
           {/* PC表示またはモバイルのプロジェクト一覧タブ */}
           {(isDesktop || mobileTab === 'projects') && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((project) => (
-                <Card 
-                  key={project.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => {
-                    // プロジェクト詳細ページに遷移
-                    router.push(`/tools/schedule-adjuster/${project.id}`);
-                  }}
-                >
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{project.name}</CardTitle>
-                      <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
-                        {project.status === 'active' ? '進行中' : '完了'}
-                      </Badge>
-                    </div>
-                    <CardDescription>{project.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {project.duration}分
-                      </div>
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1" />
-                        {project.participants}人
-                      </div>
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {project.createdAt}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <>
+              {/* プロジェクト一覧が空の場合 */}
+              {projects.length === 0 ? (
+                <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px] border border-[#4A4A4A]">
+                  <Calendar className="w-12 h-12 text-[#A0A0A0] mb-4" aria-hidden="true" />
+                  <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">プロジェクトがありません</h3>
+                  <p className="text-[#A0A0A0] mb-4">
+                    新しいプロジェクトを作成して、コラボ配信のスケジュール調整を始めましょう。
+                  </p>
+                  {isDesktop ? (
+                    <Button
+                      variant="default"
+                      onClick={() => setIsSidebarOpen(true)}
+                      className="mt-2"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      プロジェクトを作成
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="default"
+                      onClick={() => setMobileTab('add')}
+                      className="mt-2"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      プロジェクトを作成
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {projects.map((project) => (
+                    <Card 
+                      key={project.id} 
+                      className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer border-[#4A4A4A] bg-[#2D2D2D]"
+                      onClick={() => {
+                        // プロジェクト詳細ページに遷移
+                        router.push(`/tools/schedule-adjuster/${project.id}`);
+                      }}
+                    >
+                      <CardHeader>
+                        <div className="flex justify-between items-start mb-2">
+                          <CardTitle className="text-lg text-[#E0E0E0] line-clamp-2 flex-1 pr-2">
+                            {project.name}
+                          </CardTitle>
+                          <Badge 
+                            variant={project.status === 'active' ? 'default' : 'secondary'}
+                            className="flex-shrink-0"
+                          >
+                            {project.status === 'active' ? '進行中' : '完了'}
+                          </Badge>
+                        </div>
+                        {project.description && (
+                          <CardDescription className="text-[#A0A0A0] line-clamp-2">
+                            {project.description}
+                          </CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {/* 主要情報 */}
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-4 text-[#A0A0A0]">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{project.duration}分</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              <span>{project.participants}人</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* 日付情報 */}
+                        <div className="flex items-center justify-between text-xs text-[#808080] pt-2 border-t border-[#4A4A4A]">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>作成: {project.createdAt}</span>
+                          </div>
+                          {project.updatedAt !== project.createdAt && (
+                            <span>更新: {project.updatedAt}</span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {/* モバイル表示のプロジェクト追加タブ */}
