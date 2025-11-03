@@ -4,8 +4,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Clock, Users, Settings, Edit } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Settings, Edit, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface ProjectDetailClientProps {
   project: any;
@@ -14,29 +15,59 @@ interface ProjectDetailClientProps {
 export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
   const router = useRouter();
 
+  // 時間をフォーマットする関数
+  const formatTime = (time: string) => {
+    return time;
+  };
+
+  // 時間差を計算する関数（分）
+  const calculateDuration = (startTime: string, endTime: string) => {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    const start = startHour * 60 + startMin;
+    const end = endHour * 60 + endMin;
+    return end - start;
+  };
+
+  // スケジュールが空の場合の処理
+  const hasSchedules = project.schedules && project.schedules.length > 0;
+
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4 lg:p-6">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
+          <Button 
+            variant="ghost" 
+            onClick={() => router.back()}
+            className="text-[#E0E0E0] hover:bg-[#3A3A3A]"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             戻る
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">{project.name}</h1>
-            <p className="text-muted-foreground">{project.description}</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-[#E0E0E0]">{project.name}</h1>
+            {project.description && (
+              <p className="text-[#A0A0A0] mt-1">{project.description}</p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-1 rounded-full text-sm ${
-            project.status === 'active' 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-[#2D2D2D] text-[#E0E0E0]'
-          }`}>
+          <Badge 
+            variant={project.status === 'active' ? 'default' : 'secondary'}
+            className={
+              project.status === 'active'
+                ? 'bg-green-600 text-white'
+                : 'bg-[#4A4A4A] text-[#E0E0E0]'
+            }
+          >
             {project.status === 'active' ? '進行中' : '完了'}
-          </span>
-          <Button variant="outline">
+          </Badge>
+          <Button 
+            variant="outline"
+            onClick={() => toast.info('この機能は今後実装予定です')}
+            className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+          >
             <Edit className="h-4 w-4 mr-2" />
             編集
           </Button>
@@ -47,74 +78,158 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
         {/* メインコンテンツ */}
         <div className="lg:col-span-2 space-y-6">
           {/* プロジェクト情報 */}
-          <Card>
+          <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-[#E0E0E0]">
                 <Calendar className="h-5 w-5" />
                 プロジェクト情報
               </CardTitle>
+              <CardDescription className="text-[#A0A0A0]">
+                プロジェクトの基本情報を確認できます
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">配信時間</label>
-                  <p className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    {project.duration}分
-                  </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
+                  <Clock className="h-5 w-5 text-[#0070F3] mt-0.5" />
+                  <div>
+                    <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">配信時間</label>
+                    <p className="text-base font-semibold text-[#E0E0E0]">
+                      {project.duration}分
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">参加者数</label>
-                  <p className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    {project.participants}人
-                  </p>
+                <div className="flex items-start gap-3 p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
+                  <Users className="h-5 w-5 text-[#0070F3] mt-0.5" />
+                  <div>
+                    <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">参加者数</label>
+                    <p className="text-base font-semibold text-[#E0E0E0]">
+                      {project.participants}人
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#4A4A4A]">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">作成日</label>
-                  <p>{project.createdAt}</p>
+                  <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">作成日</label>
+                  <p className="text-sm text-[#E0E0E0]">{project.createdAt}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">更新日</label>
-                  <p>{project.updatedAt}</p>
+                  <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">更新日</label>
+                  <p className="text-sm text-[#E0E0E0]">
+                    {project.updatedAt !== project.createdAt ? project.updatedAt : '-'}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* スケジュール */}
-          <Card>
-            <CardHeader>
-              <CardTitle>スケジュール</CardTitle>
-              <CardDescription>配信の詳細スケジュール</CardDescription>
+          <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[#E0E0E0]">スケジュール</CardTitle>
+                <CardDescription className="text-[#A0A0A0]">
+                  配信の詳細スケジュール
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => toast.info('この機能は今後実装予定です')}
+                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                追加
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {project.schedules.map((schedule: any) => (
-                  <div key={schedule.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold">{schedule.title}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {schedule.startTime} - {schedule.endTime}
+              {hasSchedules ? (
+                <div className="space-y-4">
+                  {/* タイムライン表示 */}
+                  {project.schedules.map((schedule: any, index: number) => {
+                    const duration = calculateDuration(schedule.startTime, schedule.endTime);
+                    const colors = [
+                      'bg-blue-500',
+                      'bg-green-500',
+                      'bg-purple-500',
+                      'bg-orange-500',
+                      'bg-pink-500',
+                    ];
+                    const dotColor = colors[index % colors.length];
+                    
+                    return (
+                      <div key={schedule.id} className="relative">
+                        {/* タイムラインの線（最後の要素以外） */}
+                        {index < project.schedules.length - 1 && (
+                          <div className="absolute left-3 top-12 bottom-0 w-0.5 bg-[#4A4A4A] z-0" />
+                        )}
+                        
+                        {/* スケジュールカード */}
+                        <div className="relative border border-[#4A4A4A] rounded-lg p-4 bg-[#1A1A1A] hover:bg-[#222222] transition-colors">
+                          <div className="flex items-start gap-3">
+                            {/* タイムラインドット */}
+                            <div className={`w-6 h-6 rounded-full ${dotColor} flex-shrink-0 flex items-center justify-center mt-1 z-10 relative`}>
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                                <h3 className="font-semibold text-[#E0E0E0] text-lg">{schedule.title}</h3>
+                                <div className="flex items-center gap-2 text-sm text-[#A0A0A0]">
+                                  <Clock className="h-4 w-4" />
+                                  <span className="font-medium">
+                                    {schedule.startTime} - {schedule.endTime}
+                                  </span>
+                                  <span className="text-[#808080]">({duration}分)</span>
+                                </div>
+                              </div>
+                              
+                              {schedule.description && (
+                                <p className="text-sm text-[#A0A0A0] mb-3">{schedule.description}</p>
+                              )}
+                              
+                              {/* 参加者 */}
+                              {schedule.participants && schedule.participants.length > 0 && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Users className="h-4 w-4 text-[#A0A0A0]" />
+                                  <div className="flex gap-2 flex-wrap">
+                                    {schedule.participants.map((participant: string, pIndex: number) => (
+                                      <Badge 
+                                        key={pIndex} 
+                                        variant="outline" 
+                                        className="text-xs bg-[#2D2D2D] border-[#4A4A4A] text-[#E0E0E0]"
+                                      >
+                                        {participant}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">{schedule.description}</p>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex gap-2">
-                        {schedule.participants.map((participant: string, index: number) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {participant}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-[#4A4A4A] rounded-lg bg-[#1A1A1A]">
+                  <Calendar className="w-12 h-12 text-[#808080] mb-4" />
+                  <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">スケジュールがありません</h3>
+                  <p className="text-sm text-[#A0A0A0] mb-4">
+                    最初のスケジュールを追加して配信の準備を始めましょう
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => toast.info('この機能は今後実装予定です')}
+                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    スケジュールを追加
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -122,47 +237,84 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
         {/* サイドバー */}
         <div className="space-y-6">
           {/* 設定 */}
-          <Card>
+          <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-[#E0E0E0]">
                 <Settings className="h-5 w-5" />
                 設定
               </CardTitle>
+              <CardDescription className="text-[#A0A0A0]">
+                プロジェクトの設定を確認できます
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">タイムゾーン</label>
-                <p className="text-sm">{project.settings.timezone}</p>
+              <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">タイムゾーン</label>
+                <p className="text-sm font-medium text-[#E0E0E0]">{project.settings.timezone}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">バッファ時間</label>
-                <p className="text-sm">{project.settings.bufferTime}分</p>
+              <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">バッファ時間</label>
+                <p className="text-sm font-medium text-[#E0E0E0]">{project.settings.bufferTime}分</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">自動調整</label>
-                <p className="text-sm">{project.settings.autoAdjust ? '有効' : '無効'}</p>
+              <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">自動調整</label>
+                <Badge 
+                  variant={project.settings.autoAdjust ? 'default' : 'secondary'}
+                  className={
+                    project.settings.autoAdjust
+                      ? 'bg-green-600 text-white mt-1'
+                      : 'bg-[#4A4A4A] text-[#E0E0E0] mt-1'
+                  }
+                >
+                  {project.settings.autoAdjust ? '有効' : '無効'}
+                </Badge>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">通知</label>
-                <p className="text-sm">{project.settings.notifications ? '有効' : '無効'}</p>
+              <div className="p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
+                <label className="text-xs font-medium text-[#A0A0A0] mb-1 block">通知</label>
+                <Badge 
+                  variant={project.settings.notifications ? 'default' : 'secondary'}
+                  className={
+                    project.settings.notifications
+                      ? 'bg-green-600 text-white mt-1'
+                      : 'bg-[#4A4A4A] text-[#E0E0E0] mt-1'
+                  }
+                >
+                  {project.settings.notifications ? '有効' : '無効'}
+                </Badge>
               </div>
             </CardContent>
           </Card>
 
           {/* アクション */}
-          <Card>
+          <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
             <CardHeader>
-              <CardTitle>アクション</CardTitle>
+              <CardTitle className="text-[#E0E0E0]">アクション</CardTitle>
+              <CardDescription className="text-[#A0A0A0]">
+                プロジェクトの管理操作
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full">
+              <Button 
+                className="w-full bg-[#0070F3] hover:bg-[#0051CC] text-white"
+                onClick={() => toast.info('この機能は今後実装予定です')}
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 スケジュール編集
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button 
+                variant="outline" 
+                className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                onClick={() => toast.info('この機能は今後実装予定です')}
+              >
+                <Users className="h-4 w-4 mr-2" />
                 参加者管理
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button 
+                variant="outline" 
+                className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                onClick={() => toast.info('この機能は今後実装予定です')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
                 設定変更
               </Button>
             </CardContent>
