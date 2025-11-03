@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Clock, Users, Settings, Edit, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Settings, Edit, Plus, Copy, Mail, UserCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -14,6 +14,7 @@ interface ProjectDetailClientProps {
 
 export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
   const router = useRouter();
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
   // 時間をフォーマットする関数
   const formatTime = (time: string) => {
@@ -31,6 +32,49 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
 
   // スケジュールが空の場合の処理
   const hasSchedules = project.schedules && project.schedules.length > 0;
+
+  // 参加者リストの取得（ダミーデータまたは空配列）
+  const participantList = project.participantList || [];
+
+  // 招待リンクをコピーする関数
+  const handleCopyInviteLink = async () => {
+    const inviteLink = project.inviteLink || `https://example.com/invite/project-${project.id}`;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setInviteLinkCopied(true);
+      toast.success('招待リンクをコピーしました', {
+        description: 'DiscordやXなどで参加者に共有できます',
+      });
+      setTimeout(() => setInviteLinkCopied(false), 2000);
+    } catch (err) {
+      toast.error('コピーに失敗しました');
+    }
+  };
+
+  // 参加者のステータスバッジを取得する関数
+  const getParticipantStatusBadge = (status: string) => {
+    switch (status) {
+      case 'linked':
+        return (
+          <Badge className="bg-green-600 text-white text-xs">
+            連携済み
+          </Badge>
+        );
+      case 'manual':
+        return (
+          <Badge className="bg-blue-600 text-white text-xs">
+            入力済み
+          </Badge>
+        );
+      case 'not_linked':
+      default:
+        return (
+          <Badge className="bg-[#4A4A4A] text-[#E0E0E0] text-xs">
+            未連携
+          </Badge>
+        );
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 lg:p-6">
@@ -121,6 +165,115 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* 参加者管理 */}
+          <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[#E0E0E0] flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  参加者管理
+                </CardTitle>
+                <CardDescription className="text-[#A0A0A0]">
+                  {participantList.length > 0 
+                    ? `${participantList.length}人の参加者`
+                    : '参加者を追加してコラボを始めましょう'
+                  }
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => toast.info('この機能は今後実装予定です')}
+                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                追加
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 招待リンクセクション */}
+              <div className="p-4 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A]">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-[#E0E0E0]">招待リンク</label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCopyInviteLink}
+                    className="h-7 px-2 border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                  >
+                    <Copy className={`h-3 w-3 mr-1 ${inviteLinkCopied ? 'text-green-400' : ''}`} />
+                    {inviteLinkCopied ? 'コピー済み' : 'コピー'}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-[#0F0F0F] rounded border border-[#4A4A4A]">
+                  <Mail className="h-4 w-4 text-[#808080]" />
+                  <code className="text-xs text-[#A0A0A0] flex-1 truncate">
+                    {project.inviteLink || `https://example.com/invite/project-${project.id}`}
+                  </code>
+                </div>
+                <p className="text-xs text-[#808080] mt-2">
+                  このリンクをDiscordやXなどで参加者に共有してください
+                </p>
+              </div>
+
+              {/* 参加者リスト */}
+              {participantList.length > 0 ? (
+                <div className="space-y-2">
+                  {participantList.map((participant: any) => (
+                    <div
+                      key={participant.id}
+                      className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg border border-[#4A4A4A] hover:bg-[#222222] transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* アバター（アイコン） */}
+                        <div className="flex-shrink-0">
+                          {participant.avatar ? (
+                            <img
+                              src={participant.avatar}
+                              alt={participant.name}
+                              className="w-10 h-10 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-[#4A4A4A] flex items-center justify-center">
+                              <UserCircle className="h-6 w-6 text-[#808080]" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* 参加者情報 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-[#E0E0E0] truncate">{participant.name}</p>
+                            {getParticipantStatusBadge(participant.status)}
+                          </div>
+                          {participant.email && (
+                            <p className="text-xs text-[#A0A0A0] truncate">{participant.email}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-[#4A4A4A] rounded-lg bg-[#1A1A1A]">
+                  <Users className="w-12 h-12 text-[#808080] mb-4" />
+                  <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">参加者がいません</h3>
+                  <p className="text-sm text-[#A0A0A0] mb-4">
+                    招待リンクを共有するか、参加者を追加してください
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => toast.info('この機能は今後実装予定です')}
+                    className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#3A3A3A]"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    参加者を追加
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -16,6 +16,30 @@ const projectData = {
     status: 'active' as const,
     createdAt: '2024-01-15',
     updatedAt: '2024-01-20',
+    participantList: [
+      {
+        id: 'p1',
+        name: '配信者A',
+        email: 'streamer-a@example.com',
+        status: 'linked' as const, // 'linked' | 'not_linked' | 'manual'
+        avatar: null
+      },
+      {
+        id: 'p2',
+        name: '配信者B',
+        email: 'streamer-b@example.com',
+        status: 'linked' as const,
+        avatar: null
+      },
+      {
+        id: 'p3',
+        name: '配信者C',
+        email: 'streamer-c@example.com',
+        status: 'manual' as const,
+        avatar: null
+      }
+    ],
+    inviteLink: 'https://example.com/invite/project-1-abc123',
     schedules: [
       {
         id: 's1',
@@ -50,6 +74,23 @@ const projectData = {
     status: 'completed' as const,
     createdAt: '2024-01-10',
     updatedAt: '2024-01-12',
+    participantList: [
+      {
+        id: 'p4',
+        name: '配信者A',
+        email: 'streamer-a@example.com',
+        status: 'linked' as const,
+        avatar: null
+      },
+      {
+        id: 'p5',
+        name: '配信者B',
+        email: 'streamer-b@example.com',
+        status: 'not_linked' as const,
+        avatar: null
+      }
+    ],
+    inviteLink: 'https://example.com/invite/project-2-xyz789',
     schedules: [
       {
         id: 's3',
