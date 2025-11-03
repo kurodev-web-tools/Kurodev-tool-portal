@@ -148,14 +148,16 @@ const ScheduleAdjusterPage: React.FC = () => {
 
   // サイドバーコンテンツ（PC表示用）
   const sidebarContent = (
-    <div className="space-y-6">
-      <div>
+    <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      {/* ヘッダーセクション */}
+      <div className="pb-4 border-b border-[#4A4A4A]">
         <h3 className="text-lg font-semibold text-[#E0E0E0] mb-1">プロジェクト管理</h3>
         <p className="text-sm text-[#A0A0A0]">コラボ配信のスケジュール調整を開始します</p>
       </div>
       
-      {/* プロジェクト追加フォーム */}
-      <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
+      {/* プロジェクト追加フォームセクション */}
+      <div className="space-y-4">
+        <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-[#E0E0E0] flex items-center gap-2">
             <Plus className="h-4 w-4" />
@@ -222,6 +224,15 @@ const ScheduleAdjusterPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* 将来の拡張用スペース（プロジェクト一覧など） */}
+      {/* 
+      <div className="pt-4 border-t border-[#4A4A4A]">
+        <h4 className="text-sm font-medium text-[#E0E0E0] mb-3">最近のプロジェクト</h4>
+        // プロジェクト一覧などをここに追加
+      </div>
+      */}
+      </div>
     </div>
   );
 
@@ -448,9 +459,11 @@ const ScheduleAdjusterPage: React.FC = () => {
             onClose={() => setIsSidebarOpen(false)}
             title=""
             isDesktop={isDesktop}
-            className="lg:w-96"
+            className="lg:w-80 xl:w-96"
           >
-            {sidebarContent}
+            <div className="h-full flex flex-col">
+              {sidebarContent}
+            </div>
           </Sidebar>
         )}
       </div>
