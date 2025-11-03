@@ -1178,6 +1178,38 @@ export default function VirtualBackgroundGeneratorPage() {
     };
   }, [useInfiniteScroll, isSearching, searchResults.length, handleAsyncError, categories]);
 
+  // ショートカットキー（7.1.8）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Enter: 生成
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!isLoading && prompt.trim()) {
+          handleGenerate();
+        }
+      }
+      
+      // Escape: ダイアログを閉じる
+      if (e.key === 'Escape') {
+        if (expandedImageId !== null) {
+          setExpandedImageId(null);
+        }
+        if (isCollectionDialogOpen) {
+          setIsCollectionDialogOpen(false);
+        }
+      }
+      
+      // Ctrl/Cmd + A: すべて選択（画像一覧が表示されている場合）
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedImages.length > 0) {
+        e.preventDefault();
+        handleSelectAll();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLoading, prompt, handleGenerate, expandedImageId, isCollectionDialogOpen, sortedImages.length, handleSelectAll]);
+
   // サムネイルサイズのスタイル（7.1.3）
   const thumbnailSizeClasses = useMemo(() => {
     switch (searchThumbnailSize) {
@@ -1941,6 +1973,8 @@ export default function VirtualBackgroundGeneratorPage() {
                               src={result.url}
                               alt={result.title}
                               className="w-full h-full object-cover"
+                              loading="lazy"
+                              decoding="async"
                             />
                             <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
                             <div className="absolute bottom-1 left-1 right-1 flex gap-1">
@@ -2158,6 +2192,8 @@ export default function VirtualBackgroundGeneratorPage() {
                                 src={item.imageUrl}
                                 alt="履歴画像"
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                loading="lazy"
+                                decoding="async"
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                                 <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -2395,6 +2431,8 @@ export default function VirtualBackgroundGeneratorPage() {
                       src={img.url}
                       alt={img.id}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                     <Button
                       variant="ghost"
@@ -2811,6 +2849,8 @@ export default function VirtualBackgroundGeneratorPage() {
                           src={result.url}
                           alt={result.title}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
                         />
                         <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
                         <div className="absolute bottom-1 left-1 right-1 flex gap-1">
@@ -2997,6 +3037,8 @@ export default function VirtualBackgroundGeneratorPage() {
                         src={img.url}
                         alt={`Generated background ${img.id}`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
                       <div className="absolute top-2 right-2 flex gap-2">
@@ -3139,6 +3181,8 @@ export default function VirtualBackgroundGeneratorPage() {
                           src={img.url}
                           alt={`Generated background ${img.id}`}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
                         />
                       </div>
                       
@@ -3284,6 +3328,8 @@ export default function VirtualBackgroundGeneratorPage() {
                         src={img.url}
                         alt="拡大表示"
                         className="w-full h-full object-contain"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     
