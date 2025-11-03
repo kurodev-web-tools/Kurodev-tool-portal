@@ -10,7 +10,7 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Users, Plus, Settings, Loader2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Users, Plus, Settings, Loader2, AlertCircle, MoreVertical, Edit, Trash2, Copy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 const ScheduleAdjusterPage: React.FC = () => {
   // UI状態管理
@@ -472,7 +473,7 @@ const ScheduleAdjusterPage: React.FC = () => {
                   {projects.map((project) => (
                     <Card 
                       key={project.id} 
-                      className="hover:shadow-lg hover:scale-[1.01] sm:hover:scale-[1.02] transition-all duration-200 cursor-pointer border-[#4A4A4A] bg-[#2D2D2D]"
+                      className="group hover:shadow-lg hover:scale-[1.01] sm:hover:scale-[1.02] transition-all duration-200 cursor-pointer border-[#4A4A4A] bg-[#2D2D2D] relative"
                       onClick={() => {
                         // プロジェクト詳細ページに遷移
                         router.push(`/tools/schedule-adjuster/${project.id}`);
@@ -483,15 +484,74 @@ const ScheduleAdjusterPage: React.FC = () => {
                           <CardTitle className="text-base sm:text-lg text-[#E0E0E0] line-clamp-2 flex-1 pr-2">
                             {project.name}
                           </CardTitle>
-                          <Badge 
-                            className={
-                              project.status === 'active'
-                                ? 'bg-[#0070F3] text-white flex-shrink-0 self-start sm:self-auto text-xs font-medium'
-                                : 'bg-[#4A4A4A] text-[#E0E0E0] flex-shrink-0 self-start sm:self-auto text-xs font-medium'
-                            }
-                          >
-                            {project.status === 'active' ? '進行中' : '完了'}
-                          </Badge>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge 
+                              className={
+                                project.status === 'active'
+                                  ? 'bg-[#0070F3] text-white self-start sm:self-auto text-xs font-medium'
+                                  : 'bg-[#4A4A4A] text-[#E0E0E0] self-start sm:self-auto text-xs font-medium'
+                              }
+                            >
+                              {project.status === 'active' ? '進行中' : '完了'}
+                            </Badge>
+                            {/* 操作メニュー（ホバー時表示） */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                  aria-label="プロジェクト操作"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent 
+                                align="end" 
+                                className="bg-[#2D2D2D] border-[#4A4A4A] min-w-[160px]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.info('この機能は今後実装予定です', {
+                                      description: 'プロジェクトの編集機能は開発中です',
+                                    });
+                                  }}
+                                  className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  編集
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.info('この機能は今後実装予定です', {
+                                      description: 'プロジェクトの複製機能は開発中です',
+                                    });
+                                  }}
+                                  className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                >
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  複製
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-[#4A4A4A]" />
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.info('この機能は今後実装予定です', {
+                                      description: 'プロジェクトの削除機能は開発中です',
+                                    });
+                                  }}
+                                  className="text-[#E0E0E0] hover:bg-[#4A4A4A] hover:text-red-400 cursor-pointer text-red-400"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  削除
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                         {project.description && (
                           <CardDescription className="text-sm sm:text-base text-[#A0A0A0] line-clamp-2">
