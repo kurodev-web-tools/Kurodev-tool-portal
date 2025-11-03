@@ -456,35 +456,56 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
           {/* アクション */}
           <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
             <CardHeader>
-              <CardTitle className="text-[#E0E0E0]">アクション</CardTitle>
-              <CardDescription className="text-[#A0A0A0]">
-                プロジェクトの管理操作
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-[#E0E0E0]">アクション</CardTitle>
+                  <CardDescription className="text-[#A0A0A0]">
+                    プロジェクトの管理操作
+                  </CardDescription>
+                </div>
+                <Badge variant="secondary" className="bg-[#4A4A4A] text-[#A0A0A0] text-xs">
+                  準備中
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button 
-                className="w-full bg-[#0070F3] hover:bg-[#0051CC] text-white"
-                onClick={() => toast.info('この機能は今後実装予定です')}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                スケジュール編集
-              </Button>
-              <Button 
-                variant="outline" 
-                      className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
-                onClick={() => toast.info('この機能は今後実装予定です')}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                参加者管理
-              </Button>
-              <Button 
-                variant="outline" 
-                      className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
-                onClick={() => toast.info('この機能は今後実装予定です')}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                設定変更
-              </Button>
+            <CardContent className="space-y-3">
+              {/* 主要アクション */}
+              <div className="pb-2 border-b border-[#4A4A4A]">
+                <Button 
+                  variant="default"
+                  className="w-full bg-[#0070F3] hover:bg-[#0051CC] text-white h-11"
+                  onClick={() => toast.info('この機能は今後実装予定です', {
+                    description: 'スケジュールの追加・編集機能は開発中です',
+                  })}
+                >
+                  <Edit className="h-5 w-5 mr-2" />
+                  <span className="font-medium">スケジュール編集</span>
+                </Button>
+              </div>
+              
+              {/* その他のアクション */}
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A] h-10"
+                  onClick={() => toast.info('この機能は今後実装予定です', {
+                    description: '参加者の追加・削除・管理機能は開発中です',
+                  })}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  <span>参加者管理</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A] h-10"
+                  onClick={() => toast.info('この機能は今後実装予定です', {
+                    description: 'プロジェクト設定の変更機能は開発中です',
+                  })}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  <span>設定変更</span>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
