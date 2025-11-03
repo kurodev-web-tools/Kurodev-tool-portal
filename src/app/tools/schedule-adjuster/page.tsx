@@ -10,7 +10,8 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Users, Plus, Settings } from 'lucide-react';
+import { Calendar, Clock, Users, Plus, Settings, Loader2, AlertCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,6 +35,11 @@ const ScheduleAdjusterPage: React.FC = () => {
 
   // モバイル表示用のタブ状態管理
   const [mobileTab, setMobileTab] = useState<'projects' | 'add'>('projects');
+
+  // ローディング状態管理
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // プロジェクト状態管理
   const [projectName, setProjectName] = useState('');
@@ -103,11 +109,20 @@ const ScheduleAdjusterPage: React.FC = () => {
   ]);
 
   const handleCreateProject = async () => {
+    setError(null);
+    setIsCreatingProject(true);
+    
     await handleAsyncError(async () => {
       if (!projectName.trim()) {
-        toast.error('プロジェクト名を入力してください');
-        throw new Error('プロジェクト名を入力してください');
+        const errorMsg = 'プロジェクト名を入力してください';
+        setError(errorMsg);
+        toast.error(errorMsg);
+        setIsCreatingProject(false);
+        throw new Error(errorMsg);
       }
+      
+      // ローディング状態をシミュレート（実際のAPI呼び出し時はここを置き換え）
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       const newProject = {
         id: Date.now().toString(),
@@ -143,7 +158,12 @@ const ScheduleAdjusterPage: React.FC = () => {
       if (!isDesktop) {
         setMobileTab('projects');
       }
-    }, "プロジェクトの作成に失敗しました");
+      
+      setIsCreatingProject(false);
+    }, "プロジェクトの作成に失敗しました").catch((err) => {
+      setIsCreatingProject(false);
+      setError(err instanceof Error ? err.message : 'プロジェクトの作成に失敗しました');
+    });
   };
 
   // サイドバーコンテンツ（PC表示用）
@@ -213,13 +233,34 @@ const ScheduleAdjusterPage: React.FC = () => {
             </div>
           </div>
           
+          {/* エラー表示 */}
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-400">エラーが発生しました</p>
+                <p className="text-xs text-red-300 mt-1">{error}</p>
+              </div>
+            </div>
+          )}
+          
           <div className="pt-2 border-t border-[#4A4A4A]">
             <Button 
-              onClick={handleCreateProject} 
-              className="w-full bg-[#0070F3] hover:bg-[#0051CC] text-white"
+              onClick={handleCreateProject}
+              disabled={isCreatingProject}
+              className="w-full bg-[#0070F3] hover:bg-[#0051CC] text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              プロジェクトを作成
+              {isCreatingProject ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  作成中...
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  プロジェクトを作成
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -302,10 +343,20 @@ const ScheduleAdjusterPage: React.FC = () => {
           <div className="pt-4 border-t border-[#4A4A4A]">
             <Button 
               onClick={handleCreateProject} 
-              className="w-full bg-[#0070F3] hover:bg-[#0051CC] text-white"
+              disabled={isCreatingProject}
+              className="w-full bg-[#0070F3] hover:bg-[#0051CC] text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              プロジェクトを作成
+              {isCreatingProject ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  作成中...
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  プロジェクトを作成
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -356,8 +407,31 @@ const ScheduleAdjusterPage: React.FC = () => {
           {/* PC表示またはモバイルのプロジェクト一覧タブ */}
           {(isDesktop || mobileTab === 'projects') && (
             <>
-              {/* プロジェクト一覧が空の場合 */}
-              {projects.length === 0 ? (
+              {/* ローディング状態 */}
+              {isLoadingProjects ? (
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="border-[#4A4A4A] bg-[#2D2D2D]">
+                      <CardHeader className="p-4 sm:p-6">
+                        <div className="flex justify-between items-start mb-2">
+                          <Skeleton className="h-6 w-32" />
+                          <Skeleton className="h-5 w-16" />
+                        </div>
+                        <Skeleton className="h-4 w-full" />
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6 pt-0 space-y-3">
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-4 w-16" />
+                        </div>
+                        <div className="pt-2 border-t border-[#4A4A4A]">
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : projects.length === 0 ? (
                 <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-6 sm:p-8 min-h-[400px] border border-[#4A4A4A]">
                   <Calendar className="w-12 h-12 text-[#A0A0A0] mb-4" aria-hidden="true" />
                   <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">プロジェクトがありません</h3>
@@ -452,6 +526,16 @@ const ScheduleAdjusterPage: React.FC = () => {
           {/* モバイル表示のプロジェクト追加タブ */}
           {!isDesktop && mobileTab === 'add' && (
             <div className="max-w-2xl mx-auto w-full px-4 sm:px-6">
+              {/* エラー表示 */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-400">エラーが発生しました</p>
+                    <p className="text-xs text-red-300 mt-1">{error}</p>
+                  </div>
+                </div>
+              )}
               {mobileAddForm}
             </div>
           )}
