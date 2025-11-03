@@ -334,31 +334,37 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                                <h3 className="font-semibold text-[#E0E0E0] text-lg">{schedule.title}</h3>
-                                <div className="flex items-center gap-2 text-sm text-[#A0A0A0]">
-                                  <Clock className="h-4 w-4" />
-                                  <span className="font-medium">
+                              {/* タイトル */}
+                              <h3 className="font-semibold text-[#E0E0E0] text-lg mb-3">{schedule.title}</h3>
+                              
+                              {/* 時間帯（視認性向上） */}
+                              <div className="flex items-center gap-2 mb-3 p-2 bg-[#2D2D2D] rounded-md border border-[#4A4A4A]">
+                                <Clock className="h-4 w-4 text-[#0070F3] flex-shrink-0" />
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-[#E0E0E0] text-sm">
                                     {schedule.startTime} - {schedule.endTime}
                                   </span>
-                                  <span className="text-[#808080]">({duration}分)</span>
+                                  <span className="text-xs text-[#A0A0A0] font-medium">
+                                    ({duration}分)
+                                  </span>
                                 </div>
                               </div>
                               
+                              {/* 説明 */}
                               {schedule.description && (
-                                <p className="text-sm text-[#A0A0A0] mb-3">{schedule.description}</p>
+                                <p className="text-sm text-[#A0A0A0] mb-3 leading-relaxed">{schedule.description}</p>
                               )}
                               
-                              {/* 参加者 */}
+                              {/* 参加者（配置改善） */}
                               {schedule.participants && schedule.participants.length > 0 && (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Users className="h-4 w-4 text-[#A0A0A0]" />
+                                <div className="flex items-start gap-2 pt-2 border-t border-[#4A4A4A]">
+                                  <Users className="h-4 w-4 text-[#A0A0A0] mt-0.5 flex-shrink-0" />
                                   <div className="flex gap-2 flex-wrap">
                                     {schedule.participants.map((participant: string, pIndex: number) => (
                                       <Badge 
                                         key={pIndex} 
                                         variant="outline" 
-                                        className="text-xs bg-[#2D2D2D] border-[#4A4A4A] text-[#E0E0E0]"
+                                        className="text-xs bg-[#2D2D2D] border-[#4A4A4A] text-[#E0E0E0] font-medium px-2 py-1"
                                       >
                                         {participant}
                                       </Badge>
