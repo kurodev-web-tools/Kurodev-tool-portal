@@ -37,6 +37,23 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useErrorHandler } from "@/hooks/use-error-handler";
 import { validatePrompt } from "@/lib/validation";
@@ -53,7 +70,12 @@ import {
   Save,
   BookOpen,
   X,
-  Trash2
+  Trash2,
+  Grid3x3,
+  List,
+  Maximize2,
+  ArrowUpDown,
+  Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -208,8 +230,29 @@ export default function VirtualBackgroundGeneratorPage() {
   const [resolution, setResolution] = useState("");
   const [imageCount, setImageCount] = useState("1");
   const [selectedColor, setSelectedColor] = useState<string>(""); // カラーパレット（7.1.1）
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  
+  // 生成画像のデータ構造（7.1.2）
+  interface GeneratedImage {
+    id: string;
+    url: string;
+    prompt: string;
+    negativePrompt?: string;
+    category?: string;
+    style?: string;
+    resolution?: string;
+    color?: string;
+    createdAt: number;
+    downloadCount?: number; // ダウンロード回数（7.1.2）
+  }
+  
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  
+  // 表示設定（7.1.2）
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // グリッド/リスト表示
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'favorite' | 'download'>('newest'); // 並び替え
+  const [expandedImageId, setExpandedImageId] = useState<string | null>(null); // 拡大表示中の画像ID（7.1.2）
+  const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set()); // バッチ選択用（7.1.2）
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [favoriteImages, setFavoriteImages] = useState<string[]>([]);
   
@@ -452,16 +495,27 @@ export default function VirtualBackgroundGeneratorPage() {
         return;
       }
 
-      // プレースホルダー画像を生成
-      const mockImages = Array.from({ length: parseInt(imageCount) }, (_, i) => 
-        `https://picsum.photos/800/600?random=${Date.now() + i}`
-      );
+      // プレースホルダー画像を生成（7.1.2: GeneratedImage型に拡張）
+      const newImages: GeneratedImage[] = Array.from({ length: parseInt(imageCount) }, (_, i) => ({
+        id: `img-${Date.now()}-${i}`,
+        url: `https://picsum.photos/800/600?random=${Date.now() + i}`,
+        prompt: prompt || '',
+        negativePrompt: negativePrompt || undefined,
+        category: category || undefined,
+        style: style || undefined,
+        resolution: resolution || undefined,
+        color: selectedColor || undefined,
+        createdAt: Date.now(),
+        downloadCount: 0,
+      }));
       
-      setGeneratedImages(mockImages);
-      setSelectedImage(mockImages[0]);
+      setGeneratedImages(prev => [...prev, ...newImages]);
+      setSelectedImage(newImages[0]?.url || null);
       
       // 履歴に追加（自動保存）（7.1.6）
-      addToHistory({ url: mockImages[0], prompt });
+      newImages.forEach(img => {
+        addToHistory({ url: img.url, prompt: img.prompt });
+      });
       
       // 生成完了通知（7.1.6）
       toast.success(`${imageCount}枚の背景を生成しました`, {
@@ -499,7 +553,8 @@ export default function VirtualBackgroundGeneratorPage() {
     );
   }, []);
 
-  const handleDownload = async (imageUrl: string) => {
+  // 画像ダウンロード（7.1.2: GeneratedImage型対応、ダウンロード回数更新）
+  const handleDownload = useCallback(async (imageUrl: string) => {
     try {
       // 画像をfetchしてBlobに変換
       const response = await fetch(imageUrl);
@@ -520,18 +575,86 @@ export default function VirtualBackgroundGeneratorPage() {
       
       // Blob URLを解放
       window.URL.revokeObjectURL(blobUrl);
+      
+      // ダウンロード回数を更新（7.1.2）
+      setGeneratedImages(prev => prev.map(img => 
+        img.url === imageUrl 
+          ? { ...img, downloadCount: (img.downloadCount || 0) + 1 }
+          : img
+      ));
     } catch (error) {
       logger.error('ダウンロードエラー', error, 'VirtualBgGenerator');
       // フォールバック: 元の方法でダウンロード
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `virtual-background-${Date.now()}.jpg`;
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `virtual-background-${Date.now()}.jpg`;
       link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-  };
+  }, []);
+
+  // バッチダウンロード（7.1.2）
+  const handleBatchDownload = useCallback(async () => {
+    if (selectedImageIds.size === 0) return;
+    
+    const imagesToDownload = generatedImages.filter(img => selectedImageIds.has(img.id));
+    
+    for (const img of imagesToDownload) {
+      await handleDownload(img.url);
+      // 少し間隔を空ける（ブラウザの同時ダウンロード制限対策）
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    toast.success(`${imagesToDownload.length}枚の画像をダウンロードしました`);
+    setSelectedImageIds(new Set()); // 選択をクリア
+  }, [selectedImageIds, generatedImages, handleDownload]);
+
+  // 並び替え済み画像リスト（7.1.2）
+  const sortedImages = useMemo(() => {
+    const sorted = [...generatedImages];
+    
+    switch (sortOrder) {
+      case 'newest':
+        return sorted.sort((a, b) => b.createdAt - a.createdAt);
+      case 'oldest':
+        return sorted.sort((a, b) => a.createdAt - b.createdAt);
+      case 'favorite':
+        return sorted.sort((a, b) => {
+          const aIsFavorite = favoriteImages.includes(a.url);
+          const bIsFavorite = favoriteImages.includes(b.url);
+          if (aIsFavorite === bIsFavorite) return b.createdAt - a.createdAt;
+          return aIsFavorite ? -1 : 1;
+        });
+      case 'download':
+        return sorted.sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0));
+      default:
+        return sorted;
+    }
+  }, [generatedImages, sortOrder, favoriteImages]);
+
+  // 選択状態のトグル（7.1.2）
+  const handleToggleImageSelection = useCallback((imageId: string) => {
+    setSelectedImageIds(prev => {
+      const next = new Set(prev);
+      if (next.has(imageId)) {
+        next.delete(imageId);
+      } else {
+        next.add(imageId);
+      }
+      return next;
+    });
+  }, []);
+
+  // すべて選択/解除（7.1.2）
+  const handleSelectAll = useCallback(() => {
+    if (selectedImageIds.size === sortedImages.length) {
+      setSelectedImageIds(new Set());
+    } else {
+      setSelectedImageIds(new Set(sortedImages.map(img => img.id)));
+    }
+  }, [selectedImageIds.size, sortedImages]);
 
   // 検索機能のハンドラー
   const handleSearch = async () => {
@@ -577,10 +700,18 @@ export default function VirtualBackgroundGeneratorPage() {
     );
   };
 
-  // 検索結果の画像選択
+  // 検索結果の画像選択（7.1.2: GeneratedImage型に変換）
   const handleSelectSearchImage = (imageUrl: string) => {
     setSelectedImage(imageUrl);
-    setGeneratedImages([imageUrl]);
+    // GeneratedImage型に変換
+    const newImage: GeneratedImage = {
+      id: `search-${Date.now()}`,
+      url: imageUrl,
+      prompt: searchKeyword || '',
+      createdAt: Date.now(),
+      downloadCount: 0,
+    };
+    setGeneratedImages([newImage]);
     if (!isDesktop) {
       setActiveTab("preview");
     }
@@ -1557,81 +1688,384 @@ export default function VirtualBackgroundGeneratorPage() {
           estimatedTimeRemaining={estimatedTimeRemaining}
           onCancel={handleCancelGeneration}
         />
-      ) : generatedImages.length > 0 ? (
+      ) : sortedImages.length > 0 ? (
         <div className="h-full flex flex-col">
+          {/* ツールバー（7.1.2） */}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 space-y-2 lg:space-y-0">
-            <h3 className="text-lg lg:text-xl font-semibold">生成された背景</h3>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="flex-1 lg:flex-none">
-                <Settings className="mr-2 h-4 w-4" />
-                編集
-              </Button>
-              <Button 
-                variant="outline" 
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg lg:text-xl font-semibold">生成された背景</h3>
+              <Badge variant="secondary">{sortedImages.length}枚</Badge>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 表示モード切り替え（7.1.2） */}
+              <div className="flex border rounded-md">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="rounded-r-none"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="rounded-l-none"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* 並び替え（7.1.2） */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                    並び替え
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>並び替え</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSortOrder('newest')}>
+                    新しい順
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOrder('oldest')}>
+                    古い順
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOrder('favorite')}>
+                    お気に入り順
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOrder('download')}>
+                    ダウンロード数順
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* バッチダウンロード（7.1.2） */}
+              {selectedImageIds.size > 0 && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleBatchDownload}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {selectedImageIds.size}枚ダウンロード
+                </Button>
+              )}
+              
+              {/* すべて選択/解除（7.1.2） */}
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => selectedImage && handleDownload(selectedImage)}
-                className="flex-1 lg:flex-none"
+                onClick={handleSelectAll}
               >
-                <Download className="mr-2 h-4 w-4" />
-                ダウンロード
+                {selectedImageIds.size === sortedImages.length ? '選択解除' : 'すべて選択'}
               </Button>
             </div>
           </div>
           
-          <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {generatedImages.map((imageUrl, index) => (
-              <Card 
-                key={index} 
-                className={`cursor-pointer transition-all ${
-                  selectedImage === imageUrl ? 'ring-2 ring-primary' : 'hover:shadow-md'
-                }`}
-                onClick={() => setSelectedImage(imageUrl)}
-              >
-                <CardContent className="p-0">
-                  <div className="aspect-video relative overflow-hidden rounded-lg">
-                    <img
-                      src={imageUrl}
-                      alt={`Generated background ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleFavorite(imageUrl);
-                        }}
-                        className="h-8 w-8 p-0"
-                        aria-label={favoriteImages.includes(imageUrl) ? "お気に入りから削除" : "お気に入りに追加"}
-                      >
-                        <Heart 
-                          className={`h-4 w-4 ${
-                            favoriteImages.includes(imageUrl) 
-                              ? 'fill-red-500 text-red-500' 
-                              : 'text-[#A0A0A0]'
-                          }`} 
+          {/* 画像一覧（7.1.2: グリッドビューとリストビュー） */}
+          {viewMode === 'grid' ? (
+            <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-y-auto">
+              {sortedImages.map((img) => (
+                <Card 
+                  key={img.id} 
+                  className={`cursor-pointer transition-all relative ${
+                    selectedImage === img.url ? 'ring-2 ring-primary' : 'hover:shadow-md'
+                  } ${selectedImageIds.has(img.id) ? 'ring-2 ring-blue-500' : ''}`}
+                  onClick={() => setSelectedImage(img.url)}
+                >
+                  <CardContent className="p-0">
+                    <div className="aspect-video relative overflow-hidden rounded-lg">
+                      {/* 選択チェックボックス（7.1.2） */}
+                      <div className="absolute top-2 left-2 z-10">
+                        <Checkbox
+                          checked={selectedImageIds.has(img.id)}
+                          onCheckedChange={(checked) => {
+                            handleToggleImageSelection(img.id);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-white/90"
                         />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(imageUrl);
-                        }}
-                        className="h-8 w-8 p-0"
-                        aria-label="画像をダウンロード"
-                      >
-                        <DownloadIcon className="h-4 w-4" />
-                      </Button>
+                      </div>
+                      
+                      <img
+                        src={img.url}
+                        alt={`Generated background ${img.id}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFavorite(img.url);
+                          }}
+                          className="h-8 w-8 p-0"
+                          aria-label={favoriteImages.includes(img.url) ? "お気に入りから削除" : "お気に入りに追加"}
+                        >
+                          <Heart 
+                            className={`h-4 w-4 ${
+                              favoriteImages.includes(img.url) 
+                                ? 'fill-red-500 text-red-500' 
+                                : 'text-[#A0A0A0]'
+                            }`} 
+                          />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(img.url);
+                          }}
+                          className="h-8 w-8 p-0"
+                          aria-label="画像をダウンロード"
+                        >
+                          <DownloadIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedImageId(img.id);
+                          }}
+                          className="h-8 w-8 p-0"
+                          aria-label="拡大表示"
+                        >
+                          <Maximize2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {/* 生成パラメータ表示（7.1.2） */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                        <div className="flex flex-wrap gap-1 text-xs text-white">
+                          {img.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {categories.find(c => c.value === img.category)?.label || img.category}
+                            </Badge>
+                          )}
+                          {img.style && (
+                            <Badge variant="secondary" className="text-xs">
+                              {styles.find(s => s.value === img.style)?.label || img.style}
+                            </Badge>
+                          )}
+                          {img.downloadCount && img.downloadCount > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              DL: {img.downloadCount}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-grow overflow-y-auto space-y-3">
+              {sortedImages.map((img) => (
+                <Card 
+                  key={img.id} 
+                  className={`cursor-pointer transition-all ${
+                    selectedImage === img.url ? 'ring-2 ring-primary' : 'hover:shadow-md'
+                  } ${selectedImageIds.has(img.id) ? 'ring-2 ring-blue-500' : ''}`}
+                  onClick={() => setSelectedImage(img.url)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex gap-4">
+                      {/* チェックボックス（7.1.2） */}
+                      <Checkbox
+                        checked={selectedImageIds.has(img.id)}
+                        onCheckedChange={(checked) => {
+                          handleToggleImageSelection(img.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      
+                      {/* サムネイル */}
+                      <div className="w-32 h-20 relative flex-shrink-0 rounded overflow-hidden">
+                        <img
+                          src={img.url}
+                          alt={`Generated background ${img.id}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* 情報 */}
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-grow min-w-0">
+                            <p className="text-sm font-medium truncate">{img.prompt || 'プロンプトなし'}</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {img.category && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {categories.find(c => c.value === img.category)?.label || img.category}
+                                </Badge>
+                              )}
+                              {img.style && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {styles.find(s => s.value === img.style)?.label || img.style}
+                                </Badge>
+                              )}
+                              {img.resolution && (
+                                <Badge variant="outline" className="text-xs">
+                                  {img.resolution}
+                                </Badge>
+                              )}
+                              {img.downloadCount !== undefined && (
+                                <Badge variant="outline" className="text-xs">
+                                  ダウンロード: {img.downloadCount}回
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(img.createdAt).toLocaleString('ja-JP')}
+                            </p>
+                          </div>
+                          
+                          {/* アクションボタン */}
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleFavorite(img.url);
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Heart 
+                                className={`h-4 w-4 ${
+                                  favoriteImages.includes(img.url) 
+                                    ? 'fill-red-500 text-red-500' 
+                                    : 'text-[#A0A0A0]'
+                                }`} 
+                              />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(img.url);
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
+                              <DownloadIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedImageId(img.id);
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Maximize2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          
+          {/* 拡大プレビューダイアログ（7.1.2） */}
+          <Dialog open={expandedImageId !== null} onOpenChange={(open) => !open && setExpandedImageId(null)}>
+            <DialogContent className="max-w-4xl w-full">
+              <DialogHeader>
+                <DialogTitle>画像プレビュー</DialogTitle>
+              </DialogHeader>
+              {expandedImageId && (() => {
+                const img = sortedImages.find(i => i.id === expandedImageId);
+                if (!img) return null;
+                return (
+                  <div className="space-y-4">
+                    <div className="relative w-full aspect-video bg-[#1A1A1A] rounded-lg overflow-hidden">
+                      <img
+                        src={img.url}
+                        alt="拡大表示"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    
+                    {/* 生成パラメータ詳細（7.1.2） */}
+                    <div className="space-y-2">
+                      <DialogDescription className="text-sm font-semibold">生成パラメータ</DialogDescription>
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="font-medium">プロンプト:</span>
+                          <p className="text-muted-foreground mt-1">{img.prompt || 'なし'}</p>
+                        </div>
+                        {img.negativePrompt && (
+                          <div>
+                            <span className="font-medium">ネガティブプロンプト:</span>
+                            <p className="text-muted-foreground mt-1">{img.negativePrompt}</p>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {img.category && (
+                            <div>
+                              <span className="font-medium">カテゴリ:</span>
+                              <Badge variant="secondary" className="ml-2">
+                                {categories.find(c => c.value === img.category)?.label || img.category}
+                              </Badge>
+                            </div>
+                          )}
+                          {img.style && (
+                            <div>
+                              <span className="font-medium">スタイル:</span>
+                              <Badge variant="secondary" className="ml-2">
+                                {styles.find(s => s.value === img.style)?.label || img.style}
+                              </Badge>
+                            </div>
+                          )}
+                          {img.resolution && (
+                            <div>
+                              <span className="font-medium">解像度:</span>
+                              <Badge variant="outline" className="ml-2">{img.resolution}</Badge>
+                            </div>
+                          )}
+                          {img.color && (
+                            <div>
+                              <span className="font-medium">色:</span>
+                              <Badge variant="outline" className="ml-2">{img.color}</Badge>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          生成日時: {new Date(img.createdAt).toLocaleString('ja-JP')}
+                          {img.downloadCount !== undefined && (
+                            <span className="ml-4">ダウンロード回数: {img.downloadCount}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => img && handleDownload(img.url)}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        ダウンロード
+                      </Button>
+                      <Button onClick={() => setExpandedImageId(null)}>閉じる</Button>
+                    </DialogFooter>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                );
+              })()}
+            </DialogContent>
+          </Dialog>
         </div>
       ) : (
         <div className="h-full flex items-center justify-center">
