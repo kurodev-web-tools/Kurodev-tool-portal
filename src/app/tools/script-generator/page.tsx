@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2, Play, Pause, Volume2, Gauge, Check, Share2, Copy, Download, GitBranch } from 'lucide-react';
+import { Lightbulb, Construction, Loader2, FileText, Gamepad2, Music, MessageCircle, Users, Calendar, Clock, Search, Filter, X, Star, GripVertical, History, Trash2, Printer, FileDown, Undo2, Redo2, Save, RotateCcw, BookOpen, Layout, Plus, Edit2, Play, Pause, Volume2, Gauge, Check, Share2, Copy, Download, GitBranch, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -479,12 +479,44 @@ export default function ScriptGeneratorPage() {
     desktopDefaultOpen: true,
   });
   const [selectedTab, setSelectedTab] = useState("persona");
+  // モバイル表示用のメインタブ（生成・企画案・台本・その他）
+  const [mobileMainTab, setMobileMainTab] = useState<"generate" | "ideas" | "script" | "others">("generate");
+  // タブスクロール位置の監視用
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const tabsScrollRef = React.useRef<HTMLDivElement>(null);
   const { handleAsyncError } = useErrorHandler();
 
   // デバイスサイズに応じてデフォルトタブを設定
   useEffect(() => {
     setSelectedTab(isDesktop ? "generate" : "persona");
+    if (!isDesktop) {
+      setMobileMainTab("generate");
+    }
   }, [isDesktop]);
+
+  // タブスクロール位置を監視（モバイルのみ）
+  useEffect(() => {
+    if (!isDesktop && tabsScrollRef.current) {
+      const checkScroll = () => {
+        const el = tabsScrollRef.current;
+        if (el) {
+          setCanScrollLeft(el.scrollLeft > 0);
+          setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+        }
+      };
+      
+      checkScroll();
+      const scrollElement = tabsScrollRef.current;
+      scrollElement.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+      
+      return () => {
+        scrollElement.removeEventListener('scroll', checkScroll);
+        window.removeEventListener('resize', checkScroll);
+      };
+    }
+  }, [isDesktop, mobileMainTab]);
 
   // ローカルストレージからお気に入りと並び替え順序を読み込み
   useEffect(() => {
@@ -1237,7 +1269,11 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
     
     setIsGeneratingIdeas(false);
     setIdeaGenerationStep(null);
-  }, [handleAsyncError, favoriteIds, saveHistory]);
+    // モバイル表示の場合、企画案タブに自動切り替え
+    if (!isDesktop) {
+      setMobileMainTab("ideas");
+    }
+  }, [handleAsyncError, favoriteIds, saveHistory, isDesktop]);
 
   const handleCardClick = useCallback((id: number) => {
     setSelectedIdeaId(id);
@@ -1840,7 +1876,11 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
     
     setIsGeneratingScript(false);
     setScriptGenerationStep(null);
-  }, [handleAsyncError, selectedTemplate]);
+    // モバイル表示の場合、台本タブに自動切り替え
+    if (!isDesktop) {
+      setMobileMainTab("script");
+    }
+  }, [handleAsyncError, selectedTemplate, isDesktop]);
 
   // 印刷処理（デザイナー提案 + 利用者提案）
   const handlePrint = useCallback(() => {
@@ -2069,7 +2109,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
               <span>基本設定</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="space-y-4 pt-4">
+          <AccordionContent className="space-y-4 pt-4 px-2">
             <div className="space-y-2">
               <Label htmlFor="keywords-mobile">キーワード</Label>
               <Input
@@ -2077,7 +2117,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                 placeholder="例: ゲーム実況、マリオカート"
                 value={generationSettings.keywords}
                 onChange={(e) => setGenerationSettings(prev => ({ ...prev, keywords: e.target.value }))}
-                className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A] focus:ring-2 focus:ring-[#00D4FF] focus:ring-offset-2 focus:ring-offset-[#1A1A1A]"
               />
             </div>
             <div className="space-y-2">
@@ -2086,7 +2126,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                 value={generationSettings.direction}
                 onValueChange={(value) => setGenerationSettings(prev => ({ ...prev, direction: value }))}
               >
-                <SelectTrigger id="direction-mobile" className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]">
+                <SelectTrigger id="direction-mobile" className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] focus:ring-2 focus:ring-[#00D4FF] focus:ring-offset-2 focus:ring-offset-[#1A1A1A]">
                   <SelectValue placeholder="方向性を選択" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#2D2D2D] border-[#4A4A4A]">
@@ -2115,7 +2155,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
               <span>配信設定</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="space-y-4 pt-4">
+          <AccordionContent className="space-y-4 pt-4 px-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label htmlFor="duration-mobile">配信時間</Label>
@@ -2163,6 +2203,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                           }));
                         }
                       }}
+                      className="focus-visible:ring-2 focus-visible:ring-[#00D4FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A1A1A]"
                     />
                     <Label
                       htmlFor={`style-mobile-${style.id}`}
@@ -2185,7 +2226,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
               <span>詳細設定</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="space-y-4 pt-4">
+          <AccordionContent className="space-y-4 pt-4 px-2">
             <div className="space-y-2">
               <Label>含める要素の選択</Label>
               <div className="space-y-2">
@@ -2215,6 +2256,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                             }));
                           }
                         }}
+                        className="focus-visible:ring-2 focus-visible:ring-[#00D4FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A1A1A]"
                       />
                       <Label
                         htmlFor={`element-mobile-${element.id}`}
@@ -2338,7 +2380,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
           </Button>
         </div>
       </div>
-    ), [isGeneratingIdeas, handleGenerate, allTemplates, selectedTemplateId, categoryConfig]);
+    ), [isGeneratingIdeas, handleGenerate, allTemplates, selectedTemplateId, categoryConfig, generationSettings]);
 
   // モバイル用のサイドバーコンテンツ（ペルソナ、履歴、保存済み）
   const mobileSidebarContent = useMemo(() => (
@@ -3531,8 +3573,999 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         )}
       </aside>
 
-      {/* 中央: 企画案エリア */}
-      <main className="flex-1 p-3 sm:p-4 overflow-y-auto md:pt-4 md:border-r border-[#4A4A4A]">
+      {/* モバイル用タブ切り替えUI（md未満のみ表示） */}
+      {!isDesktop && (
+        <div className="md:hidden flex flex-col h-[calc(100vh-4.1rem)]">
+          {/* タブメニュー */}
+          <div className="relative bg-[#1A1A1A] flex-shrink-0 border-b border-[#4A4A4A]">
+            {/* 左フェードアウト */}
+            {canScrollLeft && (
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#1A1A1A] to-transparent z-10 pointer-events-none" />
+            )}
+            
+            {/* タブリスト（ハイブリッド：モバイルは横スクロール、タブレット以上はグリッド） */}
+            <div 
+              ref={tabsScrollRef}
+              className={cn(
+                "grid grid-cols-4 sm:flex sm:overflow-x-auto scrollbar-thin scrollbar-thumb-[#20B2AA] scrollbar-track-[#2D2D2D] px-2 pt-2"
+              )}
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              <button
+                onClick={() => setMobileMainTab("generate")}
+                className={cn(
+                  "flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors relative",
+                  mobileMainTab === "generate"
+                    ? "text-[#20B2AA]"
+                    : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                )}
+              >
+                <Lightbulb className="h-4 w-4 inline mr-2" />
+                生成
+                {mobileMainTab === "generate" && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                )}
+              </button>
+              <button
+                onClick={() => setMobileMainTab("ideas")}
+                className={cn(
+                  "flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors relative",
+                  mobileMainTab === "ideas"
+                    ? "text-[#20B2AA]"
+                    : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                )}
+              >
+                <Construction className="h-4 w-4 inline mr-2" />
+                企画案
+                {mobileMainTab === "ideas" && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                )}
+              </button>
+              <button
+                onClick={() => setMobileMainTab("script")}
+                className={cn(
+                  "flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors relative",
+                  mobileMainTab === "script"
+                    ? "text-[#20B2AA]"
+                    : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                )}
+              >
+                <FileText className="h-4 w-4 inline mr-2" />
+                台本
+                {mobileMainTab === "script" && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                )}
+              </button>
+              
+              {/* その他（ドロップダウン） */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors relative",
+                      mobileMainTab === "others"
+                        ? "text-[#20B2AA]"
+                        : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                    )}
+                  >
+                    <MoreVertical className="h-4 w-4 inline mr-2" />
+                    その他
+                    {mobileMainTab === "others" && (
+                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-[#2D2D2D] border-[#4A4A4A]">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setMobileMainTab("others");
+                      setSelectedTab("persona");
+                    }}
+                    className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                  >
+                    <Construction className="h-4 w-4 mr-2" />
+                    ペルソナ
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setMobileMainTab("others");
+                      setSelectedTab("history");
+                    }}
+                    className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    履歴
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setMobileMainTab("others");
+                      setSelectedTab("saved");
+                    }}
+                    className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    保存済み
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            {/* 右フェードアウト */}
+            {canScrollRight && (
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#1A1A1A] to-transparent z-10 pointer-events-none" />
+            )}
+          </div>
+          
+          {/* タブコンテンツ */}
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+            {mobileMainTab === "generate" && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-[#E0E0E0] flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5" />
+                  企画案生成
+                </h2>
+                {renderControlPanel()}
+              </div>
+            )}
+            
+            {mobileMainTab === "ideas" && (
+              <div className="space-y-4">
+                {isGeneratingIdeas ? (
+                  <ProgressBar
+                    steps={ideaGenerationSteps}
+                    currentStepId={ideaGenerationStep}
+                    type="ideas"
+                  />
+                ) : generatedIdeas.length === 0 ? (
+                  <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+                    <Lightbulb className="w-16 h-16 text-[#A0A0A0] mb-4" aria-hidden="true" />
+                    <h3 className="text-lg font-semibold text-[#E0E0E0]">企画案を生成しよう！</h3>
+                    <p className="text-[#A0A0A0] mt-2">「生成」タブからキーワードや企画の方向性を入力して、「企画案を生成する」ボタンを押してください。</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* お気に入りタブ */}
+                    {generatedIdeas.length > 0 && (
+                      <Tabs value={ideaViewMode} onValueChange={(value) => setIdeaViewMode(value as 'all' | 'favorites' | 'recent')} className="mb-4">
+                        <TabsList className="grid w-full grid-cols-3 bg-[#2D2D2D] border border-[#4A4A4A] rounded-none p-0 gap-0 h-auto">
+                          <TabsTrigger 
+                            value="all" 
+                            className="data-[state=active]:bg-[#1A1A1A] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                          >
+                            すべて ({generatedIdeas.length})
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="favorites" 
+                            className="data-[state=active]:bg-[#1A1A1A] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                          >
+                            お気に入り ({generatedIdeas.filter(i => i.isFavorite).length})
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="recent" 
+                            className="data-[state=active]:bg-[#1A1A1A] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                          >
+                            最近生成
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    )}
+                    
+                    {/* 検索・フィルターUI */}
+                    {generatedIdeas.length > 0 && (
+                      <div className="mb-4 space-y-4 p-4 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
+                        {/* 検索バー */}
+                        <div className="space-y-2">
+                          <Label htmlFor="idea-search-mobile" className="flex items-center gap-2 text-[#E0E0E0]">
+                            <Search className="h-4 w-4" />
+                            検索
+                          </Label>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" />
+                            <Input
+                              id="idea-search-mobile"
+                              placeholder="タイトル、説明、ポイントで検索..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="pl-10 bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                            />
+                            {searchQuery && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 hover:bg-[#4A4A4A]"
+                                aria-label="検索をクリア"
+                              >
+                                <X className="h-4 w-4 text-[#A0A0A0]" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* フィルター */}
+                        <div className="space-y-3">
+                          <Label className="flex items-center gap-2 text-[#E0E0E0]">
+                            <Filter className="h-4 w-4" />
+                            フィルター
+                          </Label>
+                          
+                          <div className="grid grid-cols-1 gap-4">
+                            {/* カテゴリフィルター */}
+                            <div className="space-y-2">
+                              <Label className="text-sm text-[#A0A0A0]">カテゴリ</Label>
+                              <div className="flex flex-wrap gap-2">
+                                {(Object.keys(categoryConfig) as IdeaCategory[]).map((category) => {
+                                  const isSelected = selectedCategories.includes(category);
+                                  const config = categoryConfig[category];
+                                  const CategoryIcon = config.icon;
+                                  
+                                  return (
+                                    <Badge
+                                      key={category}
+                                      className={cn(
+                                        "cursor-pointer transition-all text-xs font-medium",
+                                        isSelected 
+                                          ? config.badgeColor + " border-2 shadow-md" 
+                                          : "bg-[#2D2D2D] text-[#A0A0A0] border-[#4A4A4A] hover:border-[#A0A0A0] hover:bg-[#1A1A1A]"
+                                      )}
+                                      onClick={() => {
+                                        setSelectedCategories(prev => 
+                                          isSelected 
+                                            ? prev.filter(c => c !== category)
+                                            : [...prev, category]
+                                        );
+                                      }}
+                                    >
+                                      <CategoryIcon className="h-3 w-3 mr-1" />
+                                      {config.label}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            
+                            {/* 難易度フィルター */}
+                            <div className="space-y-2">
+                              <Label className="text-sm text-[#A0A0A0]">難易度</Label>
+                              <Select 
+                                value={selectedDifficulty} 
+                                onValueChange={(value) => setSelectedDifficulty(value as IdeaDifficulty | 'all')}
+                              >
+                                <SelectTrigger className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">すべて</SelectItem>
+                                  <SelectItem value="easy">初級</SelectItem>
+                                  <SelectItem value="medium">中級</SelectItem>
+                                  <SelectItem value="hard">上級</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {/* 予想時間フィルター */}
+                            <div className="space-y-2">
+                              <Label className="text-sm text-[#A0A0A0]">予想時間（分）</Label>
+                              <div className="flex gap-2 items-center">
+                                <Input
+                                  type="number"
+                                  placeholder="最小"
+                                  min="0"
+                                  value={durationFilter.min || ''}
+                                  onChange={(e) => setDurationFilter(prev => ({
+                                    ...prev,
+                                    min: e.target.value ? parseInt(e.target.value) : undefined
+                                  }))}
+                                  className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                                />
+                                <span className="text-[#A0A0A0]">〜</span>
+                                <Input
+                                  type="number"
+                                  placeholder="最大"
+                                  min="0"
+                                  value={durationFilter.max || ''}
+                                  onChange={(e) => setDurationFilter(prev => ({
+                                    ...prev,
+                                    max: e.target.value ? parseInt(e.target.value) : undefined
+                                  }))}
+                                  className="bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#4A4A4A]"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* フィルターリセットボタン */}
+                          {(searchQuery || selectedCategories.length > 0 || selectedDifficulty !== 'all' || durationFilter.min !== undefined || durationFilter.max !== undefined) && (
+                            <div className="flex justify-end pt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSearchQuery('');
+                                  setSelectedCategories([]);
+                                  setSelectedDifficulty('all');
+                                  setDurationFilter({});
+                                }}
+                                className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A]"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                フィルターをクリア
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* 検索結果数表示 */}
+                        <div className="text-sm text-[#A0A0A0] pt-2 border-t border-[#4A4A4A]">
+                          <span className="font-medium text-[#E0E0E0]">{filteredIdeas.length}</span>件の企画案が見つかりました
+                          {filteredIdeas.length < generatedIdeas.length && (
+                            <span className="ml-2">（全{generatedIdeas.length}件中）</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* フィルター結果が0件の場合 */}
+                    {generatedIdeas.length > 0 && filteredIdeas.length === 0 && (
+                      <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px] border border-[#4A4A4A]">
+                        <Search className="w-12 h-12 text-[#A0A0A0] mb-4" aria-hidden="true" />
+                        <h3 className="text-lg font-semibold text-[#E0E0E0] mb-2">検索条件に一致する企画案がありません</h3>
+                        <p className="text-[#A0A0A0] mb-4">検索条件やフィルターを変更してお試しください。</p>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setSelectedCategories([]);
+                            setSelectedDifficulty('all');
+                            setDurationFilter({});
+                          }}
+                          className="border-[#4A4A4A]"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          フィルターをクリア
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* 企画案カード一覧 */}
+                    {filteredIdeas.length > 0 && (
+                      <DragDropContext onDragEnd={handleDragEnd}>
+                        <Droppable droppableId="ideas-mobile">
+                          {(provided) => (
+                            <div 
+                              {...provided.droppableProps} 
+                              ref={provided.innerRef}
+                              className="space-y-4"
+                            >
+                              {filteredIdeas.map((idea, index) => {
+                                const category = categoryConfig[idea.category];
+                                const CategoryIcon = category.icon;
+                                
+                                return (
+                                  <Draggable 
+                                    key={idea.id} 
+                                    draggableId={`mobile-${idea.id.toString()}`} 
+                                    index={index}
+                                    isDragDisabled={idea.isFavorite}
+                                  >
+                                    {(provided, snapshot) => (
+                                      <Card 
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className={cn(
+                                          "cursor-pointer transition-all relative overflow-hidden",
+                                          "hover:border-primary hover:shadow-lg hover:shadow-primary/20",
+                                          selectedIdeaId === idea.id && "border-primary shadow-md",
+                                          snapshot.isDragging && "shadow-2xl opacity-90 bg-[#3A3A3A]",
+                                          idea.isFavorite && "border-l-4 border-l-yellow-500/80",
+                                          `bg-gradient-to-br ${category.gradient}`,
+                                          !idea.isFavorite && `border-l-4 ${category.borderColor}`
+                                        )}
+                                        onClick={() => handleCardClick(idea.id)}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-expanded={selectedIdeaId === idea.id}
+                                        aria-label={`企画案: ${idea.title}`}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleCardClick(idea.id);
+                                          }
+                                        }}
+                                      >
+                                        {!idea.isFavorite && (
+                                          <div 
+                                            {...provided.dragHandleProps}
+                                            className="absolute left-0 top-0 bottom-0 w-6 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-[#4A4A4A]/50 z-10 rounded-l-md transition-colors"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <GripVertical className="h-4 w-4 text-[#A0A0A0]" />
+                                          </div>
+                                        )}
+                                        
+                                        <CardHeader className={cn("pb-3", !idea.isFavorite && "pl-8")}>
+                                          <div className="flex items-start gap-3">
+                                            <div className={cn(
+                                              "w-12 h-12 rounded-lg flex items-center justify-center shadow-md flex-shrink-0",
+                                              category.bgColor,
+                                              "border border-[#4A4A4A]"
+                                            )}>
+                                              <CategoryIcon className="h-6 w-6 text-[#E0E0E0]" />
+                                            </div>
+                                            
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-start justify-between gap-2 mb-2">
+                                                <CardTitle className="text-lg font-semibold line-clamp-2 text-[#E0E0E0] flex-1">
+                                                  {idea.title}
+                                                </CardTitle>
+                                                
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      toggleFavorite(idea.id);
+                                                    }}
+                                                    className={cn(
+                                                      "h-8 w-8",
+                                                      idea.isFavorite 
+                                                        ? "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10" 
+                                                        : "text-[#A0A0A0] hover:text-yellow-400 hover:bg-yellow-500/10"
+                                                    )}
+                                                    aria-label={idea.isFavorite ? "お気に入りから削除" : "お気に入りに追加"}
+                                                  >
+                                                    <Star className={cn(
+                                                      "h-4 w-4 transition-all",
+                                                      idea.isFavorite && "fill-current"
+                                                    )} />
+                                                  </Button>
+                                                  
+                                                  <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="h-8 w-8 text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                                        aria-label="共有・エクスポート"
+                                                      >
+                                                        <Share2 className="h-4 w-4" />
+                                                      </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent 
+                                                      align="end" 
+                                                      className="bg-[#2D2D2D] border-[#4A4A4A] min-w-[180px]"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                      <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleCopyIdea(idea);
+                                                        }}
+                                                        className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                                      >
+                                                        <Copy className="h-4 w-4 mr-2" />
+                                                        コピー
+                                                      </DropdownMenuItem>
+                                                      <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleShareIdeaUrl(idea);
+                                                        }}
+                                                        className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                                      >
+                                                        <Share2 className="h-4 w-4 mr-2" />
+                                                        URL共有
+                                                      </DropdownMenuItem>
+                                                      <DropdownMenuSeparator className="bg-[#4A4A4A]" />
+                                                      <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleExportIdeaAsText(idea);
+                                                        }}
+                                                        className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                                      >
+                                                        <FileText className="h-4 w-4 mr-2" />
+                                                        テキストエクスポート
+                                                      </DropdownMenuItem>
+                                                      <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleExportIdeaAsPDF(idea);
+                                                        }}
+                                                        className="text-[#E0E0E0] hover:bg-[#4A4A4A] cursor-pointer"
+                                                      >
+                                                        <FileDown className="h-4 w-4 mr-2" />
+                                                        PDFエクスポート
+                                                      </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                  </DropdownMenu>
+                                                  
+                                                  <Badge variant="outline" className="flex-shrink-0 border-[#4A4A4A] text-[#A0A0A0]">
+                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    {idea.estimatedDuration}分
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                              
+                                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                <Badge className={cn(
+                                                  category.badgeColor,
+                                                  "text-xs font-medium"
+                                                )}>
+                                                  {category.label}
+                                                </Badge>
+                                                
+                                                {idea.difficulty && (
+                                                  <Badge 
+                                                    variant="outline"
+                                                    className={cn(
+                                                      "text-xs font-medium border-[#4A4A4A]",
+                                                      idea.difficulty === 'easy' && 'text-green-400 border-green-500/50 bg-green-500/10',
+                                                      idea.difficulty === 'medium' && 'text-yellow-400 border-yellow-500/50 bg-yellow-500/10',
+                                                      idea.difficulty === 'hard' && 'text-red-400 border-red-500/50 bg-red-500/10',
+                                                    )}
+                                                  >
+                                                    {idea.difficulty === 'easy' ? '初級' : 
+                                                     idea.difficulty === 'medium' ? '中級' : '上級'}
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                              
+                                              <CardDescription className="line-clamp-2 text-[#A0A0A0]">
+                                                {idea.description}
+                                              </CardDescription>
+                                            </div>
+                                          </div>
+                                        </CardHeader>
+                                        
+                                        <CardContent>
+                                          <h4 className="font-semibold text-sm mb-2 text-[#E0E0E0]">おすすめポイント</h4>
+                                          <div className="flex flex-wrap gap-2">
+                                            {idea.points.map((point: string, index: number) => (
+                                              <Badge 
+                                                key={index} 
+                                                variant="secondary"
+                                                className="text-xs bg-[#2D2D2D] text-[#A0A0A0] border-[#4A4A4A]"
+                                              >
+                                                {point}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </CardContent>
+                                        
+                                        <CardFooter className="gap-2">
+                                          <Button variant="outline" aria-label="この企画を調整" className="border-[#4A4A4A]">
+                                            この企画を調整
+                                          </Button>
+                                          <Button 
+                                            onClick={() => handleGenerateScript(idea)}
+                                            disabled={isGeneratingScript}
+                                            aria-label={`${idea.title}の台本を生成`}
+                                          >
+                                            {isGeneratingScript ? (
+                                              <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                                                台本生成中...
+                                              </>
+                                            ) : (
+                                              <>
+                                                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                                                台本を生成する
+                                              </>
+                                            )}
+                                          </Button>
+                                        </CardFooter>
+                                      </Card>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {mobileMainTab === "script" && (
+              <div className="space-y-4">
+                {isGeneratingScript ? (
+                  <ProgressBar
+                    steps={scriptGenerationSteps}
+                    currentStepId={scriptGenerationStep}
+                    type="script"
+                  />
+                ) : currentScript && selectedIdeaId === currentScript.ideaId ? (
+                  <Card className="bg-[#2D2D2D]">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
+                          <FileText className="h-5 w-5" />
+                          台本プレビュー
+                        </CardTitle>
+                        
+                        {/* 印刷・PDFエクスポートボタン（利用者提案） */}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePrint}
+                            className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                            title="印刷"
+                          >
+                            <Printer className="h-4 w-4 mr-1" />
+                            印刷
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleExportPDF}
+                            className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                            title="PDFエクスポート"
+                          >
+                            <FileDown className="h-4 w-4 mr-1" />
+                            PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* 表示モード切り替えタブ（6.11） */}
+                      <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'edit' | 'reading' | 'timeline')}>
+                        <TabsList className="grid w-full grid-cols-3 bg-[#1A1A1A] border border-[#4A4A4A] rounded-none p-0 gap-0 h-auto">
+                          <TabsTrigger 
+                            value="edit" 
+                            className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                          >
+                            <Edit2 className="h-4 w-4 mr-1" />
+                            編集
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="reading" 
+                            className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                          >
+                            <Volume2 className="h-4 w-4 mr-1" />
+                            読み上げ
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="timeline" 
+                            className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                          >
+                            <Gauge className="h-4 w-4 mr-1" />
+                            タイムライン
+                          </TabsTrigger>
+                        </TabsList>
+                        
+                        {/* 編集モード */}
+                        <TabsContent value="edit" className="mt-4 space-y-4">
+                          {/* ツールバー（デザイナー提案） - 2行レイアウト */}
+                          <div className="space-y-2 pb-2 border-b border-[#4A4A4A]">
+                            {/* 1行目: ボタン群 */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleUndo}
+                                disabled={historyIndex <= 0}
+                                className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="アンドゥ"
+                              >
+                                <Undo2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRedo}
+                                disabled={historyIndex >= scriptHistory.length - 1}
+                                className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="リドゥ"
+                              >
+                                <Redo2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (currentScript) {
+                                    addToScriptHistory(currentScript);
+                                    saveScript(false); // 手動保存（6.7）
+                                  }
+                                }}
+                                disabled={!isEditingScript || saveStatus === 'saving'}
+                                className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="保存"
+                              >
+                                {saveStatus === 'saving' ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    保存中...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Save className="h-4 w-4 mr-1" />
+                                    保存
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDuplicateScript}
+                                disabled={!currentScript}
+                                className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="複製（6.14）"
+                              >
+                                <Copy className="h-4 w-4 mr-1" />
+                                複製
+                              </Button>
+                            </div>
+                            
+                            {/* 2行目: 統計情報と保存状態 */}
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                              {calculateScriptStats && (
+                                <div className="flex items-center gap-4 text-xs text-[#A0A0A0] flex-wrap">
+                                  <span>文字数: {calculateScriptStats.total.chars}</span>
+                                  <span>行数: {calculateScriptStats.total.lines}</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    予想時間: {calculateScriptStats.total.estimatedMinutes}分
+                                  </span>
+                                </div>
+                              )}
+                              {/* 保存状態バッジ（6.7） */}
+                              {currentScript && (
+                                <div>
+                                  {saveStatus === 'saved' && (
+                                    <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
+                                      保存済み
+                                    </Badge>
+                                  )}
+                                  {saveStatus === 'editing' && (
+                                    <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
+                                      編集中
+                                    </Badge>
+                                  )}
+                                  {saveStatus === 'saving' && (
+                                    <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
+                                      保存中...
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 動的セクション表示（テンプレートベース）（6.8） */}
+                          {currentTemplate.sections
+                            .sort((a, b) => a.order - b.order)
+                            .map((section) => {
+                              const sectionValue = getSectionValue(section.id);
+                              const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
+                              const lineCount = sectionValue.split('\n').length;
+                              
+                              return (
+                                <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h5 className="font-bold text-[#E0E0E0]">【{section.label}】</h5>
+                                    <span className="text-xs text-[#A0A0A0]">
+                                      {sectionValue.length}文字 / {lineCount}行
+                                    </span>
+                                  </div>
+                                  <div className="relative">
+                                    {/* 行番号表示（デザイナー提案） */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
+                                      {sectionValue.split('\n').map((_, index) => (
+                                        <div key={index} className="leading-6 whitespace-nowrap">
+                                          {index + 1}
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <Textarea
+                                      value={sectionValue}
+                                      onChange={(e) => handleSectionChange(section.id, e.target.value)}
+                                      className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
+                                      placeholder={section.placeholder}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </TabsContent>
+                        
+                        {/* 読み上げモード（6.11） */}
+                        <TabsContent value="reading" className="mt-4 space-y-4">
+                          {/* 読み上げ速度調整 */}
+                          <div className="space-y-3 pb-4 border-b border-[#4A4A4A]">
+                            <div className="flex items-center justify-between">
+                              <Label className="flex items-center gap-2 text-[#E0E0E0]">
+                                <Volume2 className="h-4 w-4" />
+                                読み上げ速度
+                              </Label>
+                              <span className="text-sm text-[#A0A0A0]">{readingSpeed.toFixed(1)}倍速</span>
+                            </div>
+                            <Slider
+                              min={0.5}
+                              max={2.0}
+                              step={0.1}
+                              value={[readingSpeed]}
+                              onValueChange={(value) => setReadingSpeed(value[0])}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-[#4A4A4A]">
+                              <span>0.5倍</span>
+                              <span>1.0倍</span>
+                              <span>2.0倍</span>
+                            </div>
+                          </div>
+                          
+                          {/* 読み上げコントロール */}
+                          <div className="flex items-center gap-2 pb-4 border-b border-[#4A4A4A]">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsReading(!isReading)}
+                              className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
+                            >
+                              {isReading ? (
+                                <>
+                                  <Pause className="h-4 w-4 mr-1" />
+                                  停止
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-4 w-4 mr-1" />
+                                  読み上げ開始
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          
+                          {/* 読み上げ表示（大きめフォント） */}
+                          <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                            {currentTemplate.sections
+                              .sort((a, b) => a.order - b.order)
+                              .map((section, sectionIndex) => {
+                                const sectionValue = getSectionValue(section.id);
+                                const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
+                                const lines = sectionValue.split('\n');
+                                
+                                return (
+                                  <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
+                                    <h5 className="font-bold text-lg text-[#E0E0E0] mb-3">【{section.label}】</h5>
+                                    <div className="space-y-2">
+                                      {lines.map((line, lineIndex) => {
+                                        const globalLineIndex = currentTemplate.sections
+                                          .slice(0, sectionIndex)
+                                          .reduce((acc, s) => acc + getSectionValue(s.id).split('\n').length, 0) + lineIndex;
+                                        const isCurrentLine = currentReadingIndex === globalLineIndex;
+                                        
+                                        return (
+                                          <div
+                                            key={lineIndex}
+                                            className={cn(
+                                              "text-lg leading-relaxed p-2 rounded transition-all",
+                                              isCurrentLine
+                                                ? "bg-primary/20 border-2 border-primary text-[#E0E0E0] font-semibold"
+                                                : "text-[#A0A0A0]"
+                                            )}
+                                          >
+                                            {line || '\u00A0'}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </TabsContent>
+                        
+                        {/* タイムライン表示（6.11） */}
+                        <TabsContent value="timeline" className="mt-4 space-y-4">
+                          {calculateTimeline ? (
+                            <>
+                              {/* 全体時間表示 */}
+                              <div className="p-4 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-primary" />
+                                    <span className="text-lg font-semibold text-[#E0E0E0]">総時間</span>
+                                  </div>
+                                  <span className="text-2xl font-bold text-primary">
+                                    {formatTime(calculateTimeline.totalSeconds)}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* セクションタイムライン */}
+                              <div className="space-y-3">
+                                {calculateTimeline.sections.map((timelineItem, index) => {
+                                  const colorClasses = sectionColorMap[timelineItem.section.color] || sectionColorMap.blue;
+                                  const percentage = (timelineItem.duration / calculateTimeline.totalSeconds) * 100;
+                                  
+                                  // セクションカラーに応じたドットの色を設定
+                                  const dotColorMap: Record<string, string> = {
+                                    blue: 'bg-blue-500',
+                                    green: 'bg-green-500',
+                                    purple: 'bg-purple-500',
+                                    yellow: 'bg-yellow-500',
+                                    orange: 'bg-orange-500',
+                                    pink: 'bg-pink-500',
+                                  };
+                                  const dotColor = dotColorMap[timelineItem.section.color] || 'bg-blue-500';
+                                  
+                                  return (
+                                    <div key={timelineItem.section.id} className="border border-[#4A4A4A] rounded-lg p-4 bg-[#2D2D2D]">
+                                      <div className="flex items-center justify-between mb-3 flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                          <div className={`w-3 h-3 rounded-full ${dotColor}`} />
+                                          <h5 className="font-semibold text-[#E0E0E0]">【{timelineItem.section.label}】</h5>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-sm text-[#A0A0A0]">
+                                          <span>{formatTime(timelineItem.startTime)}</span>
+                                          <span className="text-primary">→</span>
+                                          <span>{formatTime(timelineItem.endTime)}</span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* タイムラインバー */}
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-xs text-[#4A4A4A]">
+                                          <span>開始: {formatTime(timelineItem.startTime)}</span>
+                                          <span className="text-primary font-semibold">継続時間: {formatTime(timelineItem.duration)}</span>
+                                          <span>終了: {formatTime(timelineItem.endTime)}</span>
+                                        </div>
+                                        <div className="w-full h-3 bg-[#1A1A1A] rounded-full overflow-hidden">
+                                          <div
+                                            className={cn("h-full transition-all", dotColor)}
+                                            style={{ width: `${percentage}%` }}
+                                          />
+                                        </div>
+                                        <div className="text-xs text-[#A0A0A0]">
+                                          {timelineItem.chars}文字 / 累積: {formatTime(timelineItem.endTime)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-center text-[#A0A0A0] py-8">
+                              タイムラインを計算中...
+                            </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="w-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
+                    <FileText className="w-16 h-16 text-[#A0A0A0] mb-4" aria-hidden="true" />
+                    <h3 className="text-lg font-semibold text-[#E0E0E0]">台本プレビュー</h3>
+                    <p className="text-[#A0A0A0] mt-2">企画案を選択して「台本を生成する」ボタンを押すと、ここに台本が表示されます。</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {mobileMainTab === "others" && (
+              <div className="space-y-4">
+                {mobileSidebarContent}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 中央: 企画案エリア（md以上でのみ表示） */}
+      <main className="hidden md:block flex-1 p-3 sm:p-4 overflow-y-auto md:pt-4 md:border-r border-[#4A4A4A]">
         {isGeneratingIdeas ? (
           <ProgressBar
             steps={ideaGenerationSteps}
@@ -3550,14 +4583,23 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
             {/* お気に入りタブ */}
             {generatedIdeas.length > 0 && (
               <Tabs value={ideaViewMode} onValueChange={(value) => setIdeaViewMode(value as 'all' | 'favorites' | 'recent')} className="mb-4">
-                <TabsList className="grid w-full grid-cols-3 bg-[#2D2D2D] border border-[#4A4A4A]">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-[#1A1A1A]">
+                <TabsList className="grid w-full grid-cols-3 bg-[#2D2D2D] border border-[#4A4A4A] p-0 gap-0">
+                  <TabsTrigger 
+                    value="all" 
+                    className="data-[state=active]:bg-[#1A1A1A] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0"
+                  >
                     すべて ({generatedIdeas.length})
                   </TabsTrigger>
-                  <TabsTrigger value="favorites" className="data-[state=active]:bg-[#1A1A1A]">
+                  <TabsTrigger 
+                    value="favorites" 
+                    className="data-[state=active]:bg-[#1A1A1A] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0"
+                  >
                     お気に入り ({generatedIdeas.filter(i => i.isFavorite).length})
                   </TabsTrigger>
-                  <TabsTrigger value="recent" className="data-[state=active]:bg-[#1A1A1A]">
+                  <TabsTrigger 
+                    value="recent" 
+                    className="data-[state=active]:bg-[#1A1A1A] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0"
+                  >
                     最近生成
                   </TabsTrigger>
                 </TabsList>
@@ -4050,16 +5092,25 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
               <CardContent className="space-y-4">
                 {/* 表示モード切り替えタブ（6.11） */}
                 <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'edit' | 'reading' | 'timeline')}>
-                  <TabsList className="grid w-full grid-cols-3 bg-[#1A1A1A] border border-[#4A4A4A]">
-                    <TabsTrigger value="edit" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                  <TabsList className="grid w-full grid-cols-3 bg-[#1A1A1A] border border-[#4A4A4A] rounded-none p-0 gap-0 h-auto">
+                    <TabsTrigger 
+                      value="edit" 
+                      className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                    >
                       <Edit2 className="h-4 w-4 mr-1" />
                       編集
                     </TabsTrigger>
-                    <TabsTrigger value="reading" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                    <TabsTrigger 
+                      value="reading" 
+                      className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                    >
                       <Volume2 className="h-4 w-4 mr-1" />
                       読み上げ
                     </TabsTrigger>
-                    <TabsTrigger value="timeline" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
+                    <TabsTrigger 
+                      value="timeline" 
+                      className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0] h-full rounded-none border-r border-[#4A4A4A] last:border-r-0 px-2 py-2"
+                    >
                       <Gauge className="h-4 w-4 mr-1" />
                       タイムライン
                     </TabsTrigger>
@@ -4379,389 +5430,6 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
           )}
         </div>
       </aside>
-
-      {/* Mobile Controls - Always Visible */}
-      <div className="p-4 border-t border-[#4A4A4A] lg:hidden">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Construction className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">企画案生成</h3>
-          </div>
-          {renderControlPanel()}
-        </div>
-      </div>
-
-      {/* モバイル用台本プレビュー（企画案の下に表示） */}
-      {!isDesktop && (
-        <>
-          {isGeneratingScript ? (
-            <div className="p-4 border-t border-[#4A4A4A] lg:hidden bg-[#1A1A1A]">
-              <ProgressBar
-                steps={scriptGenerationSteps}
-                currentStepId={scriptGenerationStep}
-                type="script"
-              />
-            </div>
-          ) : currentScript && selectedIdeaId === currentScript.ideaId && (
-            <div className="p-4 border-t border-[#4A4A4A] lg:hidden bg-[#1A1A1A]">
-              <Card className="bg-[#2D2D2D]">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2 text-[#E0E0E0]">
-                  <FileText className="h-5 w-5" />
-                  台本プレビュー
-                </CardTitle>
-                
-                {/* 印刷・PDFエクスポートボタン（利用者提案） */}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrint}
-                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
-                    title="印刷"
-                  >
-                    <Printer className="h-4 w-4 mr-1" />
-                    印刷
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportPDF}
-                    className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
-                    title="PDFエクスポート"
-                  >
-                    <FileDown className="h-4 w-4 mr-1" />
-                    PDF
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* 表示モード切り替えタブ（6.11） */}
-              <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'edit' | 'reading' | 'timeline')}>
-                <TabsList className="grid w-full grid-cols-3 bg-[#1A1A1A] border border-[#4A4A4A]">
-                  <TabsTrigger value="edit" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
-                    <Edit2 className="h-4 w-4 mr-1" />
-                    編集
-                  </TabsTrigger>
-                  <TabsTrigger value="reading" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
-                    <Volume2 className="h-4 w-4 mr-1" />
-                    読み上げ
-                  </TabsTrigger>
-                  <TabsTrigger value="timeline" className="data-[state=active]:bg-[#2D2D2D] data-[state=active]:text-[#E0E0E0]">
-                    <Gauge className="h-4 w-4 mr-1" />
-                    タイムライン
-                  </TabsTrigger>
-                </TabsList>
-                
-                {/* 編集モード */}
-                <TabsContent value="edit" className="mt-4 space-y-4">
-                  {/* ツールバー（デザイナー提案） - 2行レイアウト */}
-                  <div className="space-y-2 pb-2 border-b border-[#4A4A4A]">
-                    {/* 1行目: ボタン群 */}
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleUndo}
-                        disabled={historyIndex <= 0}
-                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="アンドゥ"
-                      >
-                        <Undo2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRedo}
-                        disabled={historyIndex >= scriptHistory.length - 1}
-                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="リドゥ"
-                      >
-                        <Redo2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (currentScript) {
-                            addToScriptHistory(currentScript);
-                            saveScript(false); // 手動保存（6.7）
-                          }
-                        }}
-                        disabled={!isEditingScript || saveStatus === 'saving'}
-                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="保存"
-                      >
-                        {saveStatus === 'saving' ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            保存中...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-4 w-4 mr-1" />
-                            保存
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDuplicateScript}
-                        disabled={!currentScript}
-                        className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0] disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="複製（6.14）"
-                      >
-                        <Copy className="h-4 w-4 mr-1" />
-                        複製
-                      </Button>
-                    </div>
-                    
-                    {/* 2行目: 統計情報と保存状態 */}
-                    <div className="flex items-center justify-between gap-4">
-                      {calculateScriptStats && (
-                        <div className="flex items-center gap-4 text-xs text-[#A0A0A0]">
-                          <span>文字数: {calculateScriptStats.total.chars}</span>
-                          <span>行数: {calculateScriptStats.total.lines}</span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            予想時間: {calculateScriptStats.total.estimatedMinutes}分
-                          </span>
-                        </div>
-                      )}
-                      {/* 保存状態バッジ（6.7） */}
-                      {currentScript && (
-                        <div>
-                          {saveStatus === 'saved' && (
-                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/50">
-                              保存済み
-                            </Badge>
-                          )}
-                          {saveStatus === 'editing' && (
-                            <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/50">
-                              編集中
-                            </Badge>
-                          )}
-                          {saveStatus === 'saving' && (
-                            <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/50">
-                              保存中...
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-              {/* 動的セクション表示（テンプレートベース）（6.8） */}
-              {currentTemplate.sections
-                .sort((a, b) => a.order - b.order)
-                .map((section) => {
-                  const sectionValue = getSectionValue(section.id);
-                  const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
-                  const lineCount = sectionValue.split('\n').length;
-                  
-                  return (
-                    <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-bold text-[#E0E0E0]">【{section.label}】</h5>
-                        <span className="text-xs text-[#A0A0A0]">
-                          {sectionValue.length}文字 / {lineCount}行
-                        </span>
-                      </div>
-                      <div className="relative">
-                        {/* 行番号表示（デザイナー提案） */}
-                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#2D2D2D] border-r border-[#4A4A4A] text-xs text-[#666] font-mono flex flex-col items-end pr-2 py-2 overflow-hidden">
-                          {sectionValue.split('\n').map((_, index) => (
-                            <div key={index} className="leading-6 whitespace-nowrap">
-                              {index + 1}
-                            </div>
-                          ))}
-                        </div>
-                        <Textarea
-                          value={sectionValue}
-                          onChange={(e) => handleSectionChange(section.id, e.target.value)}
-                          className="pl-10 font-mono text-sm text-[#E0E0E0] bg-[#1A1A1A] border-[#4A4A4A] resize-none min-h-[120px]"
-                          placeholder={section.placeholder}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-                </TabsContent>
-                
-                {/* 読み上げモード（6.11） */}
-                <TabsContent value="reading" className="mt-4 space-y-4">
-                  {/* 読み上げ速度調整 */}
-                  <div className="space-y-3 pb-4 border-b border-[#4A4A4A]">
-                    <div className="flex items-center justify-between">
-                      <Label className="flex items-center gap-2 text-[#E0E0E0]">
-                        <Volume2 className="h-4 w-4" />
-                        読み上げ速度
-                      </Label>
-                      <span className="text-sm text-[#A0A0A0]">{readingSpeed.toFixed(1)}倍速</span>
-                    </div>
-                    <Slider
-                      min={0.5}
-                      max={2.0}
-                      step={0.1}
-                      value={[readingSpeed]}
-                      onValueChange={(value) => setReadingSpeed(value[0])}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-[#4A4A4A]">
-                      <span>0.5倍</span>
-                      <span>1.0倍</span>
-                      <span>2.0倍</span>
-                    </div>
-                  </div>
-                  
-                  {/* 読み上げコントロール */}
-                  <div className="flex items-center gap-2 pb-4 border-b border-[#4A4A4A]">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsReading(!isReading)}
-                      className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#4A4A4A] hover:text-[#E0E0E0]"
-                    >
-                      {isReading ? (
-                        <>
-                          <Pause className="h-4 w-4 mr-1" />
-                          停止
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-1" />
-                          読み上げ開始
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  
-                  {/* 読み上げ表示（大きめフォント） */}
-                  <div className="space-y-4 max-h-[500px] overflow-y-auto">
-                    {currentTemplate.sections
-                      .sort((a, b) => a.order - b.order)
-                      .map((section, sectionIndex) => {
-                        const sectionValue = getSectionValue(section.id);
-                        const colorClasses = sectionColorMap[section.color] || sectionColorMap.blue;
-                        const lines = sectionValue.split('\n');
-                        
-                        return (
-                          <div key={section.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} p-4 rounded`}>
-                            <h5 className="font-bold text-lg text-[#E0E0E0] mb-3">【{section.label}】</h5>
-                            <div className="space-y-2">
-                              {lines.map((line, lineIndex) => {
-                                const globalLineIndex = currentTemplate.sections
-                                  .slice(0, sectionIndex)
-                                  .reduce((acc, s) => acc + getSectionValue(s.id).split('\n').length, 0) + lineIndex;
-                                const isCurrentLine = currentReadingIndex === globalLineIndex;
-                                
-                                return (
-                                  <div
-                                    key={lineIndex}
-                                    className={cn(
-                                      "text-lg leading-relaxed p-2 rounded transition-all",
-                                      isCurrentLine
-                                        ? "bg-primary/20 border-2 border-primary text-[#E0E0E0] font-semibold"
-                                        : "text-[#A0A0A0]"
-                                    )}
-                                  >
-                                    {line || '\u00A0'}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </TabsContent>
-                
-                {/* タイムライン表示（6.11） */}
-                <TabsContent value="timeline" className="mt-4 space-y-4">
-                  {calculateTimeline ? (
-                    <>
-                      {/* 全体時間表示 */}
-                      <div className="p-4 bg-[#2D2D2D] rounded-lg border border-[#4A4A4A]">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-5 w-5 text-primary" />
-                            <span className="text-lg font-semibold text-[#E0E0E0]">総時間</span>
-                          </div>
-                          <span className="text-2xl font-bold text-primary">
-                            {formatTime(calculateTimeline.totalSeconds)}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* セクションタイムライン */}
-                      <div className="space-y-3">
-                        {calculateTimeline.sections.map((timelineItem, index) => {
-                          const colorClasses = sectionColorMap[timelineItem.section.color] || sectionColorMap.blue;
-                          const percentage = (timelineItem.duration / calculateTimeline.totalSeconds) * 100;
-                          
-                          // セクションカラーに応じたドットの色を設定
-                          const dotColorMap: Record<string, string> = {
-                            blue: 'bg-blue-500',
-                            green: 'bg-green-500',
-                            purple: 'bg-purple-500',
-                            yellow: 'bg-yellow-500',
-                            orange: 'bg-orange-500',
-                            pink: 'bg-pink-500',
-                          };
-                          const dotColor = dotColorMap[timelineItem.section.color] || 'bg-blue-500';
-                          
-                          return (
-                            <div key={timelineItem.section.id} className="border border-[#4A4A4A] rounded-lg p-4 bg-[#2D2D2D]">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-3 h-3 rounded-full ${dotColor}`} />
-                                  <h5 className="font-semibold text-[#E0E0E0]">【{timelineItem.section.label}】</h5>
-                                </div>
-                                <div className="flex items-center gap-4 text-sm text-[#A0A0A0]">
-                                  <span>{formatTime(timelineItem.startTime)}</span>
-                                  <span className="text-primary">→</span>
-                                  <span>{formatTime(timelineItem.endTime)}</span>
-                                </div>
-                              </div>
-                              
-                              {/* タイムラインバー */}
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between text-xs text-[#4A4A4A]">
-                                  <span>開始: {formatTime(timelineItem.startTime)}</span>
-                                  <span className="text-primary font-semibold">継続時間: {formatTime(timelineItem.duration)}</span>
-                                  <span>終了: {formatTime(timelineItem.endTime)}</span>
-                                </div>
-                                <div className="w-full h-3 bg-[#1A1A1A] rounded-full overflow-hidden">
-                                  <div
-                                    className={cn("h-full transition-all", colorClasses.bg.replace('/5', ''))}
-                                    style={{ width: `${percentage}%` }}
-                                  />
-                                </div>
-                                <div className="text-xs text-[#A0A0A0]">
-                                  {timelineItem.chars}文字 / 累積: {formatTime(timelineItem.endTime)}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center text-[#A0A0A0] py-8">
-                      タイムラインを計算中...
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-          )}
-        </>
-      )}
 
       {/* Overlay for mobile sidebar */}
       {!isDesktop && isSidebarOpen && (
