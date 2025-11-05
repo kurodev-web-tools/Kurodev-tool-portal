@@ -319,15 +319,15 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              title="図形レイヤーを追加"
-              aria-label="図形レイヤーを追加"
-            >
-              <Square className="h-4 w-4" aria-hidden="true" />
+        <Button 
+          size="sm" 
+          variant="outline" 
+          title="図形レイヤーを追加"
+          aria-label="図形レイヤーを追加"
+        >
+          <Square className="h-4 w-4" aria-hidden="true" />
               <ChevronDown className="h-3 w-3 ml-0.5" aria-hidden="true" />
-            </Button>
+        </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-64 bg-[#2D2D2D] border border-[#4A4A4A] max-h-96 overflow-y-auto">
             {/* 基本図形 */}

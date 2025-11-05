@@ -90,7 +90,9 @@ import {
   Plus,
   Edit2,
   FolderOpen,
-  Package
+  Package,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -235,7 +237,34 @@ export default function VirtualBackgroundGeneratorPage() {
   });
   const [activeTab, setActiveTab] = useState("generate");
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(true); // プレビューエリアの折りたたみ状態（デフォルト: 折りたたみ）
+  const [canScrollLeft, setCanScrollLeft] = useState(false); // タブの左スクロール可能フラグ
+  const [canScrollRight, setCanScrollRight] = useState(false); // タブの右スクロール可能フラグ
+  const tabsScrollRef = useRef<HTMLDivElement>(null); // タブスクロール用のref
   const [generationStep, setGenerationStep] = useState<string | null>(null); // 生成ステップ（7.1.6）
+  
+  // タブスクロール位置を監視（モバイルのみ）
+  useEffect(() => {
+    if (!isDesktop && tabsScrollRef.current) {
+      const checkScroll = () => {
+        const el = tabsScrollRef.current;
+        if (el) {
+          setCanScrollLeft(el.scrollLeft > 0);
+          setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+        }
+      };
+      
+      checkScroll();
+      const scrollElement = tabsScrollRef.current;
+      scrollElement.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+      
+      return () => {
+        scrollElement.removeEventListener('scroll', checkScroll);
+        window.removeEventListener('resize', checkScroll);
+      };
+    }
+  }, [isDesktop, activeTab]);
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number>(0); // 残り推定時間（7.1.6）
   const isCancelledRef = useRef(false); // キャンセルフラグ（7.1.6 - useRefで管理）
   const [prompt, setPrompt] = useState("");
@@ -664,16 +693,17 @@ export default function VirtualBackgroundGeneratorPage() {
         description: '生成が完了しました',
       });
 
-      if (!isDesktop) {
-        setActiveTab("preview");
-      }
-
       // ステップをリセット
       setGenerationStep(null);
       setEstimatedTimeRemaining(0);
     }, "背景生成中にエラーが発生しました");
-    
+
     setIsLoading(false);
+    
+    // モバイル表示の場合、プレビューエリアを展開（生成完了後）
+    if (!isDesktop && isPreviewCollapsed) {
+      setIsPreviewCollapsed(false);
+    }
     isCancelledRef.current = false; // リセット
   }, [prompt, imageCount, handleAsyncError, isDesktop, handleAutoTagImage]);
 
@@ -2917,6 +2947,309 @@ export default function VirtualBackgroundGeneratorPage() {
     </div>
   );
 
+  // モバイル用の履歴タブ内容
+  const mobileHistoryContent = (
+    <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
+      <Separator />
+      
+      <div className="space-y-3 flex-shrink-0">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Label>履歴</Label>
+            <Badge variant="secondary">{filteredHistory.length}件</Badge>
+          </div>
+          <div className="flex gap-2">
+            {history.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearHistory}
+                className="text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                全削除
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        {/* フィルターと検索 */}
+        <div className="flex gap-2">
+          <div className="flex border rounded-md flex-1">
+            <Button
+              variant={historyFilter === 'all' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setHistoryFilter('all')}
+              className="rounded-r-none flex-1 text-xs"
+            >
+              すべて
+            </Button>
+            <Button
+              variant={historyFilter === 'generated' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setHistoryFilter('generated')}
+              className="rounded-none border-x text-xs"
+            >
+              <ImagePlus className="h-3 w-3 mr-1" />
+              生成
+            </Button>
+            <Button
+              variant={historyFilter === 'search' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setHistoryFilter('search')}
+              className="rounded-l-none flex-1 text-xs"
+            >
+              <SearchIcon className="h-3 w-3 mr-1" />
+              検索
+            </Button>
+          </div>
+        </div>
+        
+        {/* 履歴検索 */}
+        <div className="relative">
+          <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="履歴を検索..."
+            value={historySearchKeyword}
+            onChange={(e) => setHistorySearchKeyword(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+      
+      {/* 履歴リスト */}
+      <div className="flex-grow overflow-y-auto space-y-3 pr-1">
+        {filteredHistory.length > 0 ? (
+          <div className="space-y-3">
+            {filteredHistory.map((item, index) => {
+              const prevDate = index > 0 ? new Date(filteredHistory[index - 1].timestamp) : null;
+              const currentDate = new Date(item.timestamp);
+              const showDateSeparator = !prevDate || 
+                prevDate.toDateString() !== currentDate.toDateString();
+              
+              return (
+                <div key={item.id} className="space-y-2">
+                  {/* 日付セパレーター */}
+                  {showDateSeparator && (
+                    <div className="flex items-center gap-2 py-1 sticky top-0 bg-[#1A1A1A] z-10">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {currentDate.toLocaleDateString('ja-JP', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <Card 
+                    className={cn(
+                      "hover:shadow-md transition-all relative",
+                      item.type === 'generated' ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-blue-500'
+                    )}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex gap-2">
+                        {/* サムネイル */}
+                        <div 
+                          className="w-20 h-14 relative overflow-hidden rounded flex-shrink-0 cursor-pointer group"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const historyImage: GeneratedImage = {
+                              id: `history-${item.id}`,
+                              url: item.imageUrl,
+                              prompt: item.prompt || '',
+                              negativePrompt: item.negativePrompt,
+                              category: item.category,
+                              style: item.style,
+                              resolution: item.resolution,
+                              color: item.color,
+                              createdAt: new Date(item.timestamp).getTime(),
+                              downloadCount: 0,
+                            };
+                            setGeneratedImages([historyImage]);
+                            setExpandedImageId(`history-${item.id}`);
+                            if (!isDesktop) {
+                              setIsPreviewCollapsed(false);
+                            }
+                          }}
+                        >
+                          <img
+                            src={item.imageUrl}
+                            alt="履歴画像"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                        
+                        {/* 情報 */}
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant={item.type === 'generated' ? 'default' : 'secondary'} className="text-xs">
+                                  {item.type === 'generated' ? 'AI生成' : '検索'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {currentDate.toLocaleTimeString('ja-JP', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-sm font-medium truncate mb-1">
+                                {item.type === 'generated' 
+                                  ? (item.prompt || "プロンプトなし")
+                                  : (item.searchKeyword || "検索キーワードなし")
+                                }
+                              </p>
+                            </div>
+                            
+                            {/* アクションボタン */}
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  restoreHistoryItem(item);
+                                }}
+                                title="復元"
+                                className="h-8 w-8"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteHistoryItem(item.id);
+                                }}
+                                className="text-red-400 hover:text-red-300 h-8 w-8"
+                                title="削除"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground py-8">
+            <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm">
+              {historySearchKeyword || historyFilter !== 'all' 
+                ? '検索条件に一致する履歴が見つかりませんでした' 
+                : '履歴がここに表示されます'}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // モバイル用のコレクションタブ内容
+  const mobileCollectionsContent = (
+    <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
+      <Separator />
+      
+      <div className="space-y-3 flex-shrink-0">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Label>コレクション</Label>
+            <Badge variant="secondary">{collections.length}件</Badge>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleCreateCollection}
+          >
+            <FolderPlus className="h-4 w-4 mr-2" />
+            新規作成
+          </Button>
+        </div>
+      </div>
+      
+      {/* コレクション一覧 */}
+      <div className="flex-grow overflow-y-auto space-y-2">
+        {collections.length > 0 ? (
+          collections.map((collection) => (
+            <Card 
+              key={collection.id}
+              className={cn(
+                "hover:shadow-md transition-all cursor-pointer",
+                selectedCollectionId === collection.id && 'ring-2 ring-primary'
+              )}
+              onClick={() => setSelectedCollectionId(
+                selectedCollectionId === collection.id ? null : collection.id
+              )}
+            >
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-grow min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Folder className="h-4 w-4 text-primary" />
+                      <h4 className="font-medium truncate text-sm">{collection.name}</h4>
+                      <Badge variant="outline" className="text-xs">
+                        {collection.imageIds.length}枚
+                      </Badge>
+                    </div>
+                    {collection.description && (
+                      <p className="text-xs text-muted-foreground truncate mb-1">
+                        {collection.description}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditCollection(collection);
+                      }}
+                      title="編集"
+                      className="h-8 w-8"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCollection(collection.id);
+                      }}
+                      className="text-red-400 hover:text-red-300 h-8 w-8"
+                      title="削除"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="text-center text-muted-foreground py-8">
+            <Folder className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm">コレクションがここに表示されます</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const previewContent = (
     <div className="h-full p-3 sm:p-4 lg:p-6">
       {isLoading && generationStep ? (
@@ -3007,13 +3340,23 @@ export default function VirtualBackgroundGeneratorPage() {
           
           {/* 画像一覧（7.1.2: グリッドビューとリストビュー） */}
           {viewMode === 'grid' ? (
-            <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto">
+            <div className={cn(
+              "flex-grow gap-4",
+              isDesktop 
+                ? "grid grid-cols-1 md:grid-cols-2 overflow-y-auto" 
+                : "flex overflow-x-auto snap-x snap-mandatory scrollbar-thin scrollbar-thumb-[#20B2AA] scrollbar-track-[#2D2D2D]"
+            )}
+            style={!isDesktop ? { scrollbarWidth: 'thin' } : undefined}
+            >
               {sortedImages.map((img) => (
                 <Card 
                   key={img.id} 
-                  className={`cursor-pointer transition-all relative ${
-                    selectedImage === img.url ? 'ring-2 ring-primary' : 'hover:shadow-md'
-                  } ${selectedImageIds.has(img.id) ? 'ring-2 ring-blue-500' : ''}`}
+                  className={cn(
+                    "cursor-pointer transition-all relative",
+                    selectedImage === img.url ? 'ring-2 ring-primary' : 'hover:shadow-md',
+                    selectedImageIds.has(img.id) && 'ring-2 ring-blue-500',
+                    !isDesktop && "flex-shrink-0 w-[85vw] snap-center"
+                  )}
                   onClick={() => setSelectedImage(img.url)}
                 >
                   <CardContent className="p-0">
@@ -3460,26 +3803,143 @@ export default function VirtualBackgroundGeneratorPage() {
               </Sidebar>
         </>
       ) : (
-        <div className="w-full h-full flex flex-col">
-          {/* プレビューエリア */}
-          <div className="flex-grow p-4">
-            {previewContent}
+        <div className="w-full h-[calc(100vh-4.1rem)] flex flex-col md:hidden">
+          {/* プレビューエリア（折りたたみ可能） */}
+          <div className={cn(
+            "border-b border-[#4A4A4A] transition-all duration-300 overflow-hidden flex-shrink-0",
+            isPreviewCollapsed ? "max-h-0" : "max-h-[40vh]"
+          )}>
+            <div className="p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-[#E0E0E0]">プレビュー</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsPreviewCollapsed(!isPreviewCollapsed)}
+                  className="h-8 w-8"
+                  aria-label={isPreviewCollapsed ? "プレビューを展開" : "プレビューを折りたたむ"}
+                >
+                  {isPreviewCollapsed ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <div className="max-h-[calc(40vh-4rem)] overflow-y-auto">
+                {previewContent}
+              </div>
+            </div>
           </div>
           
-          {/* 生成・検索の切り替えボタン */}
-          <div className="border-t p-4">
-            <Tabs defaultValue="generate" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="generate">生成</TabsTrigger>
-                <TabsTrigger value="search">検索</TabsTrigger>
-              </TabsList>
-              <TabsContent value="generate" className="mt-4">
-                {mobileGenerateContent}
-              </TabsContent>
-              <TabsContent value="search" className="mt-4">
-                {mobileSearchContent}
-              </TabsContent>
-            </Tabs>
+          {/* タブ切り替えUI */}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {/* タブメニュー */}
+            <div className="relative bg-[#1A1A1A] flex-shrink-0 border-b border-[#4A4A4A]">
+              {/* 左フェードアウト */}
+              {canScrollLeft && (
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#1A1A1A] to-transparent z-10 pointer-events-none" />
+              )}
+              
+              {/* タブリスト（ハイブリッド：モバイルは横スクロール、タブレット以上はグリッド） */}
+              <div 
+                ref={tabsScrollRef}
+                className={cn(
+                  "grid grid-cols-4 sm:flex sm:overflow-x-auto scrollbar-thin scrollbar-thumb-[#20B2AA] scrollbar-track-[#2D2D2D] px-2 pt-2"
+                )}
+                style={{ scrollbarWidth: 'thin' }}
+              >
+                <button
+                  onClick={() => setActiveTab("generate")}
+                  className={cn(
+                    "flex-shrink-0 px-3 py-2.5 text-sm font-medium transition-colors relative",
+                    activeTab === "generate"
+                      ? "text-[#20B2AA]"
+                      : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                  )}
+                >
+                  <Sparkles className="h-4 w-4 inline mr-1.5" />
+                  <span className="hidden sm:inline">生成</span>
+                  {activeTab === "generate" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("search")}
+                  className={cn(
+                    "flex-shrink-0 px-3 py-2.5 text-sm font-medium transition-colors relative",
+                    activeTab === "search"
+                      ? "text-[#20B2AA]"
+                      : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                  )}
+                >
+                  <Search className="h-4 w-4 inline mr-1.5" />
+                  <span className="hidden sm:inline">検索</span>
+                  {activeTab === "search" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("history")}
+                  className={cn(
+                    "flex-shrink-0 px-3 py-2.5 text-sm font-medium transition-colors relative",
+                    activeTab === "history"
+                      ? "text-[#20B2AA]"
+                      : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                  )}
+                >
+                  <History className="h-4 w-4 inline mr-1.5" />
+                  <span className="hidden sm:inline">履歴</span>
+                  {activeTab === "history" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("collections")}
+                  className={cn(
+                    "flex-shrink-0 px-3 py-2.5 text-sm font-medium transition-colors relative",
+                    activeTab === "collections"
+                      ? "text-[#20B2AA]"
+                      : "text-[#A0A0A0] hover:text-[#E0E0E0]"
+                  )}
+                >
+                  <Folder className="h-4 w-4 inline mr-1.5" />
+                  <span className="hidden sm:inline">コレクション</span>
+                  {activeTab === "collections" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#20B2AA] z-10" />
+                  )}
+                </button>
+              </div>
+              
+              {/* 右フェードアウト */}
+              {canScrollRight && (
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#1A1A1A] to-transparent z-10 pointer-events-none" />
+              )}
+            </div>
+            
+            {/* タブコンテンツ */}
+            <div className="flex-1 overflow-y-auto">
+              {activeTab === "generate" && (
+                <div className="h-full">
+                  {mobileGenerateContent}
+                </div>
+              )}
+              {activeTab === "search" && (
+                <div className="h-full">
+                  {mobileSearchContent}
+                </div>
+              )}
+              {activeTab === "history" && (
+                <div className="h-full">
+                  {mobileHistoryContent}
+                </div>
+              )}
+              {activeTab === "collections" && (
+                <div className="h-full">
+                  {mobileCollectionsContent}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

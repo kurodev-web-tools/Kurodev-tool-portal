@@ -169,7 +169,7 @@ export const useEditorState = (): EditorState => {
     historyIndexRef.current = targetIndex;
     setHistoryIndex(targetIndex);
     isUpdatingFromHistory.current = true;
-
+    
     // canUndoとcanRedoの状態を更新
     setCanUndo(targetIndex > 0);
     setCanRedo(targetIndex < history.length - 1);

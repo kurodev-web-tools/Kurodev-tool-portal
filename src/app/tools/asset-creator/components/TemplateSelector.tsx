@@ -244,38 +244,38 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
 
               {/* ジャンル別タブ（検索時は非表示） */}
               {!searchQuery.trim() && activeTab === 'all' && (
-                <Tabs defaultValue={availableGenres[0]} className="w-full">
-                  <TabsList className={cn(
-                    "w-full h-auto p-1",
-                    availableGenres.length <= 4 
-                      ? availableGenres.length === 1 ? "grid grid-cols-1" :
-                        availableGenres.length === 2 ? "grid grid-cols-2" :
-                        availableGenres.length === 3 ? "grid grid-cols-3" :
-                        "grid grid-cols-4"
-                      : "flex overflow-x-auto space-x-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-                  )}>
-                    {availableGenres.map(genre => (
-                      <TabsTrigger 
-                        key={genre} 
-                        value={genre}
-                        className={cn(
-                          availableGenres.length > 4 ? 'min-w-fit whitespace-nowrap' : '',
-                          'h-8 px-3 py-1 text-sm'
-                        )}
-                      >
-                        {genreNames[genre]}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+            <Tabs defaultValue={availableGenres[0]} className="w-full">
+              <TabsList className={cn(
+                "w-full h-auto p-1",
+                availableGenres.length <= 4 
+                  ? availableGenres.length === 1 ? "grid grid-cols-1" :
+                    availableGenres.length === 2 ? "grid grid-cols-2" :
+                    availableGenres.length === 3 ? "grid grid-cols-3" :
+                    "grid grid-cols-4"
+                  : "flex overflow-x-auto space-x-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+              )}>
+                {availableGenres.map(genre => (
+                  <TabsTrigger 
+                    key={genre} 
+                    value={genre}
+                    className={cn(
+                      availableGenres.length > 4 ? 'min-w-fit whitespace-nowrap' : '',
+                      'h-8 px-3 py-1 text-sm'
+                    )}
+                  >
+                    {genreNames[genre]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
                   
-                  {availableGenres.map(genre => (
-                    <TabsContent key={genre} value={genre}>
+              {availableGenres.map(genre => (
+                <TabsContent key={genre} value={genre}>
                       <div className={cn("grid gap-2 mt-4", gridCols)}>
                         {displayTemplates
-                          .filter(template => template.genre === genre)
-                          .map((template) => (
+                      .filter(template => template.genre === genre)
+                      .map((template) => (
                             <TemplateCard
-                              key={template.id}
+                          key={template.id}
                               template={template}
                               isSelected={selectedTemplateId === template.id}
                               isFavorite={favorites.has(template.id)}
@@ -284,11 +284,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
                               aspectRatio={aspectRatio}
                               previewSize={previewSize}
                             />
-                          ))}
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                      ))}
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
               )}
 
               {/* 検索結果またはお気に入り表示 */}
