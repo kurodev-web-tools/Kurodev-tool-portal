@@ -606,6 +606,11 @@ export default function VirtualBackgroundGeneratorPage() {
     }
 
     setIsLoading(true);
+    
+    // モバイル表示の場合、生成開始時にプレビューエリアを展開
+    if (!isDesktop && isPreviewCollapsed) {
+      setIsPreviewCollapsed(false);
+    }
     isCancelledRef.current = false;
     setGenerationStep(null);
     setEstimatedTimeRemaining(0);
@@ -705,7 +710,7 @@ export default function VirtualBackgroundGeneratorPage() {
       setIsPreviewCollapsed(false);
     }
     isCancelledRef.current = false; // リセット
-  }, [prompt, imageCount, handleAsyncError, isDesktop, handleAutoTagImage]);
+  }, [prompt, imageCount, handleAsyncError, isDesktop, handleAutoTagImage, isPreviewCollapsed]);
 
   const handleCopyPrompt = useCallback(async () => {
     try {
@@ -1416,6 +1421,12 @@ export default function VirtualBackgroundGeneratorPage() {
         downloadCount: 0,
       }]);
       setSelectedImage(item.imageUrl);
+      
+      // モバイル表示の場合、プレビューエリアを自動展開
+      if (!isDesktop && isPreviewCollapsed) {
+        setIsPreviewCollapsed(false);
+      }
+      
       toast.success('履歴を復元しました');
     } else if (item.type === 'search') {
       // 検索履歴の復元
@@ -1428,7 +1439,7 @@ export default function VirtualBackgroundGeneratorPage() {
       // 検索を実行
       handleSearch();
     }
-  }, [handleSearch]);
+  }, [handleSearch, isDesktop, isPreviewCollapsed]);
 
   // フィルター済み・検索済み履歴（7.1.4）
   const filteredHistory = useMemo(() => {
@@ -2482,11 +2493,10 @@ export default function VirtualBackgroundGeneratorPage() {
   // モバイル用の生成タブ内容（7.1.1対応）
   const mobileGenerateContent = (
       <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
-      <Separator />
       
       <Accordion type="multiple" defaultValue={["basic"]} className="w-full space-y-2">
         {/* 基本設定 */}
-        <AccordionItem value="basic" className="border rounded-lg px-4">
+        <AccordionItem value="basic" className="rounded-lg px-4">
           <AccordionTrigger className="hover:no-underline">
             <div className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -2626,7 +2636,7 @@ export default function VirtualBackgroundGeneratorPage() {
         </AccordionItem>
 
         {/* 詳細設定 */}
-        <AccordionItem value="advanced" className="border rounded-lg px-4">
+        <AccordionItem value="advanced" className="rounded-lg px-4">
           <AccordionTrigger className="hover:no-underline">
             <div className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -2742,7 +2752,6 @@ export default function VirtualBackgroundGeneratorPage() {
   // モバイル用の検索タブ内容
   const mobileSearchContent = (
       <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
-      <Separator />
       
       <div className="space-y-4">
         {/* 検索バー */}
@@ -2861,7 +2870,7 @@ export default function VirtualBackgroundGeneratorPage() {
           </div>
           
           {/* 検索結果グリッド（7.1.3: サムネイルサイズ対応、無限スクロール対応） */}
-          <div className={`grid ${thumbnailSizeClasses} max-h-96 overflow-y-auto`}>
+          <div className={`grid ${thumbnailSizeClasses} overflow-y-auto`} style={{ maxHeight: 'calc(100vh - 28rem)' }}>
             {searchResults.length > 0 ? (
               <>
                 {searchResults.map((result, i) => (
@@ -2950,7 +2959,6 @@ export default function VirtualBackgroundGeneratorPage() {
   // モバイル用の履歴タブ内容
   const mobileHistoryContent = (
     <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
-      <Separator />
       
       <div className="space-y-3 flex-shrink-0">
         <div className="flex justify-between items-center">
@@ -3031,7 +3039,7 @@ export default function VirtualBackgroundGeneratorPage() {
                 <div key={item.id} className="space-y-2">
                   {/* 日付セパレーター */}
                   {showDateSeparator && (
-                    <div className="flex items-center gap-2 py-1 sticky top-0 bg-[#1A1A1A] z-10">
+                    <div className="flex items-center gap-2 py-2 sticky top-0 bg-[#1A1A1A] backdrop-blur-sm z-10 border-b border-[#4A4A4A]/50">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-muted-foreground">
                         {currentDate.toLocaleDateString('ja-JP', { 
@@ -3160,7 +3168,6 @@ export default function VirtualBackgroundGeneratorPage() {
   // モバイル用のコレクションタブ内容
   const mobileCollectionsContent = (
     <div className="flex flex-col h-full space-y-4 p-3 sm:p-4">
-      <Separator />
       
       <div className="space-y-3 flex-shrink-0">
         <div className="flex justify-between items-center">
@@ -3182,64 +3189,101 @@ export default function VirtualBackgroundGeneratorPage() {
       {/* コレクション一覧 */}
       <div className="flex-grow overflow-y-auto space-y-2">
         {collections.length > 0 ? (
-          collections.map((collection) => (
-            <Card 
-              key={collection.id}
-              className={cn(
-                "hover:shadow-md transition-all cursor-pointer",
-                selectedCollectionId === collection.id && 'ring-2 ring-primary'
-              )}
-              onClick={() => setSelectedCollectionId(
-                selectedCollectionId === collection.id ? null : collection.id
-              )}
-            >
-              <CardContent className="p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-grow min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Folder className="h-4 w-4 text-primary" />
-                      <h4 className="font-medium truncate text-sm">{collection.name}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {collection.imageIds.length}枚
-                      </Badge>
+          <>
+            {collections.map((collection) => (
+              <Card 
+                key={collection.id}
+                className={cn(
+                  "hover:shadow-md transition-all cursor-pointer",
+                  selectedCollectionId === collection.id && 'ring-2 ring-primary bg-primary/5'
+                )}
+                onClick={() => setSelectedCollectionId(
+                  selectedCollectionId === collection.id ? null : collection.id
+                )}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-grow min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Folder className="h-4 w-4 text-primary" />
+                        <h4 className="font-medium truncate text-sm">{collection.name}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {collection.imageIds.length}枚
+                        </Badge>
+                      </div>
+                      {collection.description && (
+                        <p className="text-xs text-muted-foreground truncate mb-1">
+                          {collection.description}
+                        </p>
+                      )}
                     </div>
-                    {collection.description && (
-                      <p className="text-xs text-muted-foreground truncate mb-1">
-                        {collection.description}
-                      </p>
-                    )}
+                    
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCollection(collection);
+                        }}
+                        title="編集"
+                        className="h-8 w-8"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCollection(collection.id);
+                        }}
+                        className="text-red-400 hover:text-red-300 h-8 w-8"
+                        title="削除"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditCollection(collection);
-                      }}
-                      title="編集"
-                      className="h-8 w-8"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCollection(collection.id);
-                      }}
-                      className="text-red-400 hover:text-red-300 h-8 w-8"
-                      title="削除"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {/* 選択中のコレクションの画像一覧 */}
+            {selectedCollectionId && collectionImages.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-[#4A4A4A] space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">
+                    {collections.find(c => c.id === selectedCollectionId)?.name} の画像
+                  </Label>
+                  <Badge variant="secondary" className="text-xs">
+                    {collectionImages.length}枚
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+                <div className="grid grid-cols-3 gap-2 max-h-[40vh] overflow-y-auto">
+                  {collectionImages.map((img) => (
+                    <div key={img.id} className="relative aspect-video rounded overflow-hidden group">
+                      <img
+                        src={img.url}
+                        alt={img.id}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveImageFromCollection(img.id, selectedCollectionId)}
+                        className="absolute top-1 right-1 h-8 w-8 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center text-muted-foreground py-8">
             <Folder className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -3251,7 +3295,10 @@ export default function VirtualBackgroundGeneratorPage() {
   );
 
   const previewContent = (
-    <div className="h-full p-3 sm:p-4 lg:p-6">
+    <div className={cn(
+      "p-3 sm:p-4 lg:p-6",
+      isDesktop ? "h-full" : ""
+    )}>
       {isLoading && generationStep ? (
         // 生成プロセスの可視化（7.1.6）
         <ProgressBar
@@ -3261,7 +3308,10 @@ export default function VirtualBackgroundGeneratorPage() {
           onCancel={handleCancelGeneration}
         />
       ) : sortedImages.length > 0 ? (
-        <div className="h-full flex flex-col">
+        <div className={cn(
+          "flex flex-col",
+          isDesktop ? "h-full" : ""
+        )}>
           {/* ツールバー（7.1.2） */}
           <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 space-y-2 md:space-y-0">
             <div className="flex items-center gap-2">
@@ -3269,25 +3319,27 @@ export default function VirtualBackgroundGeneratorPage() {
               <Badge variant="secondary">{sortedImages.length}枚</Badge>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {/* 表示モード切り替え（7.1.2） */}
-              <div className="flex border rounded-md">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="rounded-r-none"
-                >
-                  <Grid3x3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="rounded-l-none"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
+              {/* 表示モード切り替え（7.1.2: デスクトップのみ） */}
+              {isDesktop && (
+                <div className="flex border rounded-md">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="rounded-r-none"
+                  >
+                    <Grid3x3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="rounded-l-none"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               
               {/* 並び替え（7.1.2） */}
               <DropdownMenu>
@@ -3339,7 +3391,7 @@ export default function VirtualBackgroundGeneratorPage() {
           </div>
           
           {/* 画像一覧（7.1.2: グリッドビューとリストビュー） */}
-          {viewMode === 'grid' ? (
+          {viewMode === 'grid' || !isDesktop ? (
             <div className={cn(
               "flex-grow gap-4",
               isDesktop 
@@ -3360,7 +3412,7 @@ export default function VirtualBackgroundGeneratorPage() {
                   onClick={() => setSelectedImage(img.url)}
                 >
                   <CardContent className="p-0">
-                    <div className="aspect-video relative overflow-hidden rounded-lg">
+                    <div className="aspect-video relative overflow-hidden rounded-lg bg-[#1A1A1A]">
                       {/* 選択チェックボックス（7.1.2） */}
                       <div className="absolute top-2 left-2 z-10">
                         <Checkbox
@@ -3376,7 +3428,10 @@ export default function VirtualBackgroundGeneratorPage() {
                       <img
                         src={img.url}
                         alt={`Generated background ${img.id}`}
-                        className="w-full h-full object-cover"
+                        className={cn(
+                          "w-full h-full",
+                          !isDesktop ? "object-contain" : "object-cover"
+                        )}
                         loading="lazy"
                         decoding="async"
                       />
@@ -3803,11 +3858,11 @@ export default function VirtualBackgroundGeneratorPage() {
               </Sidebar>
         </>
       ) : (
-        <div className="w-full h-[calc(100vh-4.1rem)] flex flex-col md:hidden">
+        <div className="w-full h-[calc(100vh-4.1rem)] flex flex-col overflow-y-auto md:hidden">
           {/* プレビューエリア（折りたたみ可能） */}
           <div className={cn(
             "border-b border-[#4A4A4A] transition-all duration-300 overflow-hidden flex-shrink-0",
-            isPreviewCollapsed ? "max-h-0" : "max-h-[40vh]"
+            isPreviewCollapsed ? "max-h-0" : sortedImages.length === 1 ? "" : "max-h-[55vh]"
           )}>
             <div className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-2">
@@ -3826,14 +3881,14 @@ export default function VirtualBackgroundGeneratorPage() {
                   )}
                 </Button>
               </div>
-              <div className="max-h-[calc(40vh-4rem)] overflow-y-auto">
+              <div>
                 {previewContent}
               </div>
             </div>
           </div>
           
           {/* タブ切り替えUI */}
-          <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 flex flex-col">
             {/* タブメニュー */}
             <div className="relative bg-[#1A1A1A] flex-shrink-0 border-b border-[#4A4A4A]">
               {/* 左フェードアウト */}
@@ -3918,24 +3973,24 @@ export default function VirtualBackgroundGeneratorPage() {
             </div>
             
             {/* タブコンテンツ */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1">
               {activeTab === "generate" && (
-                <div className="h-full">
+                <div>
                   {mobileGenerateContent}
                 </div>
               )}
               {activeTab === "search" && (
-                <div className="h-full">
+                <div>
                   {mobileSearchContent}
                 </div>
               )}
               {activeTab === "history" && (
-                <div className="h-full">
+                <div>
                   {mobileHistoryContent}
                 </div>
               )}
               {activeTab === "collections" && (
-                <div className="h-full">
+                <div>
                   {mobileCollectionsContent}
                 </div>
               )}
