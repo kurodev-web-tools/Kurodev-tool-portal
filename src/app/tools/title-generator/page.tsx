@@ -1141,7 +1141,7 @@ export default function TitleGeneratorPage() {
                     validationErrors.videoTheme && "border-red-500 focus-visible:ring-red-500"
                   )}
                 />
-                <div className="flex items-center justify-between mt-1">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                   <div className="flex-1">
                     {validationErrors.videoTheme && (
                       <div className="space-y-1">
@@ -1158,7 +1158,7 @@ export default function TitleGeneratorPage() {
                     )}
                   </div>
                   <span className={cn(
-                    "text-xs ml-2",
+                    "text-xs md:ml-2",
                     videoTheme.length < VIDEO_THEME_MIN_LENGTH 
                       ? "text-red-500" 
                       : videoTheme.length > VIDEO_THEME_MAX_LENGTH 
@@ -1187,7 +1187,7 @@ export default function TitleGeneratorPage() {
                       validationErrors.keywords && "border-red-500 focus-visible:ring-red-500"
                     )}
                   />
-                  <div className="flex items-center justify-between mt-1">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                     <div className="flex-1">
                       {validationErrors.keywords && (
                         <div className="space-y-1">
@@ -1204,7 +1204,7 @@ export default function TitleGeneratorPage() {
                       )}
                     </div>
                     <span className={cn(
-                      "text-xs ml-2",
+                      "text-xs md:ml-2",
                       keywords.length > KEYWORDS_MAX_LENGTH 
                         ? "text-red-500" 
                         : "text-muted-foreground"
@@ -1228,7 +1228,7 @@ export default function TitleGeneratorPage() {
                       validationErrors.targetAudience && "border-red-500 focus-visible:ring-red-500"
                     )}
                   />
-                  <div className="flex items-center justify-between mt-1">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                     <div className="flex-1">
                       {validationErrors.targetAudience && (
                         <div className="space-y-1">
@@ -1245,7 +1245,7 @@ export default function TitleGeneratorPage() {
                       )}
                     </div>
                     <span className={cn(
-                      "text-xs ml-2",
+                      "text-xs md:ml-2",
                       targetAudience.length > TARGET_AUDIENCE_MAX_LENGTH 
                         ? "text-red-500" 
                         : "text-muted-foreground"
@@ -1271,7 +1271,7 @@ export default function TitleGeneratorPage() {
                     validationErrors.videoMood && "border-red-500 focus-visible:ring-red-500"
                   )}
                 />
-                <div className="flex items-center justify-between mt-1">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                   <div className="flex-1">
                     {validationErrors.videoMood && (
                       <div className="space-y-1">
@@ -1288,7 +1288,7 @@ export default function TitleGeneratorPage() {
                     )}
                   </div>
                   <span className={cn(
-                    "text-xs ml-2",
+                    "text-xs md:ml-2",
                     videoMood.length > VIDEO_MOOD_MAX_LENGTH 
                       ? "text-red-500" 
                       : "text-muted-foreground"
@@ -1427,11 +1427,11 @@ export default function TitleGeneratorPage() {
 
   const resultsDisplayContent = (
     <div className="flex flex-col h-full p-4 sm:p-6 space-y-4 relative">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-4">
         <h2 className="text-2xl font-semibold">生成結果</h2>
         {/* 再生成ボタンセクション（5.10対応） */}
         {aiTitles.length > 0 || aiDescription ? (
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             {aiTitles.length > 0 && (
               <Button
                 variant="outline"
@@ -1959,85 +1959,123 @@ export default function TitleGeneratorPage() {
                                       const analysis = analyzeTitle(titleOption.text, keywords);
                                       return (
                                         <div className="flex flex-wrap items-center gap-2 text-xs">
-                                          {/* 文字数表示 */}
-                                          <div className="flex items-center gap-1">
-                                            <span className={cn(
-                                              "font-medium",
-                                              analysis.isOverRecommended 
-                                                ? "text-yellow-400" 
-                                                : analysis.charCount >= 30 && analysis.charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH
-                                                ? "text-green-400"
-                                                : "text-muted-foreground"
-                                            )}>
-                                              {analysis.charCount}文字
-                                            </span>
-                                            {analysis.isOverRecommended && (
-                                              <AlertCircle className="h-3 w-3 text-yellow-400" />
-                                            )}
-                                            {analysis.charCount >= 30 && analysis.charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH && (
-                                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-green-400/50 text-green-400">
-                                                推奨
-                                              </Badge>
-                                            )}
-                                          </div>
-                                          
-                                          {/* キーワード含有率 */}
-                                          {keywords.trim() && (
+                                          {/* モバイル: 主要情報のみ表示 */}
+                                          <div className="flex items-center gap-2 md:hidden">
+                                            {/* 文字数表示 */}
                                             <div className="flex items-center gap-1">
-                                              <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                                              <span className="text-muted-foreground">
-                                                キーワード: {analysis.keywordCoverage}%
+                                              <span className={cn(
+                                                "font-medium",
+                                                analysis.isOverRecommended 
+                                                  ? "text-yellow-400" 
+                                                  : analysis.charCount >= 30 && analysis.charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH
+                                                  ? "text-green-400"
+                                                  : "text-muted-foreground"
+                                              )}>
+                                                {analysis.charCount}文字
                                               </span>
-                                              {analysis.keywordCoverage >= 50 && (
-                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-blue-400/50 text-blue-400">
-                                                  高
+                                              {analysis.isOverRecommended && (
+                                                <AlertCircle className="h-3 w-3 text-yellow-400" />
+                                              )}
+                                            </div>
+                                            {/* 評価スコア */}
+                                            <div className="flex items-center gap-1">
+                                              <span className="text-muted-foreground">スコア:</span>
+                                              <span className={cn(
+                                                "font-semibold",
+                                                analysis.score >= 80 
+                                                  ? "text-green-400"
+                                                  : analysis.score >= 60
+                                                  ? "text-yellow-400"
+                                                  : "text-red-400"
+                                              )}>
+                                                {analysis.score}
+                                              </span>
+                                              <span className="text-muted-foreground text-[10px]">/100</span>
+                                            </div>
+                                          </div>
+
+                                          {/* デスクトップ: すべての情報を表示 */}
+                                          <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
+                                            {/* 文字数表示 */}
+                                            <div className="flex items-center gap-1">
+                                              <span className={cn(
+                                                "font-medium",
+                                                analysis.isOverRecommended 
+                                                  ? "text-yellow-400" 
+                                                  : analysis.charCount >= 30 && analysis.charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH
+                                                  ? "text-green-400"
+                                                  : "text-muted-foreground"
+                                              )}>
+                                                {analysis.charCount}文字
+                                              </span>
+                                              {analysis.isOverRecommended && (
+                                                <AlertCircle className="h-3 w-3 text-yellow-400" />
+                                              )}
+                                              {analysis.charCount >= 30 && analysis.charCount <= YOUTUBE_TITLE_RECOMMENDED_LENGTH && (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-green-400/50 text-green-400">
+                                                  推奨
                                                 </Badge>
                                               )}
                                             </div>
-                                          )}
-                                          
-                                          {/* 特徴タグ */}
-                                          {analysis.features.length > 0 && (
-                                            <div className="flex items-center gap-1 flex-wrap">
-                                              {analysis.features.map((feature, idx) => (
-                                                <Badge 
-                                                  key={idx}
-                                                  variant="secondary" 
-                                                  className="text-[10px] px-1.5 py-0 h-4"
-                                                >
-                                                  {feature}
-                                                </Badge>
-                                              ))}
-                                            </div>
-                                          )}
-                                          
-                                          {/* 評価スコア */}
-                                          <div className="flex items-center gap-1 ml-auto">
-                                            <span className="text-muted-foreground">スコア:</span>
-                                            <span className={cn(
-                                              "font-semibold",
-                                              analysis.score >= 80 
-                                                ? "text-green-400"
-                                                : analysis.score >= 60
-                                                ? "text-yellow-400"
-                                                : "text-red-400"
-                                            )}>
-                                              {analysis.score}
-                                            </span>
-                                            <span className="text-muted-foreground text-[10px]">/100</span>
-                                            {/* 星評価 */}
-                                            <div className="flex gap-0.5 ml-1">
-                                              {[...Array(5)].map((_, i) => (
-                                                <Star
-                                                  key={i}
-                                                  className={cn(
-                                                    "h-2.5 w-2.5",
-                                                    i < Math.round(analysis.score / 20)
-                                                      ? "fill-yellow-400 text-yellow-400"
-                                                      : "text-muted-foreground/30"
-                                                  )}
-                                                />
-                                              ))}
+                                            
+                                            {/* キーワード含有率 */}
+                                            {keywords.trim() && (
+                                              <div className="flex items-center gap-1">
+                                                <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                                                <span className="text-muted-foreground">
+                                                  キーワード: {analysis.keywordCoverage}%
+                                                </span>
+                                                {analysis.keywordCoverage >= 50 && (
+                                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-blue-400/50 text-blue-400">
+                                                    高
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                            )}
+                                            
+                                            {/* 特徴タグ */}
+                                            {analysis.features.length > 0 && (
+                                              <div className="flex items-center gap-1 flex-wrap">
+                                                {analysis.features.map((feature, idx) => (
+                                                  <Badge 
+                                                    key={idx}
+                                                    variant="secondary" 
+                                                    className="text-[10px] px-1.5 py-0 h-4"
+                                                  >
+                                                    {feature}
+                                                  </Badge>
+                                                ))}
+                                              </div>
+                                            )}
+                                            
+                                            {/* 評価スコア */}
+                                            <div className="flex items-center gap-1 ml-auto">
+                                              <span className="text-muted-foreground">スコア:</span>
+                                              <span className={cn(
+                                                "font-semibold",
+                                                analysis.score >= 80 
+                                                  ? "text-green-400"
+                                                  : analysis.score >= 60
+                                                  ? "text-yellow-400"
+                                                  : "text-red-400"
+                                              )}>
+                                                {analysis.score}
+                                              </span>
+                                              <span className="text-muted-foreground text-[10px]">/100</span>
+                                              {/* 星評価 */}
+                                              <div className="flex gap-0.5 ml-1">
+                                                {[...Array(5)].map((_, i) => (
+                                                  <Star
+                                                    key={i}
+                                                    className={cn(
+                                                      "h-2.5 w-2.5",
+                                                      i < Math.round(analysis.score / 20)
+                                                        ? "fill-yellow-400 text-yellow-400"
+                                                        : "text-muted-foreground/30"
+                                                    )}
+                                                  />
+                                                ))}
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
