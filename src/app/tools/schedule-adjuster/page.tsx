@@ -169,7 +169,7 @@ const ScheduleAdjusterPage: React.FC = () => {
 
   // サイドバーコンテンツ（PC表示用）
   const sidebarContent = (
-    <div className="flex-1 overflow-y-auto p-4 space-y-6">
+    <div className="flex-1 md:overflow-y-auto p-4 space-y-6">
       {/* ヘッダーセクション */}
       <div className="pb-4 border-b border-[#4A4A4A]">
         <h3 className="text-lg font-semibold text-[#E0E0E0] mb-1">プロジェクト管理</h3>
@@ -319,7 +319,7 @@ const ScheduleAdjusterPage: React.FC = () => {
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="プロジェクトの詳細を入力（任意）"
-                className="min-h-[100px] resize-none bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#808080] focus:border-[#6A6A6A]"
+                className="min-h-[120px] md:min-h-[100px] resize-none bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0] placeholder:text-[#808080] focus:border-[#6A6A6A]"
               />
             </div>
             <div>
@@ -366,45 +366,47 @@ const ScheduleAdjusterPage: React.FC = () => {
   );
 
   return (
-    <div className="relative flex flex-col lg:h-screen">
+    <div className="relative flex flex-col md:h-screen">
       {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
       {isSidebarOpen && !isDesktop && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      <div className="flex flex-col lg:flex-row flex-grow lg:h-full lg:overflow-y-auto">
+      <div className="flex flex-col md:flex-row flex-grow md:h-full md:overflow-y-auto">
         {/* モバイル表示用のタブ */}
         {!isDesktop && (
-          <div className="border-b border-[#4A4A4A] bg-[#1A1A1A] p-3 sm:p-4 sticky top-0 z-20">
-            <Tabs 
-              value={mobileTab} 
-              onValueChange={(value) => setMobileTab(value as 'projects' | 'add')} 
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2 bg-[#2D2D2D] border border-[#4A4A4A] h-auto">
-                <TabsTrigger 
-                  value="projects"
-                  className="data-[state=active]:bg-[#0070F3] data-[state=active]:text-white data-[state=inactive]:text-[#A0A0A0] transition-all duration-200 py-2.5"
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <span className="text-sm font-medium">プロジェクト一覧</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="add"
-                  className="data-[state=active]:bg-[#0070F3] data-[state=active]:text-white data-[state=inactive]:text-[#A0A0A0] transition-all duration-200 py-2.5"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span className="text-sm font-medium">プロジェクト追加</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+          <div className="bg-[#1A1A1A] sticky top-0 z-20">
+            <div className="px-2 pt-2 pb-0">
+              <Tabs 
+                value={mobileTab} 
+                onValueChange={(value) => setMobileTab(value as 'projects' | 'add')} 
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2 border-b border-[#4A4A4A] rounded-none bg-transparent p-0 h-auto">
+                  <TabsTrigger 
+                    value="projects"
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-[#0070F3] data-[state=active]:text-[#0070F3] data-[state=inactive]:text-[#A0A0A0] px-2 py-2 relative transition-all duration-200"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span className="text-sm font-medium">プロジェクト一覧</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="add"
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-[#0070F3] data-[state=active]:text-[#0070F3] data-[state=inactive]:text-[#A0A0A0] px-2 py-2 relative transition-all duration-200"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    <span className="text-sm font-medium">プロジェクト追加</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
+        <main className="flex-1 md:overflow-y-auto p-3 sm:p-4 lg:p-6">
           {/* PC表示またはモバイルのプロジェクト一覧タブ */}
           {(isDesktop || mobileTab === 'projects') && (
             <>
@@ -494,14 +496,14 @@ const ScheduleAdjusterPage: React.FC = () => {
                             >
                               {project.status === 'active' ? '進行中' : '完了'}
                             </Badge>
-                            {/* 操作メニュー（ホバー時表示） */}
+                            {/* 操作メニュー（モバイルでは常に表示、デスクトップではホバー時表示） */}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={(e) => e.stopPropagation()}
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                  className="md:opacity-0 md:group-hover:opacity-100 transition-opacity text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
                                   aria-label="プロジェクト操作"
                                 >
                                   <MoreVertical className="h-4 w-4" />
@@ -574,8 +576,8 @@ const ScheduleAdjusterPage: React.FC = () => {
                           </div>
                         </div>
                         
-                        {/* 日付情報 */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs text-[#808080] pt-2 border-t border-[#4A4A4A]">
+                        {/* 日付情報（モバイルでは非表示） */}
+                        <div className="hidden md:flex md:flex-row md:items-center md:justify-between gap-1 text-xs text-[#808080] pt-2 border-t border-[#4A4A4A]">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             <span>作成: {project.createdAt}</span>
