@@ -395,7 +395,7 @@ export default function BrandingGeneratorPage() {
             size="lg"
             onClick={() => setActivityStatus("active")}
             variant="outline"
-            className="h-16 text-lg font-semibold border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
+            className="h-14 md:h-16 text-base md:text-lg font-semibold border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A] px-4"
           >
             既に活動している / 準備中
           </Button>
@@ -403,7 +403,7 @@ export default function BrandingGeneratorPage() {
             size="lg"
             onClick={() => setActivityStatus("pre-activity")}
             variant="outline"
-            className="h-16 text-lg font-semibold border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A]"
+            className="h-14 md:h-16 text-base md:text-lg font-semibold border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A] px-4"
           >
             これから活動を始める（準備前）
           </Button>
@@ -677,30 +677,58 @@ export default function BrandingGeneratorPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-xs font-medium text-[#A0A0A0] mb-1">キーワード</p>
-                      <div className="flex flex-wrap gap-1">
-                        {concept.keywords.map((keyword, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="outline" 
-                            className="text-xs bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]"
-                          >
-                            {keyword}
-                          </Badge>
-                        ))}
+                    {/* モバイル: 主要情報のみ表示 */}
+                    <div className="md:hidden">
+                      <div>
+                        <p className="text-xs font-medium text-[#A0A0A0] mb-1">キーワード</p>
+                        <div className="flex flex-wrap gap-1">
+                          {concept.keywords.slice(0, 3).map((keyword, index) => (
+                            <Badge 
+                              key={index} 
+                              variant="outline" 
+                              className="text-xs bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]"
+                            >
+                              {keyword}
+                            </Badge>
+                          ))}
+                          {concept.keywords.length > 3 && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs bg-[#1A1A1A] border-[#4A4A4A] text-[#A0A0A0]"
+                            >
+                              +{concept.keywords.length - 3}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-[#A0A0A0] mb-1">推奨活動</p>
-                      <ul className="text-xs text-[#A0A0A0] space-y-1">
-                        {concept.recommendedActivities.map((activity, index) => (
-                          <li key={index} className="flex items-center gap-1">
-                            <span className="text-[#0070F3]">•</span>
-                            {activity}
-                          </li>
-                        ))}
-                      </ul>
+                    {/* デスクトップ: すべての情報を表示 */}
+                    <div className="hidden md:block space-y-3">
+                      <div>
+                        <p className="text-xs font-medium text-[#A0A0A0] mb-1">キーワード</p>
+                        <div className="flex flex-wrap gap-1">
+                          {concept.keywords.map((keyword, index) => (
+                            <Badge 
+                              key={index} 
+                              variant="outline" 
+                              className="text-xs bg-[#1A1A1A] border-[#4A4A4A] text-[#E0E0E0]"
+                            >
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-[#A0A0A0] mb-1">推奨活動</p>
+                        <ul className="text-xs text-[#A0A0A0] space-y-1">
+                          {concept.recommendedActivities.map((activity, index) => (
+                            <li key={index} className="flex items-center gap-1">
+                              <span className="text-[#0070F3]">•</span>
+                              {activity}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -777,7 +805,7 @@ export default function BrandingGeneratorPage() {
                           className="flex flex-col items-center gap-1"
                         >
                           <div
-                            className="w-16 h-16 rounded-lg border-2 border-[#4A4A4A] shadow-md"
+                            className="w-20 h-20 md:w-16 md:h-16 rounded-lg border-2 border-[#4A4A4A] shadow-md"
                             style={{ backgroundColor: color }}
                             aria-label={`カラー ${index + 1}: ${color}`}
                           />
