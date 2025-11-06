@@ -240,8 +240,50 @@ export default function BrandingGeneratorPage() {
     setSaveProposalName("");
   }, [saveProposalName]);
 
+  // リセット関数（最初からやり直す）
+  const handleReset = useCallback(() => {
+    setCurrentStep("input");
+    setAnalysisResults(null);
+    setConcepts([]);
+    setSelectedConceptId(null);
+    setColorPalettes([]);
+    setSelectedPaletteId(null);
+    setIsEditingPalette(false);
+    setEditingPaletteId(null);
+    setIsSaveDialogOpen(false);
+    setSaveProposalName("");
+    setDescription("");
+    setPersona("");
+    setGenre("");
+    setAvatar("");
+    setIsAnalyzing(false);
+    if (!isDesktop) {
+      setActiveTab("settings");
+    }
+    toast.info('最初からやり直します', {
+      description: 'すべての入力と結果がリセットされました'
+    });
+  }, [isDesktop]);
+
+  // ステップに戻る関数
+  const handleGoToStep = useCallback((targetStep: WorkflowStep) => {
+    const steps: WorkflowStep[] = ["input", "analyzing", "analysis-results", "concept-proposal", "color-palette", "save"];
+    const currentIndex = steps.findIndex(s => s === currentStep);
+    const targetIndex = steps.findIndex(s => s === targetStep);
+    
+    // 現在のステップより前のステップにのみ戻れる（analyzingは除く）
+    if (targetIndex < currentIndex && targetStep !== "analyzing") {
+      setCurrentStep(targetStep);
+      if (!isDesktop && targetStep === "input") {
+        setActiveTab("settings");
+      } else if (!isDesktop && targetStep !== "input") {
+        setActiveTab("results");
+      }
+    }
+  }, [currentStep, isDesktop]);
+
   // ステップインジケーターコンポーネント
-  const StepIndicator = ({ currentStep: step }: { currentStep: WorkflowStep }) => {
+  const StepIndicator = ({ currentStep: step, onStepClick }: { currentStep: WorkflowStep; onStepClick: (step: WorkflowStep) => void }) => {
     const steps = [
       { id: "input", label: "入力", icon: Users },
       { id: "analyzing", label: "分析中", icon: Loader2 },
@@ -252,6 +294,15 @@ export default function BrandingGeneratorPage() {
     ];
     
     const currentIndex = steps.findIndex(s => s.id === step);
+    
+    // ステップをクリックしたときの処理
+    const handleStepClick = (stepId: string, index: number) => {
+      // 完了したステップ（現在のステップより前）のみクリック可能
+      // analyzingステップはクリック不可
+      if (index < currentIndex && stepId !== "analyzing") {
+        onStepClick(stepId as WorkflowStep);
+      }
+    };
     
     return (
       <div className="w-full mb-6">
@@ -268,19 +319,23 @@ export default function BrandingGeneratorPage() {
           {steps.map((stepItem, index) => {
             const isActive = currentIndex >= index;
             const isCurrent = currentIndex === index;
+            const isClickable = index < currentIndex && stepItem.id !== "analyzing";
             const Icon = stepItem.icon;
             
             return (
               <div key={stepItem.id} className="flex flex-col items-center relative z-10 flex-1">
                 <div
+                  onClick={() => handleStepClick(stepItem.id, index)}
                   className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                    isClickable && "cursor-pointer hover:scale-110",
                     isCurrent
                       ? "bg-[#0070F3] border-[#0070F3] scale-110 shadow-lg shadow-[#0070F3]/50"
                       : isActive
                       ? "bg-[#0070F3]/20 border-[#0070F3]"
                       : "bg-[#1A1A1A] border-[#4A4A4A]"
                   )}
+                  title={isClickable ? `${stepItem.label}に戻る` : undefined}
                 >
                   {isCurrent && stepItem.id === "analyzing" ? (
                     <Loader2 className="w-5 h-5 text-white animate-spin" />
@@ -293,12 +348,15 @@ export default function BrandingGeneratorPage() {
                 <p
                   className={cn(
                     "text-xs mt-2 text-center max-w-20",
+                    isClickable && "cursor-pointer",
                     isCurrent
                       ? "text-[#0070F3] font-semibold"
                       : isActive
                       ? "text-[#A0A0A0]"
                       : "text-[#808080]"
                   )}
+                  onClick={() => handleStepClick(stepItem.id, index)}
+                  title={isClickable ? `${stepItem.label}に戻る` : undefined}
                 >
                   {stepItem.label}
                 </p>
@@ -336,6 +394,7 @@ export default function BrandingGeneratorPage() {
           {steps.map((stepItem, index) => {
             const isActive = currentIndex >= index;
             const isCurrent = currentIndex === index;
+            const isClickable = index < currentIndex && stepItem.id !== "analyzing";
             const Icon = stepItem.icon;
             const rowIndex = Math.floor(index / 3);
             const colIndex = index % 3;
@@ -343,14 +402,17 @@ export default function BrandingGeneratorPage() {
             return (
               <div key={stepItem.id} className="flex flex-col items-center relative z-10">
                 <div
+                  onClick={() => handleStepClick(stepItem.id, index)}
                   className={cn(
                     "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                    isClickable && "cursor-pointer hover:scale-110",
                     isCurrent
                       ? "bg-[#0070F3] border-[#0070F3] scale-110 shadow-lg shadow-[#0070F3]/50"
                       : isActive
                       ? "bg-[#0070F3]/20 border-[#0070F3]"
                       : "bg-[#1A1A1A] border-[#4A4A4A]"
                   )}
+                  title={isClickable ? `${stepItem.label}に戻る` : undefined}
                 >
                   {isCurrent && stepItem.id === "analyzing" ? (
                     <Loader2 className="w-6 h-6 text-white animate-spin" />
@@ -363,12 +425,15 @@ export default function BrandingGeneratorPage() {
                 <p
                   className={cn(
                     "text-xs mt-2 text-center px-1",
+                    isClickable && "cursor-pointer",
                     isCurrent
                       ? "text-[#0070F3] font-semibold"
                       : isActive
                       ? "text-[#A0A0A0]"
                       : "text-[#808080]"
                   )}
+                  onClick={() => handleStepClick(stepItem.id, index)}
+                  title={isClickable ? `${stepItem.label}に戻る` : undefined}
                 >
                   {stepItem.label}
                 </p>
@@ -536,7 +601,18 @@ export default function BrandingGeneratorPage() {
       {/* ステップインジケーター（固定） */}
       {currentStep !== "input" && (
         <div className="sticky top-0 z-10 bg-[#1A1A1A] border-b border-[#4A4A4A] p-4 sm:p-6 pb-4">
-          <StepIndicator currentStep={currentStep} />
+          <StepIndicator currentStep={currentStep} onStepClick={handleGoToStep} />
+          <div className="flex justify-end mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="border-[#4A4A4A] text-[#A0A0A0] hover:bg-[#2D2D2D] hover:text-[#E0E0E0] hover:border-[#6A6A6A]"
+            >
+              <X className="mr-2 h-4 w-4" />
+              最初からやり直す
+            </Button>
+          </div>
         </div>
       )}
       
@@ -574,13 +650,23 @@ export default function BrandingGeneratorPage() {
           <div className="space-y-4 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pr-2 sm:pr-0">
               <h2 className="text-xl sm:text-2xl font-semibold text-[#E0E0E0]">分析結果</h2>
-              <Button
-                onClick={handleGenerateConcepts}
-                className="bg-[#0070F3] hover:bg-[#0051CC] text-white shrink-0 w-full sm:w-auto focus:ring-2 focus:ring-[#00D4FF] focus:ring-offset-2 focus:ring-offset-[#1A1A1A]"
-              >
-                コンセプトを提案する
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => handleGoToStep("input")}
+                  className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A] shrink-0 w-full sm:w-auto"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  戻る
+                </Button>
+                <Button
+                  onClick={handleGenerateConcepts}
+                  className="bg-[#0070F3] hover:bg-[#0051CC] text-white shrink-0 w-full sm:w-auto focus:ring-2 focus:ring-[#00D4FF] focus:ring-offset-2 focus:ring-offset-[#1A1A1A]"
+                >
+                  コンセプトを提案する
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
             <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
@@ -646,9 +732,19 @@ export default function BrandingGeneratorPage() {
         {/* コンセプト提案 */}
         {currentStep === "concept-proposal" && concepts.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-2xl font-semibold text-[#E0E0E0]">コンセプト提案</h2>
-              <p className="text-sm text-[#A0A0A0]">好きなコンセプトを選択してください</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+              <div className="flex-1">
+                <h2 className="text-2xl font-semibold text-[#E0E0E0]">コンセプト提案</h2>
+                <p className="text-sm text-[#A0A0A0] mt-1">好きなコンセプトを選択してください</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => handleGoToStep("analysis-results")}
+                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A] shrink-0 w-full sm:w-auto"
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                戻る
+              </Button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -752,11 +848,21 @@ export default function BrandingGeneratorPage() {
         {/* カラーパレット提案 */}
         {currentStep === "color-palette" && colorPalettes.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-2xl font-semibold text-[#E0E0E0]">カラーパレット提案</h2>
-              <p className="text-sm text-[#A0A0A0]">
-                {selectedConceptId && concepts.find(c => c.id === selectedConceptId)?.name}に基づく提案
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+              <div className="flex-1">
+                <h2 className="text-2xl font-semibold text-[#E0E0E0]">カラーパレット提案</h2>
+                <p className="text-sm text-[#A0A0A0] mt-1">
+                  {selectedConceptId && concepts.find(c => c.id === selectedConceptId)?.name}に基づく提案
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => handleGoToStep("concept-proposal")}
+                className="border-[#4A4A4A] text-[#E0E0E0] hover:bg-[#2D2D2D] hover:border-[#6A6A6A] shrink-0 w-full sm:w-auto"
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                戻る
+              </Button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
