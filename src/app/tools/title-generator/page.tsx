@@ -1554,8 +1554,28 @@ export default function TitleGeneratorPage() {
               
               <div className="flex gap-2 mb-2">
                 <Select value={selectedTemplateId} onValueChange={applyTemplate}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="テンプレートを選択" />
+                  <SelectTrigger className="flex-1 truncate">
+                    <SelectValue>
+                      {(() => {
+                        const selectedTemplate = allTemplates.find(t => t.id === selectedTemplateId) || presetTemplates[0];
+                        if (!selectedTemplate) {
+                          return <span>テンプレートを選択</span>;
+                        }
+                        return (
+                          <>
+                            <span className="md:hidden">{selectedTemplate.name}</span>
+                            <span className="hidden md:inline truncate">
+                              {selectedTemplate.name}
+                              {selectedTemplate.description && (
+                                <span className="text-muted-foreground ml-1">
+                                  ({selectedTemplate.description})
+                                </span>
+                              )}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
@@ -1914,11 +1934,11 @@ export default function TitleGeneratorPage() {
                                     titleOption.isFavorite && "border-l-4 border-l-[#20B2AA]"
                                   )}
                                 >
-                                  {/* ドラッグハンドル */}
+                                  {/* ドラッグハンドル（デスクトップのみ表示） */}
                                   {!titleOption.isFavorite && (
                                     <div
                                       {...provided.dragHandleProps}
-                                      className="flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                                      className="hidden md:flex flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
                                       aria-label="ドラッグして並び替え"
                                     >
                                       <GripVertical className="h-4 w-4" />
@@ -2157,7 +2177,7 @@ export default function TitleGeneratorPage() {
                                           <MoreVertical className="h-4 w-4" />
                                         </Button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
+                                      <DropdownMenuContent align="end" className="bg-[#2D2D2D] border-[#4A4A4A] shadow-lg">
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -2357,12 +2377,24 @@ export default function TitleGeneratorPage() {
 
       {/* モバイル表示（タブ切り替え） */}
       <div className="w-full h-[calc(100vh-4.1rem)] flex flex-col overflow-y-auto md:hidden">
-        <div className="border-b bg-background p-3 sm:p-4 flex-shrink-0">
+        <div className="bg-background flex-shrink-0">
           <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="settings">設定</TabsTrigger>
-              <TabsTrigger value="results">結果</TabsTrigger>
-            </TabsList>
+            <div className="px-2 pt-2 pb-0">
+              <TabsList className="grid w-full grid-cols-2 border-b border-[#4A4A4A] rounded-none bg-transparent p-0 h-auto">
+                <TabsTrigger 
+                  value="settings"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-[#00D4FF] data-[state=active]:text-[#00D4FF] px-2 py-2 relative"
+                >
+                  設定
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="results"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-[#00D4FF] data-[state=active]:text-[#00D4FF] px-2 py-2 relative"
+                >
+                  結果
+                </TabsTrigger>
+              </TabsList>
+            </div>
           </Tabs>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col">
