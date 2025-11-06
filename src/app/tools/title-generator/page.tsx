@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save, RefreshCw, Wand2 } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save, RefreshCw, Wand2, MoreVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -43,6 +43,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 export default function TitleGeneratorPage() {
   const { isDesktop } = useSidebar({
     defaultOpen: true,
@@ -1107,7 +1113,7 @@ export default function TitleGeneratorPage() {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="input" className="flex-1 space-y-4 overflow-auto mt-0">
+        <TabsContent value="input" className="flex-1 space-y-4 md:overflow-auto mt-0">
           {/* T-02: コントロールパネルのUI作成 */}
           <Card>
             <CardHeader>
@@ -1305,7 +1311,7 @@ export default function TitleGeneratorPage() {
           </Button>
         </TabsContent>
         
-        <TabsContent value="history" className="flex-1 space-y-4 overflow-auto mt-0">
+        <TabsContent value="history" className="flex-1 space-y-4 md:overflow-auto mt-0">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -1331,7 +1337,7 @@ export default function TitleGeneratorPage() {
                 <p className="text-xs mt-2">タイトルと概要欄を生成すると、ここに履歴が表示されます</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+              <div className="space-y-2 md:max-h-[calc(100vh-300px)] md:overflow-y-auto">
                 {history.map((item) => {
                   const dateStr = new Date(item.timestamp).toLocaleString('ja-JP', {
                     year: 'numeric',
@@ -1470,7 +1476,7 @@ export default function TitleGeneratorPage() {
         ) : null}
       </div>
       <Separator />
-      <div className="flex-grow space-y-4 overflow-auto">
+      <div className="flex-grow space-y-4 md:overflow-auto">
         {/* T-03: 結果表示エリアのUI作成 */}
         <Card>
           <CardHeader>
@@ -1479,7 +1485,7 @@ export default function TitleGeneratorPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="final-title">最終タイトル</Label>
-              <div className="flex space-x-2">
+              <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                 {isLoading ? (
                   <Skeleton className="h-10 w-full" />
                 ) : (
@@ -1488,9 +1494,10 @@ export default function TitleGeneratorPage() {
                     placeholder="AIが生成したタイトル案"
                     value={finalTitle}
                     onChange={(e) => setFinalTitle(e.target.value)}
+                    className="flex-1"
                   />
                 )}
-                <Button variant="outline" onClick={() => navigator.clipboard.writeText(finalTitle)} disabled={!finalTitle}>コピー</Button>
+                <Button variant="outline" onClick={() => navigator.clipboard.writeText(finalTitle)} disabled={!finalTitle} className="w-full md:w-auto">コピー</Button>
               </div>
             </div>
             <div>
@@ -1507,7 +1514,7 @@ export default function TitleGeneratorPage() {
                   ({finalDescription.length} / {YOUTUBE_DESCRIPTION_LIMIT})
                 </span>
               </Label>
-              <div className="flex space-x-2">
+              <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                 {isLoading ? (
                   <Skeleton className="h-24 w-full" />
                 ) : (
@@ -1517,13 +1524,13 @@ export default function TitleGeneratorPage() {
                     value={finalDescription}
                     onChange={(e) => setFinalDescription(e.target.value)}
                     rows={8}
-                    className="resize-y"
+                    className="resize-y flex-1"
                   />
                 )}
                 <Button variant="outline" onClick={() => {
                   navigator.clipboard.writeText(finalDescription);
                   toast.success('概要欄をコピーしました');
-                }} disabled={!finalDescription}>コピー</Button>
+                }} disabled={!finalDescription} className="w-full md:w-auto">コピー</Button>
               </div>
             </div>
             
@@ -1761,10 +1768,10 @@ export default function TitleGeneratorPage() {
                             key={suggestion}
                             variant="outline"
                             size="sm"
-                            className="text-xs h-7"
+                            className="text-xs h-9 md:h-7"
                             onClick={() => handleAddHashtag(suggestion)}
                           >
-                            <Sparkles className="h-3 w-3 mr-1" />
+                            <Sparkles className="h-3 w-3 md:h-3 mr-1" />
                             {suggestion}
                           </Button>
                         ))}
@@ -1784,10 +1791,10 @@ export default function TitleGeneratorPage() {
                             key={favorite}
                             variant="outline"
                             size="sm"
-                            className="text-xs h-7"
+                            className="text-xs h-9 md:h-7"
                             onClick={() => handleAddHashtag(favorite)}
                           >
-                            <Star className="h-3 w-3 mr-1 fill-[#20B2AA] text-[#20B2AA]" />
+                            <Star className="h-3 w-3 md:h-3 mr-1 fill-[#20B2AA] text-[#20B2AA]" />
                             {favorite}
                           </Button>
                         ))}
@@ -2040,6 +2047,7 @@ export default function TitleGeneratorPage() {
                                   
                                   {/* アクションボタン（5.10対応: 個別再生成ボタンを追加） */}
                                   <div className="flex gap-2 flex-shrink-0">
+                                    {/* 主要ボタン（モバイル・デスクトップ共通） */}
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -2060,6 +2068,7 @@ export default function TitleGeneratorPage() {
                                         <Copy className="h-4 w-4" />
                                       )}
                                     </Button>
+                                    {/* デスクトップ: すべてのボタンを表示 */}
                                     {/* 個別タイトル案の再生成（5.10対応） */}
                                     <Button
                                       variant="ghost"
@@ -2071,6 +2080,7 @@ export default function TitleGeneratorPage() {
                                       disabled={regeneratingTitleId === titleOption.id}
                                       aria-label={`タイトル案${index + 1}を再生成`}
                                       title="このタイトル案を再生成"
+                                      className="hidden md:flex"
                                     >
                                       {regeneratingTitleId === titleOption.id ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -2089,6 +2099,7 @@ export default function TitleGeneratorPage() {
                                       disabled={isRegeneratingTitles}
                                       aria-label={`タイトル案${index + 1}をもとに別パターンを生成`}
                                       title="この案をもとに別パターンを生成"
+                                      className="hidden md:flex"
                                     >
                                       {isRegeneratingTitles ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -2096,6 +2107,59 @@ export default function TitleGeneratorPage() {
                                         <Wand2 className="h-4 w-4" />
                                       )}
                                     </Button>
+                                    {/* モバイル: ドロップダウンメニューで追加オプションを表示 */}
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="md:hidden"
+                                          aria-label="その他のオプション"
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRegenerateSingleTitle(titleOption.id, titleOption.text);
+                                          }}
+                                          disabled={regeneratingTitleId === titleOption.id}
+                                        >
+                                          {regeneratingTitleId === titleOption.id ? (
+                                            <>
+                                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                              再生成中...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <RefreshCw className="mr-2 h-4 w-4" />
+                                              このタイトル案を再生成
+                                            </>
+                                          )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleGenerateVariantFromTitle(titleOption.text);
+                                          }}
+                                          disabled={isRegeneratingTitles}
+                                        >
+                                          {isRegeneratingTitles ? (
+                                            <>
+                                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                              生成中...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Wand2 className="mr-2 h-4 w-4" />
+                                              別パターンを生成
+                                            </>
+                                          )}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </div>
                                 </div>
                               )}
@@ -2240,34 +2304,38 @@ export default function TitleGeneratorPage() {
 
   return (
     <div className="h-full flex flex-col md:flex-row md:h-screen">
-      {isDesktop ? (
-        <>
-          {/* 左側: 入力フォーム */}
-          <aside className="w-full md:w-72 lg:w-80 xl:w-96 border-r border-[#4A4A4A] bg-[#1A1A1A] overflow-y-auto">
-            {controlPanelContent}
-          </aside>
+      {/* デスクトップ・タブレット表示（横並び） */}
+      <div className="hidden md:flex md:flex-row w-full h-full">
+        {/* 左側: 入力フォーム */}
+        <aside className="w-full md:w-72 lg:w-80 xl:w-96 border-r border-[#4A4A4A] bg-[#1A1A1A] overflow-y-auto">
+          {controlPanelContent}
+        </aside>
 
-          {/* 右側: 生成結果 */}
-          <main className="flex-1 p-3 sm:p-4 bg-[#1A1A1A] overflow-y-auto">
-            {resultsDisplayContent}
-          </main>
-        </>
-      ) : (
-        <div className="border-b bg-background p-3 sm:p-4">
-          <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+        {/* 右側: 生成結果 */}
+        <main className="flex-1 p-3 sm:p-4 bg-[#1A1A1A] overflow-y-auto">
+          {resultsDisplayContent}
+        </main>
+      </div>
+
+      {/* モバイル表示（タブ切り替え） */}
+      <div className="w-full h-[calc(100vh-4.1rem)] flex flex-col overflow-y-auto md:hidden">
+        <div className="border-b bg-background p-3 sm:p-4 flex-shrink-0">
+          <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="settings">設定</TabsTrigger>
               <TabsTrigger value="results">結果</TabsTrigger>
             </TabsList>
-            <TabsContent value="settings" className="flex-grow overflow-auto">
-              {controlPanelContent}
-            </TabsContent>
-            <TabsContent value="results" className="flex-grow overflow-auto">
-              {resultsDisplayContent}
-            </TabsContent>
           </Tabs>
         </div>
-      )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col">
+          <TabsContent value="settings" className="flex-1 mt-0">
+            {controlPanelContent}
+          </TabsContent>
+          <TabsContent value="results" className="flex-1 mt-0">
+            {resultsDisplayContent}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
