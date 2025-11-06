@@ -255,7 +255,8 @@ export default function BrandingGeneratorPage() {
     
     return (
       <div className="w-full mb-6">
-        <div className="flex items-center justify-between relative">
+        {/* デスクトップ: 1行表示 */}
+        <div className="hidden md:flex items-center justify-between relative">
           {/* 接続線 */}
           <div className="absolute top-5 left-0 right-0 h-0.5 bg-[#4A4A4A] -z-10" />
           <div
@@ -292,6 +293,76 @@ export default function BrandingGeneratorPage() {
                 <p
                   className={cn(
                     "text-xs mt-2 text-center max-w-20",
+                    isCurrent
+                      ? "text-[#0070F3] font-semibold"
+                      : isActive
+                      ? "text-[#A0A0A0]"
+                      : "text-[#808080]"
+                  )}
+                >
+                  {stepItem.label}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* モバイル: 2行表示（3列×2行） */}
+        <div className="md:hidden grid grid-cols-3 gap-4 relative">
+          {/* 接続線（1行目） */}
+          <div className="absolute top-6 left-0 right-0 h-0.5 bg-[#4A4A4A] -z-10" style={{ width: 'calc(100% - 2rem)', marginLeft: '1rem', marginRight: '1rem' }} />
+          <div
+            className="absolute top-6 left-4 h-0.5 bg-[#0070F3] transition-all duration-500 ease-out -z-10"
+            style={{ 
+              width: currentIndex < 3 
+                ? `${((currentIndex + 1) / 3) * 100}%` 
+                : '100%'
+            }}
+          />
+          {/* 接続線（2行目） */}
+          {currentIndex >= 3 && (
+            <>
+              <div className="absolute top-28 left-0 right-0 h-0.5 bg-[#4A4A4A] -z-10" style={{ width: 'calc(100% - 2rem)', marginLeft: '1rem', marginRight: '1rem' }} />
+              <div
+                className="absolute top-28 left-4 h-0.5 bg-[#0070F3] transition-all duration-500 ease-out -z-10"
+                style={{ 
+                  width: `${((currentIndex - 2) / 3) * 100}%`
+                }}
+              />
+            </>
+          )}
+          
+          {/* ステップアイコン */}
+          {steps.map((stepItem, index) => {
+            const isActive = currentIndex >= index;
+            const isCurrent = currentIndex === index;
+            const Icon = stepItem.icon;
+            const rowIndex = Math.floor(index / 3);
+            const colIndex = index % 3;
+            
+            return (
+              <div key={stepItem.id} className="flex flex-col items-center relative z-10">
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                    isCurrent
+                      ? "bg-[#0070F3] border-[#0070F3] scale-110 shadow-lg shadow-[#0070F3]/50"
+                      : isActive
+                      ? "bg-[#0070F3]/20 border-[#0070F3]"
+                      : "bg-[#1A1A1A] border-[#4A4A4A]"
+                  )}
+                >
+                  {isCurrent && stepItem.id === "analyzing" ? (
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : isActive ? (
+                    <Check className="w-6 h-6 text-[#0070F3]" />
+                  ) : (
+                    <Icon className="w-6 h-6 text-[#808080]" />
+                  )}
+                </div>
+                <p
+                  className={cn(
+                    "text-xs mt-2 text-center px-1",
                     isCurrent
                       ? "text-[#0070F3] font-semibold"
                       : isActive
@@ -345,7 +416,7 @@ export default function BrandingGeneratorPage() {
   const controlPanelContent = (
     <div className="flex flex-col h-full p-4 sm:p-6 space-y-4 relative">
       <Separator />
-      <div className="flex-grow space-y-4 overflow-auto">
+      <div className="flex-grow space-y-4 md:overflow-auto">
         {activityStatus === "active" && (
           <Card className="border-[#4A4A4A] bg-[#2D2D2D]">
             <CardHeader>
@@ -469,7 +540,7 @@ export default function BrandingGeneratorPage() {
         </div>
       )}
       
-      <div className="flex-grow space-y-4 overflow-auto p-4 sm:p-6 pr-2 sm:pr-6">
+      <div className="flex-grow space-y-4 md:overflow-auto p-4 sm:p-6 pr-2 sm:pr-6">
         {/* 分析中 */}
         {currentStep === "analyzing" && (
           <div className="space-y-4">
@@ -754,53 +825,63 @@ export default function BrandingGeneratorPage() {
 
   return (
     <div className="h-full flex flex-col md:flex-row md:h-screen">
-      {isDesktop ? (
-        <>
-          <main className="flex-grow p-4 w-full md:w-auto overflow-y-auto">
-            {resultsDisplayContent}
-          </main>
+      {/* デスクトップ・タブレット表示（横並び） */}
+      <div className="hidden md:flex md:flex-row w-full h-full">
+        <main className="flex-grow p-4 w-full overflow-y-auto">
+          {resultsDisplayContent}
+        </main>
 
-          {/* サイドバーが閉じている場合の開くボタン */}
-          {!isRightPanelOpen && (
-            <SidebarToggle 
-              onOpen={() => setIsRightPanelOpen(true)}
-              isDesktop={isDesktop}
-            />
-          )}
-
-          {/* サイドバー */}
-          <Sidebar
-            isOpen={isRightPanelOpen}
-            onClose={() => setIsRightPanelOpen(false)}
-            title=""
+        {/* サイドバーが閉じている場合の開くボタン */}
+        {!isRightPanelOpen && (
+          <SidebarToggle 
+            onOpen={() => setIsRightPanelOpen(true)}
             isDesktop={isDesktop}
-          >
-            {controlPanelContent}
-          </Sidebar>
-        </>
-      ) : (
-        <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 bg-[#2D2D2D] border-[#4A4A4A]">
-            <TabsTrigger 
-              value="settings"
-              className="data-[state=active]:bg-[#0070F3] data-[state=active]:text-white data-[state=inactive]:text-[#A0A0A0]"
-            >
-              設定
-            </TabsTrigger>
-            <TabsTrigger 
-              value="results"
-              className="data-[state=active]:bg-[#0070F3] data-[state=active]:text-white data-[state=inactive]:text-[#A0A0A0]"
-            >
-              結果
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="settings" className="flex-grow overflow-auto">
+          />
+        )}
+
+        {/* サイドバー */}
+        <Sidebar
+          isOpen={isRightPanelOpen}
+          onClose={() => setIsRightPanelOpen(false)}
+          title=""
+          isDesktop={isDesktop}
+        >
+          {controlPanelContent}
+        </Sidebar>
+      </div>
+
+      {/* モバイル表示（タブ切り替え） */}
+      {!isDesktop && (
+        <div className="w-full h-[calc(100vh-4.1rem)] flex flex-col overflow-y-auto md:hidden">
+          <div className="bg-background flex-shrink-0">
+            <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
+              <div className="px-2 pt-2 pb-0">
+                <TabsList className="grid w-full grid-cols-2 border-b border-[#4A4A4A] rounded-none bg-transparent p-0 h-auto">
+                  <TabsTrigger 
+                    value="settings"
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-[#0070F3] data-[state=active]:text-[#0070F3] data-[state=inactive]:text-[#A0A0A0] px-2 py-2 relative"
+                  >
+                    設定
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="results"
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-[#0070F3] data-[state=active]:text-[#0070F3] data-[state=inactive]:text-[#A0A0A0] px-2 py-2 relative"
+                  >
+                    結果
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </Tabs>
+          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col">
+          <TabsContent value="settings" className="flex-grow mt-0">
             {controlPanelContent}
           </TabsContent>
-          <TabsContent value="results" className="flex-grow overflow-auto">
+          <TabsContent value="results" className="flex-grow mt-0">
             {resultsDisplayContent}
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       )}
 
       {/* カラーパレット編集ダイアログ（プレースホルダー） */}
