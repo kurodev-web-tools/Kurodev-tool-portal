@@ -129,7 +129,7 @@ export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
     );
   }
 
-  // モバイル用のサイドバー開くボタン（ヘッダーのプロフィールアイコンと被らないように下に配置）
+  // モバイル用のサイドバー開くボタン（右上に配置）
   return (
     <div className={cn(
       "fixed top-20 right-4 z-20 lg:hidden",

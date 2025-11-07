@@ -22,18 +22,23 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
 
   // サイドバーコンテンツ
   const sidebarContent = (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       {isDesktop ? (
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
-            <TabsTrigger value="schedule-management">予定管理</TabsTrigger>
-            <TabsTrigger value="sns-posting">SNS投稿</TabsTrigger>
-            <TabsTrigger value="settings">設定</TabsTrigger>
+            <TabsTrigger value="schedule-management" className="text-xs sm:text-sm">
+              予定管理
+            </TabsTrigger>
+            <TabsTrigger value="sns-posting" className="text-xs sm:text-sm">
+              SNS投稿
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">
+              設定
+            </TabsTrigger>
           </TabsList>
-          <div className="flex-1">
+          <div className="flex-1 md:overflow-y-auto">
             <TabsContent value="schedule-management" className="mt-4">
               <div className="space-y-4">
-                <Button onClick={() => setIsModalOpen(true)}>予定を追加</Button>
                 <ScheduleList />
               </div>
             </TabsContent>
@@ -46,24 +51,26 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
           </div>
         </Tabs>
       ) : (
-        // モバイル表示では設定タブのみ
-        <SettingsTab />
+        // モバイル表示では設定のみ
+        <div className="flex-1 md:overflow-y-auto p-4">
+          <SettingsTab />
+        </div>
       )}
     </div>
   );
 
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden">
+    <div className="relative flex flex-col md:h-screen md:overflow-hidden">
       {/* モバイル用オーバーレイ（サイドバーが開いている時のみ表示） */}
       {isSidebarOpen && !isDesktop && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      <div className="flex flex-col lg:flex-row flex-grow h-full overflow-hidden">
-        <main className={`flex-grow p-2 lg:p-4 w-full lg:w-auto ${isDesktop ? 'overflow-y-auto' : 'overflow-y-auto'}`}>
+      <div className="flex flex-col md:flex-row flex-grow md:h-full md:overflow-hidden">
+        <main className={`flex-grow p-2 lg:p-4 w-full md:w-auto md:overflow-y-auto`}>
           {children}
         </main>
 
@@ -72,9 +79,11 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
           <SidebarToggle
             onOpen={() => setIsSidebarOpen(true)}
             isDesktop={isDesktop}
-            tabs={[
+            tabs={isDesktop ? [
               { id: "schedule-management", label: "予定", icon: <CalendarPlus className="h-4 w-4" /> },
               { id: "sns-posting", label: "SNS", icon: <MessageSquare className="h-4 w-4" /> },
+              { id: "settings", label: "設定", icon: <Settings className="h-4 w-4" /> }
+            ] : [
               { id: "settings", label: "設定", icon: <Settings className="h-4 w-4" /> }
             ]}
             onTabClick={setSelectedTab}
@@ -87,7 +96,7 @@ function ScheduleCalendarView({ children }: { children: React.ReactNode }) {
           onClose={() => setIsSidebarOpen(false)}
           title=""
           isDesktop={isDesktop}
-          className="lg:w-1/4"
+          className="md:w-72 lg:w-80 xl:w-96"
         >
           {sidebarContent}
         </Sidebar>
