@@ -22,6 +22,7 @@ interface PreviewSectionProps {
   setIsPreviewDedicatedMode: (mode: boolean) => void;
   selectedTab: string;
   setSelectedTab: (tab: string) => void;
+  isMobileSidebarOpen?: boolean;
   
   // プレビュー設定
   showGrid: boolean;
@@ -154,7 +155,17 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
   history,
   historyIndex,
   onJumpToHistory,
+  isMobileSidebarOpen = false,
 }) => {
+  const shouldShowRotationHandles = React.useMemo(() => {
+    if (isDesktop) return true;
+    return !isMobileSidebarOpen;
+  }, [isDesktop, isMobileSidebarOpen]);
+
+  const orderedLayers = React.useMemo(() => {
+    return [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+  }, [layers]);
+
   // プレビューのレンダリング
   const renderPreview = () => (
     <div className="flex flex-col h-full min-h-0">
@@ -188,12 +199,10 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
       
       {/* プレビューエリア */}
       <div 
-        className="flex-1 min-h-0 overflow-auto bg-[#1A1A1A] relative custom-scrollbar" 
+        className={`${isDesktop ? 'flex-1 overflow-auto bg-[#1A1A1A] relative' : 'flex-shrink-0 bg-[#1A1A1A] relative max-h-[50vh] overflow-auto'}`} 
         data-preview-container="true"
       >
-        <div 
-          className="flex items-start justify-center p-4 lg:p-8"
-        >
+        <div className={`${isDesktop ? 'flex items-center justify-center h-full p-4 lg:p-8' : 'flex items-center justify-center p-4'}`}>
           <div className="w-full">
             {/* メインコンテンツエリア */}
             <div
@@ -208,8 +217,9 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
               }}
               className="bg-card relative border rounded-md shadow-lg"
             >
-              <div id="download-target" className="w-full h-full relative overflow-hidden">
-                {layers.map((layer) => {
+              <div
+              id="download-target" className="w-full h-full relative overflow-visible">
+                {orderedLayers.map((layer) => {
                   const isSelected = layer.id === selectedLayerId;
                   const isDraggable = isSelected && !layer.locked;
                   const isResizable = isSelected && !layer.locked;
@@ -235,6 +245,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                         zIndex={layer.zIndex}
                         updateLayer={updateLayer}
                         imageFilters={layer.imageFilters}
+                        showRotationHandle={shouldShowRotationHandles}
                       />
                     );
                   } else if (layer.type === 'text') {
@@ -257,32 +268,55 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
                         textGradient={layer.textGradient}
                         x={layer.x} 
                         y={layer.y} 
-                        width={layer.width} 
+                        width={layer.width}
                         height={layer.height}
-                        rotation={layer.rotation} 
+                        rotation={layer.rotation}
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                        enableResizing={isResizable} 
+                        enableResizing={isResizable}
                         disableDragging={!isDraggable}
-                        zIndex={layer.zIndex}
+                        onSelect={() => setSelectedLayerId(layer.id)}
+                        isLocked={layer.locked}
+                        isDraggable={isDraggable}
+                        onRotateStart={() => {}}
+                        onRotate={() => {}}
+                        onRotateStop={() => {}}
                         updateLayer={updateLayer}
+                        showRotationHandle={shouldShowRotationHandles}
                       />
                     );
-                  } else if (layer.type === 'shape' && layer.shapeType) {
+                  } else if (layer.type === 'shape') {
                     return (
                       <ThumbnailShape
-                        key={layer.id} id={layer.id} isSelected={isSelected} shapeType={layer.shapeType}
-                        backgroundColor={layer.backgroundColor || '#cccccc'} borderColor={layer.borderColor || '#000000'}
-                        borderWidth={layer.borderWidth || 0} x={layer.x} y={layer.y} width={layer.width} height={layer.height}
-                        rotation={layer.rotation} onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
+                        key={layer.id}
+                        id={layer.id}
+                        isSelected={isSelected}
+                        shapeType={layer.shapeType as ShapeType}
+                        backgroundColor={layer.backgroundColor ?? '#FFFFFF'}
+                        borderColor={layer.borderColor ?? 'transparent'}
+                        borderWidth={layer.borderWidth ?? 0}
+                        x={layer.x}
+                        y={layer.y}
+                        width={layer.width}
+                        height={layer.height}
+                        rotation={layer.rotation}
+                        onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
-                        lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
-                        zIndex={layer.zIndex}
+                        enableResizing={isResizable}
+                        disableDragging={!isDraggable}
+                        onSelect={() => setSelectedLayerId(layer.id)}
+                        isLocked={layer.locked}
+                        isDraggable={isDraggable}
+                        onRotateStart={() => {}}
+                        onRotate={() => {}}
+                        onRotateStop={() => {}}
                         updateLayer={updateLayer}
+                        showRotationHandle={shouldShowRotationHandles}
                       />
                     );
                   }
+
                   return null;
                 })}
               </div>
@@ -382,7 +416,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
       {/* モバイル用クイックアクション */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-muted-foreground">クイックアクセス</h4>
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full max-h-[40vh] flex flex-col">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full flex flex-col">
           <TabsList className="w-full h-16 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
             <TabsTrigger 
               value="tools"
@@ -488,7 +522,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
     <>
       {renderPreview()}
       {!isDesktop && (
-        <div className="border-t bg-background max-h-[40vh] overflow-y-auto">
+        <div className="border-t bg-background max-h-[100vh] overflow-y-auto">
           {renderMobileControls()}
         </div>
       )}

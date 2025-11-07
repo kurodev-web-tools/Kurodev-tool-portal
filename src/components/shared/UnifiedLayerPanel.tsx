@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -76,6 +76,28 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
     moveLayerDown,
   } = context;
 
+  const layerIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    layers.forEach((layer, index) => {
+      map.set(layer.id, index);
+    });
+    return map;
+  }, [layers]);
+
+  const sortedLayers = useMemo(() => {
+    return [...layers].sort((a, b) => {
+      if (b.zIndex === a.zIndex) {
+        const indexA = layerIndexMap.get(a.id) ?? 0;
+        const indexB = layerIndexMap.get(b.id) ?? 0;
+        return indexA - indexB;
+      }
+      return (b.zIndex ?? 0) - (a.zIndex ?? 0);
+    });
+  }, [layers, layerIndexMap]);
+
+  const maxZIndex = sortedLayers.length ? sortedLayers[0].zIndex ?? 0 : 0;
+  const minZIndex = sortedLayers.length ? sortedLayers[sortedLayers.length - 1].zIndex ?? 0 : 0;
+
   const [showShapeSelectorModal, setShowShapeSelectorModal] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -148,7 +170,26 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
     if (!result.destination) {
       return;
     }
-    reorderLayers(result.source.index, result.destination.index);
+    const sourceLayer = sortedLayers[result.source.index];
+    if (!sourceLayer) {
+      return;
+    }
+    const destinationIndex = result.destination.index;
+    const destinationLayer = sortedLayers[destinationIndex];
+
+    const sourceActualIndex = layerIndexMap.get(sourceLayer.id);
+    const destinationActualIndex = destinationLayer
+      ? layerIndexMap.get(destinationLayer.id)
+      : layers.length - 1;
+
+    if (
+      sourceActualIndex === undefined ||
+      destinationActualIndex === undefined
+    ) {
+      return;
+    }
+
+    reorderLayers(sourceActualIndex, destinationActualIndex);
   };
 
   const getLayerIcon = (layer: UnifiedLayer) => {
@@ -444,7 +485,7 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                       snapshot.isDraggingOver && "bg-blue-50 dark:bg-blue-900/20 rounded-md p-1"
                     )}
                   >
-                    {layers.map((layer, index) => (
+                    {sortedLayers.map((layer, index) => (
                       <Draggable key={layer.id} draggableId={layer.id} index={index}>
                         {(provided, snapshot) => (
                           <div
@@ -474,13 +515,13 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                               if (e.key === 'ArrowUp' && !e.ctrlKey) {
                                 e.preventDefault();
                                 const prev = Math.max(0, index - 1);
-                                const target = layers[prev];
+                                const target = sortedLayers[prev];
                                 if (target) setSelectedLayerId(target.id);
                               }
                               if (e.key === 'ArrowDown' && !e.ctrlKey) {
                                 e.preventDefault();
-                                const next = Math.min(layers.length - 1, index + 1);
-                                const target = layers[next];
+                                const next = Math.min(sortedLayers.length - 1, index + 1);
+                                const target = sortedLayers[next];
                                 if (target) setSelectedLayerId(target.id);
                               }
                               if (e.key === 'ArrowUp' && e.ctrlKey) {
@@ -539,8 +580,11 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                                 size="sm"
                                 variant="ghost"
                                 className="h-8 w-8 p-0"
-                                onClick={(e) => handleMoveLayerUp(layer.id, e)}
-                                disabled={index === 0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveLayerUp(layer.id);
+                                }}
+                                disabled={layer.zIndex === maxZIndex}
                                 title="上に移動"
                                 aria-label="レイヤーを上に移動"
                               >
@@ -550,8 +594,11 @@ export const UnifiedLayerPanel: React.FC<UnifiedLayerPanelProps> = ({
                                 size="sm"
                                 variant="ghost"
                                 className="h-8 w-8 p-0"
-                                onClick={(e) => handleMoveLayerDown(layer.id, e)}
-                                disabled={index === layers.length - 1}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveLayerDown(layer.id);
+                                }}
+                                disabled={layer.zIndex === minZIndex}
                                 title="下に移動"
                                 aria-label="レイヤーを下に移動"
                               >

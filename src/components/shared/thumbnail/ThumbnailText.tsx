@@ -44,6 +44,7 @@ interface ThumbnailTextProps {
   onRotate?: () => void;
   onRotateStop?: () => void;
   updateLayer?: (id: string, updates: Partial<Layer>) => void;
+  showRotationHandle?: boolean;
 }
 
 const ThumbnailText: React.FC<ThumbnailTextProps> = ({
@@ -79,6 +80,7 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   onRotate,
   onRotateStop,
   updateLayer,
+  showRotationHandle = true,
 }) => {
   const [position, setPosition] = useState({ x, y });
   const [isRotating, setIsRotating] = useState(false);
@@ -160,6 +162,10 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
     window.addEventListener('touchend', handleRotateEnd);
   }, [id, updateLayer, position.x, position.y, width, height]);
 
+  const handleRotateStartTouchReact = (e: React.TouchEvent<HTMLDivElement>) => {
+    handleRotateStartTouch(e.nativeEvent);
+  };
+
   useEffect(() => {
     const handle = rotateHandleRef.current;
     if (handle) {
@@ -171,79 +177,77 @@ const ThumbnailText: React.FC<ThumbnailTextProps> = ({
   }, [handleRotateStartTouch]);
 
   return (
-    <>
-      <Rnd
-        ref={nodeRef}
-        size={{ width, height }}
-        position={position}
-        onDragStart={() => {
-          if (isRotating) {
-            return false;
-          }
-          // ドラッグ開始時にレイヤーを選択状態にする
-          onSelect?.();
-        }}
-        onDrag={(e, d) => {
-          if (!isRotating) {
-            setPosition({ x: d.x, y: d.y });
-          }
-        }}
-        onDragStop={onDragStop}
-        onResizeStop={onResizeStop}
-        minWidth={50}
-        minHeight={20}
-        enableResizing={enableResizing}
-        disableDragging={disableDragging || isRotating}
-        className="border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: zIndex,
-        }}
+    <Rnd
+      ref={nodeRef}
+      size={{ width, height }}
+      position={position}
+      cancel=".rotation-handle"
+      onDragStart={() => {
+        if (isRotating) {
+          return false;
+        }
+        // ドラッグ開始時にレイヤーを選択状態にする
+        onSelect?.();
+      }}
+      onDrag={(e, d) => {
+        if (!isRotating) {
+          setPosition({ x: d.x, y: d.y });
+        }
+      }}
+      onDragStop={onDragStop}
+      onResizeStop={onResizeStop}
+      minWidth={50}
+      minHeight={20}
+      enableResizing={enableResizing}
+      disableDragging={disableDragging || isRotating}
+      className="relative border border-dashed border-transparent hover:border-gray-500 transition-colors duration-200"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: zIndex,
+      }}
+    >
+      <div
+        className="w-full h-full flex items-center justify-center"
+        style={{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}
       >
-        <div
-          className="w-full h-full flex items-center justify-center"
-          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}
+        <p 
+          className={cn("cursor-move", className)} 
+          style={{ 
+            color: textGradient ? 'transparent' : color, 
+            fontSize, 
+            fontFamily,
+            fontWeight,
+            fontStyle,
+            textDecoration,
+            textShadow,
+            letterSpacing,
+            WebkitTextStroke: textStrokeWidth && textStrokeColor ? `${textStrokeWidth} ${textStrokeColor}` : undefined,
+            WebkitBackgroundClip: textGradient ? 'text' : undefined,
+            backgroundClip: textGradient ? 'text' : undefined,
+            backgroundImage: textGradient,
+            lineHeight: 1, 
+            whiteSpace: 'pre-wrap' 
+          } as React.CSSProperties}
         >
-          <p 
-            className={cn("cursor-move", className)} 
-            style={{ 
-              color: textGradient ? 'transparent' : color, 
-              fontSize, 
-              fontFamily,
-              fontWeight,
-              fontStyle,
-              textDecoration,
-              textShadow,
-              letterSpacing,
-              WebkitTextStroke: textStrokeWidth && textStrokeColor ? `${textStrokeWidth} ${textStrokeColor}` : undefined,
-              WebkitBackgroundClip: textGradient ? 'text' : undefined,
-              backgroundClip: textGradient ? 'text' : undefined,
-              backgroundImage: textGradient,
-              lineHeight: 1, 
-              whiteSpace: 'pre-wrap' 
-            } as React.CSSProperties}
-          >
-            {text}
-          </p>
-        </div>
-      </Rnd>
-      {isSelected && (
+          {text}
+        </p>
+      </div>
+      {showRotationHandle && isSelected && !isLocked && isDraggable && enableResizing && (
         <div
           ref={rotateHandleRef}
+          className={cn(
+            'rotation-handle absolute -top-10 left-1/2 -translate-x-1/2 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-[#00D4FF] bg-background/80 text-[#00D4FF] shadow-lg transition-opacity',
+            isRotating ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          )}
           onMouseDown={handleRotateStartMouse}
-          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50"
-          style={{
-            left: typeof width === 'number' ? position.x + width / 2 : position.x + parseFloat(width.toString()) / 2,
-            top: position.y - 30,
-            transform: 'translateX(-50%)',
-          }}
+          onTouchStart={handleRotateStartTouchReact}
         >
-          <RotateCw className="h-4 w-4" />
+          <RotateCw className="h-6 w-6" />
         </div>
       )}
-    </>
+    </Rnd>
   );
 };
 

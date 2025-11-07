@@ -33,6 +33,7 @@ interface ThumbnailImageProps {
   onRotateStop?: () => void;
   updateLayer?: (id: string, updates: Partial<Layer>) => void;
   imageFilters?: ImageFilters;
+  showRotationHandle?: boolean;
 }
 
 export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
@@ -61,6 +62,7 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   onRotateStop,
   updateLayer,
   imageFilters,
+  showRotationHandle = true,
 }) => {
   const [position, setPosition] = useState({ x: x as number, y: y as number });
   const [isRotating, setIsRotating] = useState(false);
@@ -142,6 +144,10 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
     window.addEventListener('touchend', handleRotateEnd);
   }, [id, updateLayer, position.x, position.y, width, height]);
 
+  const handleRotateStartTouchReact = (e: React.TouchEvent<HTMLDivElement>) => {
+    handleRotateStartTouch(e.nativeEvent);
+  };
+
   useEffect(() => {
     const handle = rotateHandleRef.current;
     if (handle) {
@@ -177,55 +183,53 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   }
 
   return (
-    <>
-      <Rnd
-        ref={nodeRef}
-        size={{ width, height }}
-        position={position}
-        onDragStart={() => {
-          if (isRotating) {
-            return false;
-          }
-          // ドラッグ開始時にレイヤーを選択状態にする
-          onSelect?.();
-        }}
-        onDrag={(e, d) => {
-          if (!isRotating) {
-            setPosition({ x: d.x, y: d.y });
-          }
-        }}
-        onDragStop={onDragStop}
-        onResize={onResize}
-        onResizeStop={onResizeStop}
-        lockAspectRatio={lockAspectRatio}
-        enableResizing={enableResizing}
-        disableDragging={disableDragging || isRotating}
-        className={cn(
-          "border border-dashed border-transparent transition-colors duration-200",
-          { "hover:border-gray-500": isSelected }
-        )}
-        onClick={onSelect}
-        style={{ zIndex }}
-      >
-        <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
-          <div style={imageStyle} title={alt} />
-        </div>
-      </Rnd>
-      {isSelected && !isLocked && (
+    <Rnd
+      ref={nodeRef}
+      size={{ width, height }}
+      position={position}
+      cancel=".rotation-handle"
+      onDragStart={() => {
+        if (isRotating) {
+          return false;
+        }
+        // ドラッグ開始時にレイヤーを選択状態にする
+        onSelect?.();
+      }}
+      onDrag={(e, d) => {
+        if (!isRotating) {
+          setPosition({ x: d.x, y: d.y });
+        }
+      }}
+      onDragStop={onDragStop}
+      onResize={onResize}
+      onResizeStop={onResizeStop}
+      lockAspectRatio={lockAspectRatio}
+      enableResizing={enableResizing}
+      disableDragging={disableDragging || isRotating}
+      className={cn(
+        "relative border border-dashed border-transparent transition-colors duration-200",
+        { "hover:border-gray-500": isSelected }
+      )}
+      onClick={onSelect}
+      style={{ zIndex }}
+    >
+      <div style={{ width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}>
+        <div style={imageStyle} title={alt} />
+      </div>
+      {showRotationHandle && isSelected && !isLocked && isDraggable && enableResizing && (
         <div
           ref={rotateHandleRef}
+          className={cn(
+            'rotation-handle absolute -top-10 left-1/2 -translate-x-1/2 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-[#00D4FF] bg-background/80 text-[#00D4FF] shadow-lg transition-opacity',
+            isRotating ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          )}
           onMouseDown={handleRotateStartMouse}
-          className="absolute cursor-grab active:cursor-grabbing bg-white border rounded-full p-1 shadow z-50"
-          style={{
-            left: typeof width === 'number' ? position.x + width / 2 : position.x + parseFloat(width.toString()) / 2,
-            top: position.y - 30,
-            transform: 'translateX(-50%)',
-          }}
+          onTouchStart={handleRotateStartTouchReact}
         >
-          <RotateCw className="h-4 w-4" />
+          <RotateCw className="h-6 w-6" />
         </div>
       )}
-    </>
+    </Rnd>
   );
 };
 
