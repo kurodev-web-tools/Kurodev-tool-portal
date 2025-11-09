@@ -95,6 +95,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { readStorage, writeStorage, removeStorage } from "@/lib/browser-storage";
 
 // 生成ステップの型定義（7.1.6）
 interface GenerationStep {
@@ -480,15 +481,21 @@ export default function VirtualBackgroundGeneratorPage() {
 
   // よく使うプロンプトの読み込み（7.1.1）
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(SAVED_PROMPTS_STORAGE_KEY);
-        if (saved) {
-          setSavedPrompts(JSON.parse(saved));
-        }
-      } catch (err) {
-        console.error('保存済みプロンプトの読み込み失敗', err);
-      }
+    const payload = readStorage<typeof savedPrompts>(SAVED_PROMPTS_STORAGE_KEY);
+    if (payload && Array.isArray(payload)) {
+      setSavedPrompts(
+        payload
+          .filter(item => typeof item === 'object' && item !== null)
+          .map(item => ({
+            id: String((item as any).id ?? ''),
+            prompt: String((item as any).prompt ?? ''),
+            negativePrompt: (item as any).negativePrompt
+              ? String((item as any).negativePrompt)
+              : undefined,
+            createdAt: Number((item as any).createdAt ?? Date.now()),
+          }))
+          .filter(item => item.prompt),
+      );
     }
   }, []);
 
@@ -511,10 +518,10 @@ export default function VirtualBackgroundGeneratorPage() {
     setSavedPrompts(updated);
     
     try {
-      localStorage.setItem(SAVED_PROMPTS_STORAGE_KEY, JSON.stringify(updated));
+      writeStorage(SAVED_PROMPTS_STORAGE_KEY, updated);
       toast.success('プロンプトを保存しました');
-    } catch (err) {
-      console.error('プロンプト保存失敗', err);
+    } catch (error) {
+      logger.error('プロンプト保存失敗', error, 'VirtualBgGenerator');
       toast.error('プロンプトの保存に失敗しました');
     }
     setIsSavingPrompt(false);
@@ -532,10 +539,10 @@ export default function VirtualBackgroundGeneratorPage() {
     const updated = savedPrompts.filter(p => p.id !== id);
     setSavedPrompts(updated);
     try {
-      localStorage.setItem(SAVED_PROMPTS_STORAGE_KEY, JSON.stringify(updated));
+      writeStorage(SAVED_PROMPTS_STORAGE_KEY, updated);
       toast.success('プロンプトを削除しました');
-    } catch (err) {
-      console.error('プロンプト削除失敗', err);
+    } catch (error) {
+      logger.error('プロンプト削除失敗', error, 'VirtualBgGenerator');
     }
   }, [savedPrompts]);
 
@@ -1261,50 +1268,57 @@ export default function VirtualBackgroundGeneratorPage() {
 
   // コレクションとタグの読み込み（7.1.7）
   useEffect(() => {
-    try {
-      const storedCollections = localStorage.getItem(COLLECTIONS_STORAGE_KEY);
-      if (storedCollections) {
-        const parsed = JSON.parse(storedCollections);
-        setCollections(parsed);
-      }
-      
-      const storedTags = localStorage.getItem(IMAGE_TAGS_STORAGE_KEY);
-      if (storedTags) {
-        const parsed = JSON.parse(storedTags);
-        // Map形式に変換
-        const tagsMap = new Map<string, string[]>();
-        Object.entries(parsed).forEach(([imageId, tagIds]) => {
-          tagsMap.set(imageId, tagIds as string[]);
+    const storedCollections = readStorage<Collection[]>(COLLECTIONS_STORAGE_KEY);
+    if (storedCollections && Array.isArray(storedCollections)) {
+      setCollections(
+        storedCollections
+          .filter(item => typeof item === 'object' && item !== null)
+          .map(item => ({
+            ...item,
+            id: String(item.id ?? ''),
+            name: String(item.name ?? ''),
+            description: item.description ? String(item.description) : undefined,
+            imageIds: Array.isArray(item.imageIds) ? item.imageIds.map(id => String(id)) : [],
+            tags: Array.isArray(item.tags) ? item.tags.map(tag => String(tag)) : undefined,
+            createdAt: Number(item.createdAt ?? Date.now()),
+            updatedAt: Number(item.updatedAt ?? Date.now()),
+          }))
+          .filter(item => item.id && item.name),
+      );
+    }
+
+    const storedTags = readStorage<Record<string, string[]>>(IMAGE_TAGS_STORAGE_KEY);
+    if (storedTags && typeof storedTags === 'object') {
+      const tagsMap = new Map<string, string[]>();
+      Object.entries(storedTags).forEach(([imageId, tagIds]) => {
+        if (Array.isArray(tagIds)) {
+          tagsMap.set(imageId, tagIds.map(tag => String(tag)));
+        }
+      });
+      setImageTags(tagsMap);
+
+      const tagMap = new Map<string, ImageTag>();
+      tagsMap.forEach(tagIds => {
+        tagIds.forEach(tagId => {
+          if (!tagMap.has(tagId)) {
+            tagMap.set(tagId, { id: tagId, label: tagId, color: undefined });
+          }
         });
-        setImageTags(tagsMap);
-        
-        // 全タグ一覧を読み込み（画像タグから自動生成）
-        const tagMap = new Map<string, ImageTag>();
-        tagsMap.forEach((tagIds) => {
-          tagIds.forEach((tagId) => {
-            if (!tagMap.has(tagId)) {
-              tagMap.set(tagId, { id: tagId, label: tagId, color: undefined });
-            }
-          });
-        });
-        setAllTags(Array.from(tagMap.values()));
-      }
-    } catch (error) {
-      logger.error('コレクション・タグの読み込みエラー', error, 'VirtualBgGenerator');
+      });
+      setAllTags(Array.from(tagMap.values()));
     }
   }, []);
 
   // コレクションとタグの保存（7.1.7）
   useEffect(() => {
     try {
-      localStorage.setItem(COLLECTIONS_STORAGE_KEY, JSON.stringify(collections));
-      
-      // Map形式をオブジェクトに変換して保存
+      writeStorage(COLLECTIONS_STORAGE_KEY, collections);
+
       const tagsObject: Record<string, string[]> = {};
       imageTags.forEach((tagIds, imageId) => {
         tagsObject[imageId] = tagIds;
       });
-      localStorage.setItem(IMAGE_TAGS_STORAGE_KEY, JSON.stringify(tagsObject));
+      writeStorage(IMAGE_TAGS_STORAGE_KEY, tagsObject);
     } catch (error) {
       logger.error('コレクション・タグの保存エラー', error, 'VirtualBgGenerator');
     }
@@ -1312,21 +1326,34 @@ export default function VirtualBackgroundGeneratorPage() {
 
   // 保存済み検索条件の読み込み（7.1.3）
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(SAVED_SEARCH_CONDITIONS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setSavedSearchConditions(parsed);
-      }
-    } catch (error) {
-      logger.error('保存済み検索条件の読み込みエラー', error, 'VirtualBgGenerator');
+    const stored = readStorage<typeof savedSearchConditions>(SAVED_SEARCH_CONDITIONS_STORAGE_KEY);
+    if (stored && Array.isArray(stored)) {
+      setSavedSearchConditions(
+        stored
+          .filter(item => typeof item === 'object' && item !== null)
+          .map(item => ({
+            id: String((item as any).id ?? ''),
+            name: String((item as any).name ?? ''),
+            keyword: (item as any).keyword ? String((item as any).keyword) : undefined,
+            categories: Array.isArray((item as any).categories)
+              ? (item as any).categories.map((cat: unknown) => String(cat))
+              : undefined,
+            colors: Array.isArray((item as any).colors)
+              ? (item as any).colors.map((color: unknown) => String(color))
+              : undefined,
+            resolution: (item as any).resolution ? String((item as any).resolution) : undefined,
+            license: (item as any).license ? String((item as any).license) : undefined,
+            createdAt: Number((item as any).createdAt ?? Date.now()),
+          }))
+          .filter(item => item.id && item.name),
+      );
     }
   }, []);
 
   // 保存済み検索条件の保存（7.1.3）
   useEffect(() => {
     try {
-      localStorage.setItem(SAVED_SEARCH_CONDITIONS_STORAGE_KEY, JSON.stringify(savedSearchConditions));
+      writeStorage(SAVED_SEARCH_CONDITIONS_STORAGE_KEY, savedSearchConditions);
     } catch (error) {
       logger.error('保存済み検索条件の保存エラー', error, 'VirtualBgGenerator');
     }
@@ -1334,21 +1361,54 @@ export default function VirtualBackgroundGeneratorPage() {
 
   // 履歴の読み込み（7.1.4）
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setHistory(parsed);
-      }
-    } catch (error) {
-      logger.error('履歴の読み込みエラー', error, 'VirtualBgGenerator');
+    const stored = readStorage<HistoryItem[]>(HISTORY_STORAGE_KEY);
+    if (stored && Array.isArray(stored)) {
+      const historyItems: HistoryItem[] = stored
+        .filter(item => typeof item === 'object' && item !== null)
+        .map(item => {
+          const raw = item as Partial<HistoryItem> & Record<string, unknown>;
+          const sanitized: HistoryItem = {
+            id: String(raw.id ?? ''),
+            imageUrl: String(raw.imageUrl ?? ''),
+            prompt: raw.prompt ? String(raw.prompt) : undefined,
+            negativePrompt: raw.negativePrompt ? String(raw.negativePrompt) : undefined,
+            category: raw.category ? String(raw.category) : undefined,
+            style: raw.style ? String(raw.style) : undefined,
+            resolution: raw.resolution ? String(raw.resolution) : undefined,
+            color: raw.color ? String(raw.color) : undefined,
+            timestamp: String(raw.timestamp ?? new Date().toISOString()),
+            type: raw.type === 'search' ? 'search' : 'generated',
+            searchKeyword: raw.searchKeyword ? String(raw.searchKeyword) : undefined,
+            searchParams:
+              raw.searchParams && typeof raw.searchParams === 'object'
+                ? {
+                    categories: Array.isArray((raw.searchParams as any).categories)
+                      ? (raw.searchParams as any).categories.map((cat: unknown) => String(cat))
+                      : undefined,
+                    colors: Array.isArray((raw.searchParams as any).colors)
+                      ? (raw.searchParams as any).colors.map((color: unknown) => String(color))
+                      : undefined,
+                    resolution: (raw.searchParams as any).resolution
+                      ? String((raw.searchParams as any).resolution)
+                      : undefined,
+                    license: (raw.searchParams as any).license
+                      ? String((raw.searchParams as any).license)
+                      : undefined,
+                  }
+                : undefined,
+          };
+          return sanitized;
+        })
+        .filter(item => item.id && item.imageUrl);
+
+      setHistory(historyItems);
     }
   }, []);
 
   // 履歴の保存（7.1.4）
   useEffect(() => {
     try {
-      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+      writeStorage(HISTORY_STORAGE_KEY, history);
     } catch (error) {
       logger.error('履歴の保存エラー', error, 'VirtualBgGenerator');
     }
