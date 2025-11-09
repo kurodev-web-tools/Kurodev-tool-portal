@@ -17,19 +17,10 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Tool } from '@/data/tools';
 
-export interface ToolItem {
-  id: string;
-  title: string;
-  description: string;
-  status: 'released' | 'beta' | 'development';
-  href: string;
-  iconName?: string;
+export interface ToolItem extends Omit<Tool, 'color'> {
   color?: string;
-  category: string;
-  tags: string[];
-  usageCount: number;
-  rating: number;
 }
 
 interface EnhancedFilterProps {

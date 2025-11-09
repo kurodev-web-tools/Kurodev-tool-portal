@@ -11,18 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { favoritesManager } from '@/lib/favorites-storage';
 import { favoritesEventManager } from '@/lib/favorites-events';
 
-export interface ToolItem {
-  id: string;
-  title: string;
-  description: string;
-  status: 'released' | 'beta' | 'development';
-  href: string;
-  iconName?: string;
+import type { Tool } from '@/data/tools';
+
+export interface ToolItem extends Omit<Tool, 'color'> {
   color?: string;
-  category: string;
-  tags: string[];
-  usageCount: number;
-  rating: number;
+  iconName: string;
 }
 
 interface EnhancedToolsSectionProps {

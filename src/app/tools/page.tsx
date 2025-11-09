@@ -4,17 +4,15 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { EnhancedToolsSection } from "@/components/enhanced-tools-section";
 import { useQuickAccess } from "@/hooks/use-quick-access";
 import { tools } from "@/data/tools";
-import { useRouter } from "next/navigation";
+import { useToolTracking } from "@/hooks/use-tool-tracking";
+import type { ToolItem } from "@/components/enhanced-tools-section";
 
 export default function ToolsPage() {
   const quickAccess = useQuickAccess(tools);
-  const router = useRouter();
+  const trackToolUsage = useToolTracking(quickAccess.addToRecent);
 
-  const handleItemClick = (item: any) => {
-    // ツールページに遷移
-    router.push(item.href);
-    // 最近使用に追加
-    quickAccess.addToRecent(item);
+  const handleItemClick = (item: ToolItem) => {
+    trackToolUsage(item);
   };
 
   return (
