@@ -35,6 +35,8 @@ import {
 } from '../services/TemplateAutoGenerator';
 import { ThumbnailTemplate } from '@/types/template';
 import { logger } from '@/lib/logger';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { cn } from '@/lib/utils';
 
 interface AutoGenerationPanelProps {
   onTemplateGenerated: (template: ThumbnailTemplate) => void;
@@ -50,6 +52,8 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
   const [generatedTemplates, setGeneratedTemplates] = useState<GenerationResult[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<GenerationResult | null>(null);
   const [generationCount, setGenerationCount] = useState(1);
+
+  const isTabletUp = useMediaQuery('(min-width: 768px)');
 
   // 設定更新
   const updateConfig = (updates: Partial<AutoGenerationConfig>) => {
@@ -132,6 +136,156 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
     if (score >= 60) return 'text-yellow-600';
     return 'text-red-600';
   };
+
+  const renderGeneratedCard = (
+    result: GenerationResult,
+    index: number,
+    extraClassName?: string
+  ) => (
+    <Card key={result.template.id} className={cn('relative', extraClassName)}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg">{result.template.name}</CardTitle>
+            <CardDescription className="mt-1">
+              {result.template.description}
+            </CardDescription>
+          </div>
+          <Badge variant="secondary" className="ml-2">
+            #{index + 1}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-3">
+          {/* スコア表示 */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span>総合スコア</span>
+              <span className={`font-semibold ${getScoreColor(result.score.overall)}`}>
+                {result.score.overall}/100
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex justify-between">
+                <span>美学</span>
+                <span className={getScoreColor(result.score.aesthetics)}>
+                  {result.score.aesthetics}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>使いやすさ</span>
+                <span className={getScoreColor(result.score.usability)}>
+                  {result.score.usability}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>独自性</span>
+                <span className={getScoreColor(result.score.uniqueness)}>
+                  {result.score.uniqueness}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>トレンド性</span>
+                <span className={getScoreColor(result.score.trendiness)}>
+                  {result.score.trendiness}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* メタデータ */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>{result.template.metadata.estimatedTime}分</span>
+            <span>{result.template.layout.objects.length}オブジェクト</span>
+          </div>
+
+          {/* アクションボタン */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSelectTemplate(result)}
+              className="flex-1"
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              選択
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Star className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>テンプレート詳細</DialogTitle>
+                  <DialogDescription>
+                    {result.template.name}の詳細情報と改善提案
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">スコア詳細</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>総合スコア</span>
+                          <span className={getScoreColor(result.score.overall)}>
+                            {result.score.overall}/100
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>美学</span>
+                          <span className={getScoreColor(result.score.aesthetics)}>
+                            {result.score.aesthetics}/100
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>使いやすさ</span>
+                          <span className={getScoreColor(result.score.usability)}>
+                            {result.score.usability}/100
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>独自性</span>
+                          <span className={getScoreColor(result.score.uniqueness)}>
+                            {result.score.uniqueness}/100
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">改善提案</h4>
+                    <ul className="space-y-1">
+                      {result.suggestions.map((suggestion, suggestionIndex) => (
+                        <li key={suggestionIndex} className="text-sm text-muted-foreground">
+                          • {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">生成情報</h4>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>生成時間: {result.metadata.generationTime}ms</div>
+                      <div>アルゴリズム: {result.metadata.algorithm}</div>
+                      <div>バージョン: {result.metadata.version}</div>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -479,153 +633,21 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {generatedTemplates.map((result, index) => (
-                  <Card key={result.template.id} className="relative">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{result.template.name}</CardTitle>
-                          <CardDescription className="mt-1">
-                            {result.template.description}
-                          </CardDescription>
-                        </div>
-                        <Badge variant="secondary" className="ml-2">
-                          #{index + 1}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        {/* スコア表示 */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>総合スコア</span>
-                            <span className={`font-semibold ${getScoreColor(result.score.overall)}`}>
-                              {result.score.overall}/100
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex justify-between">
-                              <span>美学</span>
-                              <span className={getScoreColor(result.score.aesthetics)}>
-                                {result.score.aesthetics}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>使いやすさ</span>
-                              <span className={getScoreColor(result.score.usability)}>
-                                {result.score.usability}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>独自性</span>
-                              <span className={getScoreColor(result.score.uniqueness)}>
-                                {result.score.uniqueness}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>トレンド性</span>
-                              <span className={getScoreColor(result.score.trendiness)}>
-                                {result.score.trendiness}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* メタデータ */}
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <span>{result.template.metadata.estimatedTime}分</span>
-                          <span>{result.template.layout.objects.length}オブジェクト</span>
-                        </div>
-
-                        {/* アクションボタン */}
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSelectTemplate(result)}
-                            className="flex-1"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            選択
-                          </Button>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <Star className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>テンプレート詳細</DialogTitle>
-                                <DialogDescription>
-                                  {result.template.name}の詳細情報と改善提案
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="font-semibold mb-2">スコア詳細</h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between">
-                                        <span>総合スコア</span>
-                                        <span className={getScoreColor(result.score.overall)}>
-                                          {result.score.overall}/100
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span>美学</span>
-                                        <span className={getScoreColor(result.score.aesthetics)}>
-                                          {result.score.aesthetics}/100
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between">
-                                        <span>使いやすさ</span>
-                                        <span className={getScoreColor(result.score.usability)}>
-                                          {result.score.usability}/100
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span>独自性</span>
-                                        <span className={getScoreColor(result.score.uniqueness)}>
-                                          {result.score.uniqueness}/100
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold mb-2">改善提案</h4>
-                                  <ul className="space-y-1">
-                                    {result.suggestions.map((suggestion, index) => (
-                                      <li key={index} className="text-sm text-muted-foreground">
-                                        • {suggestion}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold mb-2">生成情報</h4>
-                                  <div className="text-sm text-muted-foreground space-y-1">
-                                    <div>生成時間: {result.metadata.generationTime}ms</div>
-                                    <div>アルゴリズム: {result.metadata.algorithm}</div>
-                                    <div>バージョン: {result.metadata.version}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {isTabletUp ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {generatedTemplates.map((result, index) => renderGeneratedCard(result, index))}
+                </div>
+              ) : generatedTemplates.length === 1 ? (
+                <div className="space-y-4">
+                  {renderGeneratedCard(generatedTemplates[0], 0, 'w-full')}
+                </div>
+              ) : (
+                <div className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 px-2">
+                  {generatedTemplates.map((result, index) =>
+                    renderGeneratedCard(result, index, 'min-w-[85vw] snap-center')
+                  )}
+                </div>
+              )}
             </>
           )}
         </TabsContent>
