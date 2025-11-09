@@ -23,52 +23,22 @@ import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { logger } from '@/lib/logger';
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
-
-type IdeaCategory = 'gaming' | 'singing' | 'talk' | 'collaboration' | 'event' | 'other';
-type IdeaDifficulty = 'easy' | 'medium' | 'hard';
-
-// 生成ステップの型定義（6.9）
-interface GenerationStep {
-  id: string;
-  label: string;
-  icon?: React.ComponentType<{ className?: string }>;
-}
-
-type GenerationType = 'ideas' | 'script';
-
-// 生成設定の型定義（6.10）
-interface GenerationSettings {
-  keywords: string;
-  direction: string;
-  duration: number; // 配信時間（分）
-  speakingStyle: string[]; // 話し方のスタイル（複数選択可）
-  includeElements: string[]; // 含める要素（複数選択可）
-  customPrompt: string; // カスタムプロンプト
-}
-
-interface Idea {
-  id: number;
-  title: string;
-  description: string;
-  points: string[];
-  category: IdeaCategory;
-  estimatedDuration: number; // 予想配信時間（分）
-  difficulty?: IdeaDifficulty;
-  thumbnail?: string; // サムネイル画像URL（オプション）
-  isFavorite?: boolean; // お気に入りフラグ
-  order?: number; // 並び替え順序
-}
-
-// ペルソナ管理の型定義（6.12）
-interface Persona {
-  id: string;
-  name: string;
-  description: string; // ペルソナの特徴や話し方
-  speakingStyle?: string[]; // 話し方のスタイル（オプション）
-  traits?: string[]; // キャラクターの特徴（オプション）
-  createdAt: number;
-  updatedAt: number;
-}
+import { demoIdeas, demoScript } from '@/data/script-generator/demo-data';
+import type {
+  GenerationStep,
+  GenerationType,
+  GenerationSettings,
+  Idea,
+  IdeaCategory,
+  IdeaDifficulty,
+  Persona,
+  ScriptSection,
+  ScriptTemplate,
+  Script,
+  ScriptHistoryItem,
+  GenerationHistory,
+  SavedScript,
+} from './types';
 
 // カテゴリごとの色分けとアイコン定義
 const categoryConfig: Record<IdeaCategory, {
@@ -129,62 +99,6 @@ const categoryConfig: Record<IdeaCategory, {
   },
 };
 
-const dummyIdeas: Idea[] = [
-  {
-    id: 1,
-    title: '超絶高難易度ゲームに初見で挑戦！',
-    description: '視聴者から寄せられた「絶対にクリアできない」と噂のゲームに、何の予備知識もなく挑戦します。絶叫と感動のドラマが生まれること間違いなし！',
-    points: ['リアクション芸が光る', '視聴者との一体感が生まれる', '切り抜き動画映えする'],
-    category: 'gaming',
-    estimatedDuration: 120,
-    difficulty: 'hard',
-  },
-  {
-    id: 2,
-    title: '視聴者参加型！みんなで決める歌枠セットリスト',
-    description: '配信中にアンケート機能を使って、次に歌う曲を視聴者に決めてもらうインタラクティブな歌枠。定番曲から意外な曲まで、何が飛び出すか分からない！',
-    points: ['ファンサービス満点', 'コメントが盛り上がる', 'アーカイブの再生数も期待できる'],
-    category: 'singing',
-    estimatedDuration: 90,
-    difficulty: 'easy',
-  },
-  {
-    id: 3,
-    title: '完全オリジナル！自作ゲームお披露目会',
-    description: '数ヶ月かけて制作した自作ゲームを、ファンと一緒についにプレイ！開発秘話や裏話を交えながら、感動のエンディングを目指す。',
-    points: ['クリエイターとしての一面を見せられる', '独自性が高い', '記念配信に最適'],
-    category: 'gaming',
-    estimatedDuration: 180,
-    difficulty: 'medium',
-  },
-];
-
-const dummyScript = {
-  introduction: '皆さん、こんにちは！〇〇です！今日の配信は、なんと…！',
-  body: '（ここでゲームプレイや企画の本編）\nいやー、これは難しい！でも、みんなの応援があるから頑張れる！',
-  conclusion: 'というわけで、今日の配信はここまで！たくさんのコメント、スパチャありがとう！次回もまた見てね！おつ〇〇～！',
-};
-
-// 台本テンプレートのセクション定義（6.8）
-interface ScriptSection {
-  id: string;
-  label: string;
-  placeholder: string;
-  required: boolean;
-  order: number;
-  color: string; // 色分け用（blue, green, purple, yellow, orange, pink）
-}
-
-// 台本テンプレートのデータ構造（6.8）
-interface ScriptTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: IdeaCategory;
-  sections: ScriptSection[];
-  isCustom?: boolean; // カスタムテンプレートかどうか
-}
-
 // デフォルトテンプレート定義（6.8）
 const defaultTemplates: ScriptTemplate[] = [
   {
@@ -237,50 +151,6 @@ const defaultTemplates: ScriptTemplate[] = [
     ]
   },
 ];
-
-interface Script {
-  ideaId: number;
-  content: string;
-  introduction: string;
-  body: string;
-  conclusion: string;
-  templateId?: string; // 使用したテンプレートID（6.8）
-  sections?: Record<string, string>; // 動的セクション（6.8）
-}
-
-// アンドゥ・リドゥ用の履歴管理（利用者提案）
-interface ScriptHistoryItem {
-  introduction: string;
-  body: string;
-  conclusion: string;
-  timestamp: number;
-}
-
-// 生成履歴のデータ構造
-interface GenerationHistory {
-  id: string;
-  timestamp: number; // Date.now()
-  ideas: Idea[]; // 生成された企画案の配列
-  keywords?: string; // 使用したキーワード
-  direction?: string; // 企画の方向性
-  createdAt: string; // ISO形式の日時文字列（表示用）
-}
-
-// 保存済み台本のデータ構造（6.7, 6.14）
-interface SavedScript {
-  id: string;
-  scriptId: number; // currentScript.ideaIdと対応
-  title: string; // 企画案のタイトル
-  introduction: string;
-  body: string;
-  conclusion: string;
-  createdAt: number; // 作成タイムスタンプ
-  updatedAt: number; // 更新タイムスタンプ
-  version: number; // バージョン番号（同一scriptIdの複数バージョン対応）
-  versionName?: string; // バージョン名（オプション）（6.14）
-  templateId?: string; // テンプレートID（6.8）
-  sections?: Record<string, string>; // 動的セクション（6.8）
-}
 
 const FAVORITES_STORAGE_VERSION = 1;
 const HISTORY_STORAGE_VERSION = 1;
@@ -1480,7 +1350,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
       await new Promise(resolve => setTimeout(resolve, 400));
       setIdeaGenerationStep(ideaGenerationSteps[3].id);
       
-      const generated = dummyIdeas.map(idea => ({
+      const generated = demoIdeas.map(idea => ({
         ...idea,
         isFavorite: favoriteIds.has(idea.id),
       }));
@@ -2017,11 +1887,11 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
       // テンプレートのセクションに基づいてダミーテキストを生成
       template.sections.forEach(section => {
         if (section.id === 'introduction' || section.id === 'intro') {
-          sections[section.id] = dummyScript.introduction;
+        sections[section.id] = demoScript.introduction;
         } else if (section.id === 'body' || section.id === 'play' || section.id === 'performance') {
-          sections[section.id] = dummyScript.body;
+        sections[section.id] = demoScript.body;
         } else if (section.id === 'conclusion' || section.id === 'ending' || section.id === 'thanks') {
-          sections[section.id] = dummyScript.conclusion;
+        sections[section.id] = demoScript.conclusion;
         } else {
           sections[section.id] = `（${section.label}の内容）`;
         }
