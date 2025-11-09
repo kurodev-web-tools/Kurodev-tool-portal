@@ -37,6 +37,8 @@ import { ShapeTypeSelector } from '@/components/shared/ShapeTypeSelector';
 import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
 import { FILTER_PRESETS, applyPreset, type ImageFilters } from '@/utils/imageFilters';
 import { cn } from '@/lib/utils';
+import TemplateSelector from './components/TemplateSelector';
+import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -54,6 +56,8 @@ function AssetCreatorPage() {
   const [selectedTab, setSelectedTab] = React.useState("settings");
   const [isExporting, setIsExporting] = React.useState(false);
   const [isPreviewDedicatedMode, setIsPreviewDedicatedMode] = React.useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
+  const [mobileSidebarTab, setMobileSidebarTab] = React.useState<'templates' | 'export'>('templates');
   
   // プレビュー設定の状態
   const [showGrid, setShowGrid] = React.useState(false);
@@ -935,6 +939,12 @@ function AssetCreatorPage() {
       console.log('Redo failed - no history to redo');
     }
   }, [canvasOperations.redo]);
+
+  React.useEffect(() => {
+    if (isDesktop) {
+      setIsMobileSidebarOpen(false);
+    }
+  }, [isDesktop]);
 
   if (!selectedTemplate) {
     return (
@@ -2616,20 +2626,57 @@ function AssetCreatorPage() {
 
   return (
     <div className="relative flex flex-col lg:h-screen">
-      {/* モバイル用オーバーレイ（左サイドバーが開いている時のみ表示） */}
-      {isLeftSidebarOpen && !isDesktop && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setIsLeftSidebarOpen(false)}
-        />
-      )}
-      
-      {/* モバイル用オーバーレイ（右サイドバーが開いている時のみ表示） */}
-      {isRightSidebarOpen && !isDesktop && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setIsRightSidebarOpen(false)}
-        />
+      {!isDesktop && (
+        <>
+          {isMobileSidebarOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+          )}
+          <SidebarToggle
+            onOpen={() => {
+              setMobileSidebarTab('templates');
+              setIsMobileSidebarOpen(true);
+            }}
+            position="right"
+            className="top-20 right-4 z-40 lg:hidden"
+          />
+          <Sidebar
+            isOpen={isMobileSidebarOpen}
+            onClose={() => setIsMobileSidebarOpen(false)}
+            title={mobileSidebarTab === 'templates' ? 'テンプレート' : 'エクスポート'}
+            className="z-40 lg:hidden"
+          >
+            <Tabs
+              value={mobileSidebarTab}
+              onValueChange={(value) => setMobileSidebarTab(value as 'templates' | 'export')}
+              className="flex flex-col h-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 h-12">
+                <TabsTrigger value="templates" className="text-xs">テンプレート</TabsTrigger>
+                <TabsTrigger value="export" className="text-xs">エクスポート</TabsTrigger>
+              </TabsList>
+              <TabsContent value="templates" className="mt-4 flex-1 overflow-y-auto">
+                <TemplateSelector
+                  onSelectTemplate={setSelectedTemplate}
+                  selectedTemplateId={selectedTemplate?.id || null}
+                />
+              </TabsContent>
+              <TabsContent value="export" className="mt-4 flex-1 overflow-y-auto">
+                <AssetExportSettingsPanel
+                  onExport={(element, settings) => {
+                    if (settings.batchExport && settings.batchSizes.length > 0) {
+                      return handleBatchExport(element, settings);
+                    }
+                    return handleAdvancedExport(element, settings);
+                  }}
+                  isExporting={isExporting}
+                />
+              </TabsContent>
+            </Tabs>
+          </Sidebar>
+        </>
       )}
 
       <div className="flex flex-col lg:flex-row lg:h-full lg:overflow-hidden">
@@ -2637,8 +2684,6 @@ function AssetCreatorPage() {
         {!isPreviewDedicatedMode && (
           <LeftSidebar
             isDesktop={isDesktop}
-            isSidebarOpen={isLeftSidebarOpen}
-            setIsSidebarOpen={setIsLeftSidebarOpen}
             layers={layers}
             updateLayer={updateLayer}
             removeLayer={removeLayer}
@@ -2656,7 +2701,7 @@ function AssetCreatorPage() {
         )}
 
         {/* 中央プレビューエリア (60% or 100% in preview mode) */}
-        <main className={isPreviewDedicatedMode ? "w-full flex flex-col min-w-0 overflow-hidden" : "w-3/5 flex flex-col min-w-0 overflow-hidden"}>
+        <main className={isPreviewDedicatedMode ? "w-full flex flex-col min-w-0 overflow-hidden" : "w-full lg:w-3/5 flex flex-col min-w-0 overflow-hidden"}>
           <div className={`flex-1 flex flex-col min-h-0 ${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
             <div className="flex-1 flex flex-col min-h-0">
               <PreviewSection
@@ -2665,6 +2710,7 @@ function AssetCreatorPage() {
                 setIsPreviewDedicatedMode={setIsPreviewDedicatedMode}
                 selectedTab={selectedTab}
                 setSelectedTab={setSelectedTab}
+                isMobileSidebarOpen={isMobileSidebarOpen}
                 showGrid={showGrid}
                 setShowGrid={setShowGrid}
                 showAspectGuide={showAspectGuide}
@@ -2712,8 +2758,13 @@ function AssetCreatorPage() {
                 handleDownloadThumbnail={handleDownloadThumbnail}
                 handleQuickExport={handleQuickExport}
                 onOpenExportSettings={() => {
-                  setIsRightSidebarOpen(true);
-                  setSelectedTab('export');
+                  if (isDesktop) {
+                    setIsRightSidebarOpen(true);
+                    setSelectedTab('export');
+                  } else {
+                    setMobileSidebarTab('export');
+                    setIsMobileSidebarOpen(true);
+                  }
                 }}
                 canUndo={canUndo}
                 canRedo={canRedo}
@@ -2725,38 +2776,14 @@ function AssetCreatorPage() {
               />
             </div>
           </div>
-          
-          {/* モバイル用コントロール - プレビュー専用モード時は非表示 */}
-          {!isDesktop && !isPreviewDedicatedMode && (
-            <div className="border-t bg-background/95 backdrop-blur-sm">
-              <div className="p-2 flex justify-between items-center">
-                {!isPreviewDedicatedMode && (
-                  <>
-                    <button
-                      onClick={() => setIsLeftSidebarOpen(true)}
-                      className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
-                    >
-                      📁 テンプレート・レイヤー
-                    </button>
-                    <button
-                      onClick={() => setIsRightSidebarOpen(true)}
-                      className="text-xs bg-[#2D2D2D] text-[#A0A0A0] px-3 py-2 rounded border border-[#4A4A4A]"
-                    >
-                      🛠️ ツール・エクスポート
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+
+          {/* モバイル用コントロール - 上部のトグルボタンでサイドパネルを開く */}
         </main>
 
         {/* 右ツールバー (20%) - ツール設定・エクスポート */}
         {!isPreviewDedicatedMode && (
           <RightToolbar
             isDesktop={isDesktop}
-            isSidebarOpen={isRightSidebarOpen}
-            setIsSidebarOpen={setIsRightSidebarOpen}
             isExporting={isExporting}
             renderToolsPanel={renderToolsPanel}
             handleBatchExport={handleBatchExport}

@@ -2,17 +2,13 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { Settings, Download } from "lucide-react";
-import { logger } from '@/lib/logger';
 
 import { ShapeType } from '../contexts/TemplateContext';
 import { AssetExportSettingsPanel, AssetExportSettings } from './AssetExportSettingsPanel';
 
 interface RightToolbarProps {
   isDesktop: boolean;
-  isSidebarOpen: boolean;
-  setIsSidebarOpen: (open: boolean) => void;
   isExporting: boolean;
   
   // ツールパネル
@@ -30,8 +26,6 @@ interface RightToolbarProps {
 
 export const RightToolbar: React.FC<RightToolbarProps> = ({
   isDesktop,
-  isSidebarOpen,
-  setIsSidebarOpen,
   isExporting,
   renderToolsPanel,
   handleBatchExport,
@@ -90,20 +84,5 @@ export const RightToolbar: React.FC<RightToolbarProps> = ({
     );
   }
 
-  // モバイル表示（既存のサイドバー方式を踏襲）
-  return (
-    <>
-      <SidebarToggle 
-        onOpen={() => setIsSidebarOpen(true)}
-        className="fixed top-4 right-4 z-40 lg:hidden"
-      />
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        title="編集・エクスポート"
-      >
-        {toolbarContent}
-      </Sidebar>
-    </>
-  );
+  return null;
 };

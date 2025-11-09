@@ -2,9 +2,7 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sidebar, SidebarToggle } from '@/components/layouts/Sidebar';
 import { Layers, FolderOpen } from "lucide-react";
-import { logger } from '@/lib/logger';
 
 import { useTemplate } from '../contexts/TemplateContext';
 import TemplateSelector from './TemplateSelector';
@@ -12,8 +10,6 @@ import { UnifiedLayerPanel } from '@/components/shared/UnifiedLayerPanel';
 
 interface LeftSidebarProps {
   isDesktop: boolean;
-  isSidebarOpen: boolean;
-  setIsSidebarOpen: (open: boolean) => void;
   
   // レイヤー関連
   layers: any[];
@@ -37,8 +33,6 @@ interface LeftSidebarProps {
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   isDesktop,
-  isSidebarOpen,
-  setIsSidebarOpen,
   layers,
   updateLayer,
   removeLayer,
@@ -116,20 +110,5 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     );
   }
 
-  // モバイル表示（既存のサイドバー方式を踏襲）
-  return (
-    <>
-      <SidebarToggle 
-        onOpen={() => setIsSidebarOpen(true)}
-        className="fixed top-4 left-4 z-40 lg:hidden"
-      />
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        title="素材・レイヤー"
-      >
-        {sidebarContent}
-      </Sidebar>
-    </>
-  );
+  return null;
 };
