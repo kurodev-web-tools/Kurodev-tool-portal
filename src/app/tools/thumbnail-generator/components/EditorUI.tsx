@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Settings, Layers, Construction, Minimize2, Loader2 } from "lucide-react";
+import { Settings, Layers, Construction, Minimize2, Loader2, Download, Sparkles, Youtube, Twitter, Instagram, Smartphone, Monitor } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSidebar } from '@/hooks/use-sidebar';
 import { useErrorHandler } from '@/hooks/use-error-handler';
@@ -19,6 +19,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 import { useTemplate, ShapeType } from '../contexts/TemplateContext';
 import TemplateSelector from './TemplateSelector';
@@ -47,7 +48,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { toast } from "sonner";
 import { ThumbnailProject } from '../types/project';
 import { saveProject as saveProjectUtil } from '../utils/projectUtils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { AutoGenerationPanel } from './AutoGenerationPanel';
 import { ThumbnailTemplate } from '@/types/template';
@@ -55,6 +56,78 @@ import { ThumbnailTemplate } from '@/types/template';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const CUSTOM_TEMPLATES_KEY = 'customThumbnailTemplates';
+
+const QUICK_EXPORT_PRESETS = [
+  {
+    id: 'youtube',
+    label: 'YouTube サムネイル',
+    sizeLabel: '1280 × 720 px',
+    description: '16:9 標準 / 推奨解像度',
+    width: 1280,
+    height: 720,
+    platform: 'youtube',
+    Icon: Youtube,
+  },
+  {
+    id: 'youtube-hd',
+    label: 'YouTube HD',
+    sizeLabel: '1920 × 1080 px',
+    description: '16:9 高解像度 / プレミア公開に最適',
+    width: 1920,
+    height: 1080,
+    platform: 'youtube',
+    Icon: Monitor,
+  },
+  {
+    id: 'twitter',
+    label: 'X（Twitter）投稿',
+    sizeLabel: '1200 × 675 px',
+    description: '16:9 横長 / TLで切れにくいサイズ',
+    width: 1200,
+    height: 675,
+    platform: 'twitter',
+    Icon: Twitter,
+  },
+  {
+    id: 'instagram-square',
+    label: 'Instagram 正方形',
+    sizeLabel: '1080 × 1080 px',
+    description: '1:1 / フィード投稿に最適',
+    width: 1080,
+    height: 1080,
+    platform: 'instagram',
+    Icon: Instagram,
+  },
+  {
+    id: 'instagram-story',
+    label: 'Instagram ストーリーズ',
+    sizeLabel: '1080 × 1920 px',
+    description: '9:16 縦長 / Reelsにも対応',
+    width: 1080,
+    height: 1920,
+    platform: 'instagram',
+    Icon: Smartphone,
+  },
+] as const;
+
+type QuickExportPresetId = typeof QUICK_EXPORT_PRESETS[number]['id'];
+
+const QUICK_EXPORT_QUALITY_MAP = {
+  medium: {
+    label: '標準',
+    description: '容量と画質のバランス',
+    quality: 'medium' as const,
+    pixelRatio: 1.5,
+  },
+  high: {
+    label: '高品質',
+    description: '細部までくっきり',
+    quality: 'high' as const,
+    pixelRatio: 2,
+  },
+} as const;
+
+type QuickExportQualityKey = keyof typeof QUICK_EXPORT_QUALITY_MAP;
 
 interface EditorUIProps {
   // 必要なpropsを定義
@@ -87,6 +160,11 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'templates' | 'projects' | 'export'>('templates');
   const [templateSelectorVersion, setTemplateSelectorVersion] = useState(0);
+  const [showMobileExportQuickSettings, setShowMobileExportQuickSettings] = useState(false);
+  const [mobileExportPreset, setMobileExportPreset] = useState<QuickExportPresetId>('youtube');
+  const [mobileExportFormat, setMobileExportFormat] = useState<'png' | 'jpeg'>('png');
+  const [mobileExportQuality, setMobileExportQuality] = useState<QuickExportQualityKey>('high');
+  const [mobileExportTransparency, setMobileExportTransparency] = useState(true);
   
   // ショートカット一覧表示
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -118,6 +196,16 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
       return az - bz;
     });
   }, [editorState.layers]);
+
+  const currentQuickPreset = React.useMemo(
+    () => QUICK_EXPORT_PRESETS.find((item) => item.id === mobileExportPreset) ?? QUICK_EXPORT_PRESETS[0],
+    [mobileExportPreset]
+  );
+
+  const currentQuickQuality = React.useMemo(
+    () => QUICK_EXPORT_QUALITY_MAP[mobileExportQuality],
+    [mobileExportQuality]
+  );
 
   const { handleAsyncError } = useErrorHandler();
 
@@ -1001,6 +1089,34 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
       toast.error('エクスポートに失敗しました');
     }
   }, [exportHandlers]);
+
+  const handleMobileQuickExport = React.useCallback(async () => {
+    const preset = currentQuickPreset;
+    const qualityConfig = currentQuickQuality;
+
+    const exportSettings: ExportSettings = {
+      resolution: 'custom',
+      customWidth: preset.width,
+      customHeight: preset.height,
+      quality: qualityConfig.quality,
+      format: mobileExportFormat,
+      pixelRatio: qualityConfig.pixelRatio,
+      backgroundColor: mobileExportFormat === 'png' && mobileExportTransparency ? undefined : '#ffffff',
+      includeTransparency: mobileExportFormat === 'png' ? mobileExportTransparency : false,
+      optimizeForPlatform: preset.platform,
+      batchExport: false,
+      batchSizes: [],
+    };
+
+    await exportHandlers.handleAdvancedExport(exportSettings);
+    setShowMobileExportQuickSettings(false);
+  }, [
+    currentQuickPreset,
+    currentQuickQuality,
+    exportHandlers,
+    mobileExportFormat,
+    mobileExportTransparency,
+  ]);
 
   // 詳細設定を開く
   const handleOpenExportSettings = React.useCallback(() => {
@@ -2323,7 +2439,62 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
 
   // モバイル用クイックアクセス
   const renderMobileControls = () => (
-    <div className="p-2 lg:p-4 space-y-3">
+    <div className="p-2 lg:p-4 space-y-4">
+      <div className="space-y-3">
+        <div className="rounded-lg border border-[#3A3A3A] bg-[#1F1F1F] p-3 flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">エクスポート設定ショートカット</p>
+            <p className="text-sm font-medium text-foreground">主要パラメータを素早く変更できます</p>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowMobileExportQuickSettings(true)}
+            className="flex items-center gap-1"
+          >
+            <Sparkles className="h-4 w-4" />
+            開く
+          </Button>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">ワンタップエクスポート</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              className="h-10 text-xs flex items-center justify-center gap-2"
+              onClick={() => handleQuickExport('youtube-thumbnail')}
+            >
+              <Youtube className="h-4 w-4" />
+              YouTube
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 text-xs flex items-center justify-center gap-2"
+              onClick={() => handleQuickExport('twitter-post')}
+            >
+              <Twitter className="h-4 w-4" />
+              X投稿
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 text-xs flex items-center justify-center gap-2"
+              onClick={() => handleQuickExport('instagram-post')}
+            >
+              <Instagram className="h-4 w-4" />
+              Instagram
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 text-xs flex items-center justify-center gap-2"
+              onClick={() => handleQuickExport('instagram-story')}
+            >
+              <Smartphone className="h-4 w-4" />
+              ストーリー
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* モバイル用クイックアクション */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-muted-foreground">クイックアクセス</h4>
@@ -2584,6 +2755,162 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
           />
         )}
       </div>
+
+      <Dialog
+        open={showMobileExportQuickSettings}
+        onOpenChange={(open) => setShowMobileExportQuickSettings(open)}
+      >
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="text-lg font-semibold">クイックエクスポート</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              よく使うプラットフォーム向けにサイズ・形式を素早く切り替えられます。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-4 pb-4 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">プラットフォーム別プリセット</Label>
+              <div className="space-y-2">
+                {QUICK_EXPORT_PRESETS.map((preset) => {
+                  const Icon = preset.Icon;
+                  const isActive = mobileExportPreset === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setMobileExportPreset(preset.id)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-md border px-3 py-3 text-left transition",
+                        isActive
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-[#333333] bg-[#1B1B1B] hover:border-primary/40"
+                      )}
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#262626]">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground">{preset.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {preset.sizeLabel} ・ {preset.description}
+                        </p>
+                      </div>
+                      {isActive && (
+                        <span className="rounded-full bg-primary/20 px-2 py-1 text-[10px] font-medium text-primary">
+                          選択中
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">出力形式</Label>
+                <Select
+                  value={mobileExportFormat}
+                  onValueChange={(value) => {
+                    const nextFormat = value as 'png' | 'jpeg';
+                    setMobileExportFormat(nextFormat);
+                    if (nextFormat === 'jpeg') {
+                      setMobileExportTransparency(false);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="形式を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="png">PNG（透過対応）</SelectItem>
+                    <SelectItem value="jpeg">JPEG（軽量）</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">品質</Label>
+                <Select
+                  value={mobileExportQuality}
+                  onValueChange={(value) =>
+                    setMobileExportQuality(value as QuickExportQualityKey)
+                  }
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="品質を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(QUICK_EXPORT_QUALITY_MAP).map(([key, info]) => (
+                      <SelectItem key={key} value={key}>
+                        {info.label}（{info.description}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-[#333333] bg-[#1B1B1B] px-3 py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">透過背景</p>
+                <p className="text-xs text-muted-foreground">PNG形式のみ利用できます</p>
+              </div>
+              <Switch
+                checked={mobileExportTransparency && mobileExportFormat === 'png'}
+                disabled={mobileExportFormat !== 'png'}
+                onCheckedChange={(checked) => setMobileExportTransparency(checked)}
+              />
+            </div>
+
+            <div className="rounded-lg border border-[#333333] bg-[#1B1B1B] px-3 py-2 text-xs text-muted-foreground space-y-1">
+              <div className="flex justify-between">
+                <span>出力サイズ</span>
+                <span>
+                  {currentQuickPreset.width} × {currentQuickPreset.height} px
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>用途</span>
+                <span>{currentQuickPreset.label}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>品質</span>
+                <span>{currentQuickQuality.label}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>形式</span>
+                <span>{mobileExportFormat.toUpperCase()}</span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="px-4 pb-4 pt-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Button
+              variant="ghost"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setShowMobileExportQuickSettings(false);
+                handleOpenExportSettings();
+              }}
+            >
+              詳細設定を開く
+            </Button>
+            <Button
+              onClick={handleMobileQuickExport}
+              disabled={exportHandlers.isExporting}
+              className="w-full sm:w-auto flex items-center justify-center gap-2"
+            >
+              {exportHandlers.isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              エクスポートする
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* プロジェクト保存ダイアログ */}
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
