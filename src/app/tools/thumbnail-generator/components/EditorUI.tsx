@@ -32,6 +32,7 @@ import { ExportSettingsPanel, ExportSettings } from './ExportSettingsPanel';
 import { Toolbar } from '../../asset-creator/components/Toolbar';
 import { LeftSidebar } from './LeftSidebar';
 import { RightToolbar } from './RightToolbar';
+import { ProjectManager } from './ProjectManager';
 import { useCanvasOperations } from '../../asset-creator/hooks/useCanvasOperations';
 import { parseTextShadow, buildTextShadow } from '@/utils/textShadowUtils';
 import { FILTER_PRESETS, applyPreset, type ImageFilters } from '@/utils/imageFilters';
@@ -48,9 +49,12 @@ import { ThumbnailProject } from '../types/project';
 import { saveProject as saveProjectUtil } from '../utils/projectUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
+import { AutoGenerationPanel } from './AutoGenerationPanel';
+import { ThumbnailTemplate } from '@/types/template';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const CUSTOM_TEMPLATES_KEY = 'customThumbnailTemplates';
 
 interface EditorUIProps {
   // 必要なpropsを定義
@@ -80,6 +84,9 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
   const [saveProjectName, setSaveProjectName] = useState('');
   const [savedProject, setSavedProject] = useState<ThumbnailProject | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [mobileSidebarTab, setMobileSidebarTab] = useState<'templates' | 'projects' | 'export'>('templates');
+  const [templateSelectorVersion, setTemplateSelectorVersion] = useState(0);
   
   // ショートカット一覧表示
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -95,6 +102,22 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
     defaultOpen: false,
     desktopDefaultOpen: true,
   });
+
+  const shouldShowRotationHandles = React.useMemo(() => {
+    if (isDesktop) return true;
+    return !isMobileSidebarOpen;
+  }, [isDesktop, isMobileSidebarOpen]);
+
+  const orderedLayers = React.useMemo(() => {
+    return [...editorState.layers].sort((a, b) => {
+      const az = a.zIndex ?? 0;
+      const bz = b.zIndex ?? 0;
+      if (az === bz) {
+        return editorState.layers.indexOf(a) - editorState.layers.indexOf(b);
+      }
+      return az - bz;
+    });
+  }, [editorState.layers]);
 
   const { handleAsyncError } = useErrorHandler();
 
@@ -714,6 +737,70 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
     // レイヤー追加後に履歴を保存
     editorState.addToHistory(editorState.layers, editorState.selectedLayerId);
   };
+
+  const persistCustomTemplates = React.useCallback(
+    (updater: (prev: ThumbnailTemplate[]) => ThumbnailTemplate[]) => {
+      try {
+        if (typeof window === 'undefined') {
+          return [];
+        }
+        const raw = window.localStorage.getItem(CUSTOM_TEMPLATES_KEY);
+        const previousTemplates: ThumbnailTemplate[] = raw ? JSON.parse(raw) : [];
+        const nextTemplates = updater(previousTemplates);
+        window.localStorage.setItem(CUSTOM_TEMPLATES_KEY, JSON.stringify(nextTemplates));
+        setTemplateSelectorVersion((prev) => prev + 1);
+        return nextTemplates;
+      } catch (error) {
+        logger.error('カスタムテンプレートの更新に失敗しました', error, 'EditorUI:persistCustomTemplates');
+        toast.error('カスタムテンプレートの保存に失敗しました');
+        return [];
+      }
+    },
+    []
+  );
+
+  const handleAutoTemplateGenerated = React.useCallback(
+    (template: ThumbnailTemplate) => {
+      persistCustomTemplates((prev) => {
+        const next = [...prev];
+        const index = next.findIndex((item) => item.id === template.id);
+        if (index >= 0) {
+          next[index] = template;
+        } else {
+          next.push(template);
+        }
+        return next;
+      });
+      editorState.setSelectedTemplate(template);
+      toast.success('テンプレートを追加しました！');
+    },
+    [editorState, persistCustomTemplates]
+  );
+
+  const handleAutoTemplatesGenerated = React.useCallback(
+    (templates: ThumbnailTemplate[]) => {
+      if (templates.length === 0) {
+        return;
+      }
+      persistCustomTemplates((prev) => {
+        const next = [...prev];
+        const indexMap = new Map(next.map((item, idx) => [item.id, idx]));
+        templates.forEach((template) => {
+          const index = indexMap.get(template.id);
+          if (index !== undefined) {
+            next[index] = template;
+          } else {
+            indexMap.set(template.id, next.length);
+            next.push(template);
+          }
+        });
+        return next;
+      });
+      editorState.setSelectedTemplate(templates[templates.length - 1]);
+      toast.success(`${templates.length}件のテンプレートを追加しました！`);
+    },
+    [editorState, persistCustomTemplates]
+  );
 
   const handleAddText = () => {
     console.log('Adding text layer...');
@@ -2071,8 +2158,8 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
               }}
               className="bg-card relative border rounded-md shadow-lg"
             >
-              <div id="download-target" className="w-full h-full relative overflow-hidden">
-                {editorState.layers.map((layer) => {
+              <div id="download-target" className="w-full h-full relative overflow-visible">
+                {orderedLayers.map((layer) => {
                   const isSelected = layer.id === editorState.selectedLayerId;
                   const isDraggable = isSelected && !layer.locked;
                   const isResizable = isSelected && !layer.locked;
@@ -2097,6 +2184,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                         onRotateStop={() => {}}
                         updateLayer={editorState.updateLayer}
                         imageFilters={layer.imageFilters}
+                        showRotationHandle={shouldShowRotationHandles}
                       />
                     );
                   } else if (layer.type === 'text') {
@@ -2114,7 +2202,11 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                         onDragStop={(e, d) => handleLayerDragStop(layer.id, e, d)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         enableResizing={isResizable} disableDragging={!isDraggable}
+                        onSelect={() => editorState.setSelectedLayerId(layer.id)}
+                        isLocked={layer.locked}
+                        isDraggable={isDraggable}
                         updateLayer={editorState.updateLayer}
+                        showRotationHandle={shouldShowRotationHandles}
                       />
                     );
                   } else if (layer.type === 'shape') {
@@ -2128,7 +2220,11 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                         onResize={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         onResizeStop={(e, dir, ref, delta, position) => handleLayerResize(layer.id, dir, ref, delta, position)}
                         lockAspectRatio={isShiftKeyDown} enableResizing={isResizable} disableDragging={!isDraggable}
+                        onSelect={() => editorState.setSelectedLayerId(layer.id)}
+                        isLocked={layer.locked}
+                        isDraggable={isDraggable}
                         updateLayer={editorState.updateLayer}
+                        showRotationHandle={shouldShowRotationHandles}
                       />
                     );
                   }
@@ -2231,8 +2327,8 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
       {/* モバイル用クイックアクション */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-muted-foreground">クイックアクセス</h4>
-        <Tabs value={uiState.selectedTab} onValueChange={uiState.setSelectedTab} className="w-full max-h-[40vh] flex flex-col">
-          <TabsList className="w-full h-16 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
+        <Tabs value={uiState.selectedTab} onValueChange={uiState.setSelectedTab} className="w-full max-h-[50vh] flex flex-col">
+          <TabsList className="w-full items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground flex flex-wrap gap-1">
             <TabsTrigger 
               value="tools"
               className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -2256,6 +2352,12 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
               className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               表示設定
+            </TabsTrigger>
+            <TabsTrigger
+              value="ai"
+              className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              AI生成
             </TabsTrigger>
           </TabsList>
           
@@ -2328,6 +2430,13 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
               onGridSizeChange={uiState.setGridSize}
             />
           </TabsContent>
+
+          <TabsContent value="ai" className="mt-4 flex-1 overflow-y-auto">
+            <AutoGenerationPanel
+              onTemplateGenerated={handleAutoTemplateGenerated}
+              onTemplatesGenerated={handleAutoTemplatesGenerated}
+            />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
@@ -2335,10 +2444,86 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
 
   return (
     <div className="flex flex-col lg:h-screen lg:overflow-hidden">
+      {!isDesktop && !uiState.isPreviewDedicatedMode && (
+        <>
+          {isMobileSidebarOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+          )}
+          <SidebarToggle
+            onOpen={() => {
+              setMobileSidebarTab('templates');
+              setIsMobileSidebarOpen(true);
+            }}
+            position="right"
+            className="top-20 right-4 z-40 lg:hidden"
+          />
+          <Sidebar
+            isOpen={isMobileSidebarOpen}
+            onClose={() => setIsMobileSidebarOpen(false)}
+            title={
+              mobileSidebarTab === 'templates'
+                ? 'テンプレート'
+                : mobileSidebarTab === 'projects'
+                ? 'プロジェクト'
+                : 'エクスポート'
+            }
+            className="z-40 lg:hidden"
+          >
+            <Tabs
+              value={mobileSidebarTab}
+              onValueChange={(value) => setMobileSidebarTab(value as 'templates' | 'projects' | 'export')}
+              className="flex h-full flex-col"
+            >
+              <TabsList className="grid w-full grid-cols-3 h-12">
+                <TabsTrigger value="templates" className="text-xs">テンプレート</TabsTrigger>
+                <TabsTrigger value="projects" className="text-xs">プロジェクト</TabsTrigger>
+                <TabsTrigger value="export" className="text-xs">エクスポート</TabsTrigger>
+              </TabsList>
+              <TabsContent value="templates" className="mt-4 flex-1 overflow-y-auto">
+                <TemplateSelector
+                  key={`mobile-template-selector-${templateSelectorVersion}`}
+                  onSelectTemplate={(template) => {
+                    editorState.setSelectedTemplate(template);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  selectedTemplateId={editorState.selectedTemplate?.id ?? null}
+                  availableTabs={['browse', 'manage']}
+                  defaultTab="browse"
+                />
+              </TabsContent>
+              <TabsContent value="projects" className="mt-4 flex-1 overflow-y-auto">
+                <ProjectManager
+                  onLoadProject={(project) => {
+                    handleLoadProject(project);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  currentProjectName={currentProjectName}
+                  onProjectSaved={(project) => {
+                    setCurrentProjectName(project.name);
+                    setSavedProject(project);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="export" className="mt-4 flex-1 overflow-y-auto">
+                <ExportSettingsPanel
+                  onExport={exportHandlers.handleAdvancedExport}
+                  isExporting={exportHandlers.isExporting}
+                />
+              </TabsContent>
+            </Tabs>
+          </Sidebar>
+        </>
+      )}
+
       <div className="flex flex-col lg:flex-row lg:h-full lg:overflow-hidden">
         {/* 左サイドバー (20%) - テンプレート・レイヤー管理 */}
-        {!uiState.isPreviewDedicatedMode && (
+        {!uiState.isPreviewDedicatedMode && isDesktop && (
           <LeftSidebar
+            key={`desktop-sidebar-${templateSelectorVersion}`}
             isDesktop={isDesktop}
             isSidebarOpen={isLeftSidebarOpen}
             setIsSidebarOpen={setIsLeftSidebarOpen}
@@ -2365,7 +2550,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
         )}
 
         {/* 中央プレビューエリア (60% or 100% in preview mode) */}
-        <main className={uiState.isPreviewDedicatedMode ? "w-full flex flex-col min-w-0 overflow-hidden" : "w-3/5 flex flex-col min-w-0 overflow-hidden"}>
+        <main className={uiState.isPreviewDedicatedMode ? "w-full flex flex-col min-w-0 overflow-hidden" : "w-full lg:w-3/5 flex flex-col min-w-0 overflow-hidden"}>
           <div className={`flex-1 flex flex-col min-h-0 ${isDesktop ? 'p-6' : 'p-2 pt-16'}`}>
             <div className="flex-1 flex flex-col min-h-0">
               {renderPreview()}
@@ -2373,10 +2558,10 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
           </div>
           {/* モバイル用コントロール - プレビュー専用モード時は非表示 */}
           {!isDesktop && !uiState.isPreviewDedicatedMode && (
-            <div className="border-t bg-background/95 backdrop-blur-sm max-h-[40vh] overflow-y-auto flex-shrink-0">
+            <div className="border-t bg-background/95 backdrop-blur-sm max-h-[50vh] overflow-y-auto flex-shrink-0">
               <div className="p-2">
                 <p className="text-xs text-muted-foreground mb-2">
-                  💡 ヒント: 左サイドバーでテンプレート・レイヤー管理、右サイドバーで編集・エクスポート設定ができます。
+                  💡 ヒント: サイドパネルからテンプレート・プロジェクト・エクスポート設定を開けます。
                 </p>
               </div>
               {renderMobileControls()}
@@ -2385,7 +2570,7 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
         </main>
 
         {/* 右ツールバー (20%) - ツール設定・エクスポート */}
-        {!uiState.isPreviewDedicatedMode && (
+        {!uiState.isPreviewDedicatedMode && isDesktop && (
           <RightToolbar
             isDesktop={isDesktop}
             isSidebarOpen={isRightSidebarOpen}

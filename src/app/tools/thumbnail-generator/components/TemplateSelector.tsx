@@ -21,14 +21,23 @@ import { templates } from '@/data/template-definitions';
 import { logger } from '@/lib/logger';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
+type TemplateTab = 'browse' | 'manage' | 'auto-generate';
+
 interface TemplateSelectorProps {
   onSelectTemplate: (template: ThumbnailTemplate) => void;
   selectedTemplateId: string | null;
+  availableTabs?: TemplateTab[];
+  defaultTab?: TemplateTab;
 }
 
 const FAVORITES_KEY = 'thumbnail-generator-favorites';
 
-const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, selectedTemplateId }) => {
+const TemplateSelector: React.FC<TemplateSelectorProps> = ({
+  onSelectTemplate,
+  selectedTemplateId,
+  availableTabs,
+  defaultTab,
+}) => {
   const { 
     aspectRatio, 
     setAspectRatio, 
@@ -45,7 +54,32 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
   const [showCustomCreator, setShowCustomCreator] = useState(false);
   const [customTemplates, setCustomTemplates] = useState<ThumbnailTemplate[]>([]);
   const [allTemplates, setAllTemplates] = useState<ThumbnailTemplate[]>(templates);
-  const [activeTab, setActiveTab] = useState<'browse' | 'manage' | 'auto-generate'>('browse');
+
+  const tabs = useMemo<TemplateTab[]>(() => {
+    if (!availableTabs || availableTabs.length === 0) {
+      return ['browse', 'manage', 'auto-generate'];
+    }
+    return availableTabs;
+  }, [availableTabs]);
+
+  const [activeTab, setActiveTab] = useState<TemplateTab>(() => {
+    if (defaultTab && tabs.includes(defaultTab)) {
+      return defaultTab;
+    }
+    return tabs[0];
+  });
+
+  useEffect(() => {
+    setActiveTab((prev) => {
+      if (defaultTab && tabs.includes(defaultTab)) {
+        return defaultTab;
+      }
+      if (tabs.includes(prev)) {
+        return prev;
+      }
+      return tabs[0];
+    });
+  }, [tabs, defaultTab]);
   
   // お気に入り・プレビューサイズの状態
   const [favorites, setFavorites] = useState<Set<string>>(() => {
@@ -257,43 +291,51 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
   return (
     <div className="w-full">
       {/* タブ切り替え */}
-      <div className="border-b mb-4">
-        <div className="flex justify-center">
-          <button
-            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 ${
-              activeTab === 'browse'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-            onClick={() => setActiveTab('browse')}
-          >
-            <Grid3X3 className="h-4 w-4" />
-            <span>選択</span>
-          </button>
-          <button
-            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 ${
-              activeTab === 'manage'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-            onClick={() => setActiveTab('manage')}
-          >
-            <Settings className="h-4 w-4" />
-            <span>管理</span>
-          </button>
-          <button
-            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 ${
-              activeTab === 'auto-generate'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-            onClick={() => setActiveTab('auto-generate')}
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>AI生成</span>
-          </button>
+      {tabs.length > 1 && (
+        <div className="border-b mb-4">
+          <div className="flex justify-center flex-wrap gap-1">
+            {tabs.includes('browse') && (
+              <button
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 ${
+                  activeTab === 'browse'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('browse')}
+              >
+                <Grid3X3 className="h-4 w-4" />
+                <span>選択</span>
+              </button>
+            )}
+            {tabs.includes('manage') && (
+              <button
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 ${
+                  activeTab === 'manage'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('manage')}
+              >
+                <Settings className="h-4 w-4" />
+                <span>管理</span>
+              </button>
+            )}
+            {tabs.includes('auto-generate') && (
+              <button
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 ${
+                  activeTab === 'auto-generate'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('auto-generate')}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>AI生成</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {activeTab === 'browse' ? (
         <Accordion type="multiple" className="w-full" defaultValue={['aspect-ratio', 'templates']}>
@@ -517,7 +559,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
           onSelectTemplate={onSelectTemplate}
           selectedTemplateId={selectedTemplateId}
         />
-      ) : (
+      ) : tabs.includes('auto-generate') ? (
         <AutoGenerationPanel
           onTemplateGenerated={onSelectTemplate}
           onTemplatesGenerated={(templates) => {
@@ -525,7 +567,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
             handleTemplatesChange(updatedTemplates);
           }}
         />
-      )}
+      ) : null}
     </div>
   );
 };
