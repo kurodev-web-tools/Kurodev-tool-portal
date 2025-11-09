@@ -4,34 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { favoritesManager } from '@/lib/favorites-storage';
 import { favoritesEventManager } from '@/lib/favorites-events';
-
-// スイートデータ（page.tsxと統一）
-const suites = [
-  {
-    id: 'suite-1',
-    title: '企画準備',
-    description: 'コンテンツの企画から準備までをサポートするツール群。スケジュール管理、台本作成、素材準備などを効率化します。',
-    status: 'released' as const,
-    href: '/tools/schedule-calendar',
-    iconName: 'sparkles',
-  },
-  {
-    id: 'suite-2', 
-    title: '動画公開',
-    description: 'コンテンツの公開とオーディエンスへのリーチを最大化するツール群。タイトル生成、サムネイル作成、SEO最適化などを自動化します。',
-    status: 'development' as const,
-    href: '/tools/title-generator',
-    iconName: 'trending-up',
-  },
-  {
-    id: 'suite-3',
-    title: '配信強化',
-    description: 'オーディエンスとのインタラクションを強化するツール群。コメント分析、感情分析、リアルタイム支援などで配信・ライブをサポートします。',
-    status: 'development' as const,
-    href: '/tools',
-    iconName: 'users',
-  },
-];
+import { suites } from '@/data/suites';
 
 export interface QuickAccessItem {
   id: string;
