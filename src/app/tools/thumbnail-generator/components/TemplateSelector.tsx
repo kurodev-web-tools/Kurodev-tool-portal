@@ -13,6 +13,7 @@ import { generatePreviewFromTemplate, fileToDataURL } from '@/utils/imageUtils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useTemplate } from '../contexts/TemplateContext';
 import { TemplateManager } from './TemplateManager';
 import { AutoGenerationPanel } from './AutoGenerationPanel';
@@ -31,6 +32,32 @@ interface TemplateSelectorProps {
 }
 
 const FAVORITES_KEY = 'thumbnail-generator-favorites';
+
+const CATEGORY_OPTIONS = [
+  { value: 'all', label: 'すべて' },
+  { value: 'gaming', label: 'ゲーム' },
+  { value: 'talk', label: '雑談' },
+  { value: 'singing', label: '歌枠' },
+  { value: 'collaboration', label: 'コラボ' },
+  { value: 'event', label: 'イベント' },
+  { value: 'custom', label: 'カスタム' },
+] as const;
+
+const STYLE_OPTIONS = [
+  { value: 'all', label: '全スタイル' },
+  { value: 'cute', label: 'キュート' },
+  { value: 'cool', label: 'クール' },
+  { value: 'elegant', label: 'エレガント' },
+  { value: 'funny', label: 'ファニー' },
+  { value: 'simple', label: 'シンプル' },
+] as const;
+
+const DIFFICULTY_OPTIONS = [
+  { value: 'all', label: '全難易度' },
+  { value: 'beginner', label: '初級' },
+  { value: 'intermediate', label: '中級' },
+  { value: 'advanced', label: '上級' },
+] as const;
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   onSelectTemplate,
@@ -398,8 +425,67 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               </Button>
             </div>
 
+      {!isTablet && (
+        <div className="space-y-3">
+          <ScrollArea className="w-full">
+            <div className="flex gap-2 px-1 py-1">
+              {CATEGORY_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  size="sm"
+                  variant={categoryFilter === option.value ? 'default' : 'outline'}
+                  className={cn(
+                    "rounded-full px-4 py-1 text-xs whitespace-nowrap",
+                    categoryFilter === option.value ? "" : "bg-[#1A1A1A]"
+                  )}
+                  onClick={() => setCategoryFilter(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          <ScrollArea className="w-full">
+            <div className="flex gap-2 px-1 py-1">
+              {STYLE_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  size="sm"
+                  variant={styleFilter === option.value ? 'default' : 'outline'}
+                  className={cn(
+                    "rounded-full px-4 py-1 text-xs whitespace-nowrap",
+                    styleFilter === option.value ? "" : "bg-[#1A1A1A]"
+                  )}
+                  onClick={() => setStyleFilter(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          <div className="flex flex-wrap gap-2 px-1">
+            {DIFFICULTY_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                size="sm"
+                variant={difficultyFilter === option.value ? 'default' : 'outline'}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs",
+                  difficultyFilter === option.value ? "" : "bg-[#1A1A1A]"
+                )}
+                onClick={() => setDifficultyFilter(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 検索・フィルター */}
-      <div className="space-y-3">
+      <div className={cn("space-y-3", !isTablet && "mt-4")}>
         {/* 検索バー */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" />
@@ -473,7 +559,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         </div>
         
         {/* フィルター */}
-        <div className="flex flex-col md:flex-row gap-2">
+        <div className={cn("flex-col md:flex-row gap-2", !isTablet ? "hidden" : "flex")}>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-full md:w-32 h-10 md:h-9">
               <SelectValue placeholder="カテゴリ" />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,9 @@ import {
   Type,
   Layout,
   Target,
-  Gauge
+  Gauge,
+  Heart,
+  MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -37,6 +39,7 @@ import { ThumbnailTemplate } from '@/types/template';
 import { logger } from '@/lib/logger';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
 interface AutoGenerationPanelProps {
   onTemplateGenerated: (template: ThumbnailTemplate) => void;
@@ -54,6 +57,31 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
   const [generationCount, setGenerationCount] = useState(1);
 
   const isTabletUp = useMediaQuery('(min-width: 768px)');
+  const [favoriteTemplateIds, setFavoriteTemplateIds] = useState<Set<string>>(() => new Set());
+  const [templateNotes, setTemplateNotes] = useState<Record<string, string>>({});
+  const [noteDialogTemplateId, setNoteDialogTemplateId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [expandedTemplateIds, setExpandedTemplateIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    try {
+      const savedFavorites = localStorage.getItem('thumbnailGeneratorAutoFavorites');
+      if (savedFavorites) {
+        setFavoriteTemplateIds(new Set(JSON.parse(savedFavorites)));
+      }
+    } catch (error) {
+      logger.error('お気に入り読み込み失敗', error, 'AutoGenerationPanel');
+    }
+
+    try {
+      const savedNotes = localStorage.getItem('thumbnailGeneratorAutoNotes');
+      if (savedNotes) {
+        setTemplateNotes(JSON.parse(savedNotes));
+      }
+    } catch (error) {
+      logger.error('メモ読み込み失敗', error, 'AutoGenerationPanel');
+    }
+  }, []);
 
   // 設定更新
   const updateConfig = (updates: Partial<AutoGenerationConfig>) => {
@@ -137,23 +165,116 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
     return 'text-red-600';
   };
 
+  const toggleFavoriteTemplate = (templateId: string) => {
+    setFavoriteTemplateIds(prev => {
+      const next = new Set(prev);
+      if (next.has(templateId)) {
+        next.delete(templateId);
+      } else {
+        next.add(templateId);
+      }
+      localStorage.setItem('thumbnailGeneratorAutoFavorites', JSON.stringify(Array.from(next)));
+      return next;
+    });
+  };
+
+  const openNoteDialog = (templateId: string) => {
+    setNoteDialogTemplateId(templateId);
+    setNoteDraft(templateNotes[templateId] || '');
+  };
+
+  const handleSaveNote = () => {
+    if (!noteDialogTemplateId) return;
+    setTemplateNotes(prev => {
+      const next = { ...prev, [noteDialogTemplateId]: noteDraft.trim() };
+      localStorage.setItem('thumbnailGeneratorAutoNotes', JSON.stringify(next));
+      return next;
+    });
+    setNoteDialogTemplateId(null);
+    setNoteDraft('');
+    toast.success('メモを保存しました');
+  };
+
+  const handleDeleteNote = () => {
+    if (!noteDialogTemplateId) return;
+    setTemplateNotes(prev => {
+      const next = { ...prev };
+      delete next[noteDialogTemplateId];
+      localStorage.setItem('thumbnailGeneratorAutoNotes', JSON.stringify(next));
+      return next;
+    });
+    setNoteDialogTemplateId(null);
+    setNoteDraft('');
+    toast.success('メモを削除しました');
+  };
+
+  const toggleTemplateDetails = (templateId: string) => {
+    setExpandedTemplateIds(prev => {
+      const next = new Set(prev);
+      if (next.has(templateId)) {
+        next.delete(templateId);
+      } else {
+        next.add(templateId);
+      }
+      return next;
+    });
+  };
+
   const renderGeneratedCard = (
     result: GenerationResult,
     index: number,
     extraClassName?: string
-  ) => (
-    <Card key={result.template.id} className={cn('relative', extraClassName)}>
+  ) => {
+    const isExpanded = expandedTemplateIds.has(result.template.id);
+
+    return (
+      <Card key={result.template.id} className={cn('relative', extraClassName)}>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg">{result.template.name}</CardTitle>
-            <CardDescription className="mt-1">
-              {result.template.description}
-            </CardDescription>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span className="truncate">{result.template.name}</span>
+              {favoriteTemplateIds.has(result.template.id) && (
+                <Heart className="h-4 w-4 text-[#FF7FBF]" fill="#FF7FBF" />
+              )}
+            </CardTitle>
+            {result.template.description && (
+              <CardDescription className="mt-1 line-clamp-2">
+                {result.template.description}
+              </CardDescription>
+            )}
           </div>
-          <Badge variant="secondary" className="ml-2">
-            #{index + 1}
-          </Badge>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'h-9 w-9 transition-colors',
+                favoriteTemplateIds.has(result.template.id)
+                  ? 'text-[#FF7FBF]'
+                  : 'text-muted-foreground hover:text-[#FF7FBF]'
+              )}
+              onClick={() => toggleFavoriteTemplate(result.template.id)}
+              title={favoriteTemplateIds.has(result.template.id) ? 'お気に入りを解除' : 'お気に入りに追加'}
+            >
+              <Heart
+                className="h-4 w-4"
+                fill={favoriteTemplateIds.has(result.template.id) ? '#FF7FBF' : 'none'}
+              />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => openNoteDialog(result.template.id)}
+              title="メモを追加"
+            >
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+            <Badge variant="secondary" className="ml-1">
+              #{index + 1}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -200,6 +321,59 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>{result.template.metadata.estimatedTime}分</span>
             <span>{result.template.layout.objects.length}オブジェクト</span>
+          </div>
+
+          {templateNotes[result.template.id] && (
+            <div className="rounded-md border border-[#3A3A3A] bg-[#1E1E1E] p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground flex items-center gap-1 mb-1">
+                <MessageSquare className="h-3 w-3" />
+                メモ
+              </p>
+              <p className="whitespace-pre-wrap break-words">{templateNotes[result.template.id]}</p>
+            </div>
+          )}
+
+          <div className="rounded-md border border-[#3A3A3A] bg-[#1B1B1B] p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">生成テキスト</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => toggleTemplateDetails(result.template.id)}
+              >
+                {isExpanded ? '折りたたむ' : '展開'}
+              </Button>
+            </div>
+            {isExpanded ? (
+              <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+                <div>
+                  <p className="font-medium text-foreground mb-1">改善提案</p>
+                  <ul className="space-y-1 list-disc list-inside">
+                    {result.suggestions.map((suggestion, suggestionIndex) => (
+                      <li key={suggestionIndex}>{suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+                {result.template.description && (
+                  <div>
+                    <p className="font-medium text-foreground mb-1">説明文</p>
+                    <p className="whitespace-pre-wrap leading-relaxed">
+                      {result.template.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                {result.suggestions[0] || '詳細情報はありません'}
+              </p>
+            )}
+          </div>
+
+          {/* プレビュー */}
+          <div className="rounded-md border border-dashed border-muted bg-muted/30 aspect-video flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">プレビュー（実装予定）</span>
           </div>
 
           {/* アクションボタン */}
@@ -284,8 +458,9 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -652,6 +827,69 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={noteDialogTemplateId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setNoteDialogTemplateId(null);
+            setNoteDraft('');
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>メモを編集</DialogTitle>
+            <DialogDescription>
+              生成したテンプレートに関するメモを残しておくと、後から参照しやすくなります。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              placeholder="気づきやアイデアを記入してください"
+              className="min-h-[120px]"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{noteDraft.length}文字</span>
+              <span>最大 500 文字推奨</span>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteNote}
+              disabled={!noteDialogTemplateId || !(noteDialogTemplateId && templateNotes[noteDialogTemplateId])}
+              className="sm:w-auto w-full"
+            >
+              メモを削除
+            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setNoteDialogTemplateId(null);
+                  setNoteDraft('');
+                }}
+                className="flex-1 sm:flex-none"
+              >
+                キャンセル
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveNote}
+                className="flex-1 sm:flex-none"
+                disabled={!noteDraft.trim()}
+              >
+                保存する
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
