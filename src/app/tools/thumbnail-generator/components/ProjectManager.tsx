@@ -27,6 +27,7 @@ import {
   updateProjectName,
   loadProject,
 } from '../utils/projectUtils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface ProjectManagerProps {
   onLoadProject: (project: ThumbnailProject) => void;
@@ -44,6 +45,8 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   const [editName, setEditName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'manual' | 'autosave'>('all');
+  const isTablet = useMediaQuery('(min-width: 768px)');
+  const isMobile = !isTablet;
 
   // プロジェクトリストを読み込み
   const loadProjects = () => {
@@ -205,152 +208,285 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
       </div>
 
       {/* プロジェクト一覧 */}
-      <ScrollArea className="h-[calc(100vh-400px)]">
-        {filteredProjects.length === 0 ? (
-          <div className="text-center text-sm text-muted-foreground py-8">
-            {searchQuery.trim()
-              ? '検索結果が見つかりませんでした'
-              : filter === 'autosave'
-              ? '自動保存されたプロジェクトはありません'
-              : '保存されたプロジェクトはありません'}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredProjects.map((project) => (
-              <Card
-                key={project.id}
-                className={cn(
-                  "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group",
-                  currentProjectName === project.name && "border-2 border-[#20B2AA]"
-                )}
-                onClick={() => handleLoad(project.id)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-start gap-3">
-                    {/* サムネイル */}
-                    <div className="flex-shrink-0">
-                      {project.thumbnail ? (
-                        <img
-                          src={project.thumbnail}
-                          alt={project.name}
-                          className="w-16 h-9 object-cover rounded bg-[#2D2D2D]"
-                        />
-                      ) : (
-                        <div className="w-16 h-9 bg-[#2D2D2D] rounded flex items-center justify-center">
-                          <FolderOpen className="h-4 w-4 text-[#A0A0A0]" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 情報 */}
-                    <div className="flex-1 min-w-0">
-                      {editingId === project.id ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                confirmEdit(project.id);
-                              } else if (e.key === 'Escape') {
-                                cancelEdit();
-                              }
-                            }}
-                            className="h-8 text-sm flex-1"
-                            autoFocus
+      {filteredProjects.length === 0 ? (
+        <div className="text-center text-sm text-muted-foreground py-8">
+          {searchQuery.trim()
+            ? '検索結果が見つかりませんでした'
+            : filter === 'autosave'
+            ? '自動保存されたプロジェクトはありません'
+            : '保存されたプロジェクトはありません'}
+        </div>
+      ) : (
+        <>
+          {isMobile ? (
+            <div className="-mx-2 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 px-2 scrollbar-thin">
+              {filteredProjects.map((project) => (
+                <Card
+                  key={project.id}
+                  className={cn(
+                    "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group w-[85vw] min-w-[85vw] snap-center",
+                    currentProjectName === project.name && "border-2 border-[#20B2AA]"
+                  )}
+                  onClick={() => handleLoad(project.id)}
+                >
+                  <CardContent className="p-3 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        {project.thumbnail ? (
+                          <img
+                            src={project.thumbnail}
+                            alt={project.name}
+                            className="w-20 h-12 object-cover rounded bg-[#2D2D2D]"
                           />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              confirmEdit(project.id);
-                            }}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              cancelEdit();
-                            }}
-                            className="h-8 w-8 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-medium text-sm truncate flex-1">
-                              {project.name}
-                              {project.isAutoSave && (
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                  (自動保存)
-                                </span>
-                              )}
-                            </h4>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEdit(project);
-                                }}
-                                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDuplicate(project.id);
-                                }}
-                                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(project.id, project.name);
-                                }}
-                                className="h-7 w-7 p-0 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
+                        ) : (
+                          <div className="w-20 h-12 bg-[#2D2D2D] rounded flex items-center justify-center">
+                            <FolderOpen className="h-4 w-4 text-[#A0A0A0]" />
                           </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>{formatDate(project.updatedAt)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>{formatRelativeTime(project.updatedAt)}</span>
-                            </div>
-                            <span>{project.layers.length}レイヤー</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {editingId === project.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  confirmEdit(project.id);
+                                } else if (e.key === 'Escape') {
+                                  cancelEdit();
+                                }
+                              }}
+                              className="h-9 text-sm flex-1"
+                              autoFocus
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirmEdit(project.id);
+                              }}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelEdit();
+                              }}
+                              className="h-9 w-9 p-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
-                        </>
-                      )}
+                        ) : (
+                          <>
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-medium text-sm truncate flex-1">
+                                {project.name}
+                                {project.isAutoSave && (
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    (自動保存)
+                                  </span>
+                                )}
+                              </h4>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEdit(project);
+                                  }}
+                                  className="h-8 w-8 p-0 text-muted-foreground"
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDuplicate(project.id);
+                                  }}
+                                  className="h-8 w-8 p-0 text-muted-foreground"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(project.id, project.name);
+                                  }}
+                                  className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>{formatDate(project.updatedAt)}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{formatRelativeTime(project.updatedAt)}</span>
+                              </div>
+                              <span>{project.layers.length}レイヤー</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </ScrollArea>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <ScrollArea className="h-[calc(100vh-400px)]">
+              <div className="space-y-2">
+                {filteredProjects.map((project) => (
+                  <Card
+                    key={project.id}
+                    className={cn(
+                      "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group",
+                      currentProjectName === project.name && "border-2 border-[#20B2AA]"
+                    )}
+                    onClick={() => handleLoad(project.id)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          {project.thumbnail ? (
+                            <img
+                              src={project.thumbnail}
+                              alt={project.name}
+                              className="w-16 h-9 object-cover rounded bg-[#2D2D2D]"
+                            />
+                          ) : (
+                            <div className="w-16 h-9 bg-[#2D2D2D] rounded flex items-center justify-center">
+                              <FolderOpen className="h-4 w-4 text-[#A0A0A0]" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {editingId === project.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    confirmEdit(project.id);
+                                  } else if (e.key === 'Escape') {
+                                    cancelEdit();
+                                  }
+                                }}
+                                className="h-8 text-sm flex-1"
+                                autoFocus
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  confirmEdit(project.id);
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  cancelEdit();
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="font-medium text-sm truncate flex-1">
+                                  {project.name}
+                                  {project.isAutoSave && (
+                                    <span className="ml-2 text-xs text-muted-foreground">
+                                      (自動保存)
+                                    </span>
+                                  )}
+                                </h4>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEdit(project);
+                                    }}
+                                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDuplicate(project.id);
+                                    }}
+                                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(project.id, project.name);
+                                    }}
+                                    className="h-7 w-7 p-0 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{formatDate(project.updatedAt)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>{formatRelativeTime(project.updatedAt)}</span>
+                                </div>
+                                <span>{project.layers.length}レイヤー</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </>
+      )}
     </div>
   );
 };

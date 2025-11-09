@@ -46,6 +46,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   } = useTemplate();
   
   const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const isTablet = useMediaQuery('(min-width: 768px)');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -140,8 +141,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   
   // グリッド列数の決定
   const gridCols = useMemo(() => {
+    if (!isTablet) return 'grid-cols-1';
     if (!isDesktop) return 'grid-cols-2';
-    
+
     switch (previewSize) {
       case 'small':
         return 'grid-cols-3';
@@ -517,20 +519,38 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
       {/* テンプレートグリッド */}
       {displayTemplates.length > 0 ? (
-        <div className={cn("grid gap-3", gridCols)}>
-          {displayTemplates.map((template) => (
-            <TemplateCard
-            key={template.id}
-              template={template}
-              isSelected={selectedTemplateId === template.id}
-              isFavorite={favorites.has(template.id)}
-              onSelect={onSelectTemplate}
-              onToggleFavorite={toggleFavorite}
-              onDelete={template.isCustom ? handleDeleteCustomTemplate : undefined}
-              previewSize={previewSize}
-            />
-          ))}
-        </div>
+        isTablet ? (
+          <div className={cn("grid gap-3", gridCols)}>
+            {displayTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                isSelected={selectedTemplateId === template.id}
+                isFavorite={favorites.has(template.id)}
+                onSelect={onSelectTemplate}
+                onToggleFavorite={toggleFavorite}
+                onDelete={template.isCustom ? handleDeleteCustomTemplate : undefined}
+                previewSize={previewSize}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="-mx-2 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 px-2 scrollbar-thin">
+            {displayTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                isSelected={selectedTemplateId === template.id}
+                isFavorite={favorites.has(template.id)}
+                onSelect={onSelectTemplate}
+                onToggleFavorite={toggleFavorite}
+                onDelete={template.isCustom ? handleDeleteCustomTemplate : undefined}
+                previewSize={previewSize}
+                isCompact
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-center text-sm text-muted-foreground py-8">
           {searchQuery.trim() 
@@ -581,6 +601,7 @@ interface TemplateCardProps {
   onToggleFavorite: (templateId: string, e: React.MouseEvent) => void;
   onDelete?: (templateId: string) => void;
   previewSize: 'small' | 'medium' | 'large';
+  isCompact?: boolean;
 }
 
 const TemplateCard: React.FC<TemplateCardProps> = ({
@@ -591,9 +612,13 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
   onToggleFavorite,
   onDelete,
   previewSize,
+  isCompact = false,
 }) => {
   // プレビューサイズに応じた画像サイズの計算
   const imageSize = useMemo(() => {
+    if (isCompact) {
+      return { height: '180px' };
+    }
     switch (previewSize) {
       case 'small':
         return { height: '120px' };
@@ -608,15 +633,16 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
 
   return (
     <Card
-            className={cn(
+      className={cn(
         "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group relative overflow-hidden",
         isSelected && "border-2 border-[#20B2AA] ring-2 ring-[#20B2AA] ring-offset-2",
-        !isSelected && "hover:shadow-lg"
-            )}
+        !isSelected && "hover:shadow-lg",
+        isCompact && "w-[82vw] min-w-[82vw] snap-center"
+      )}
       onClick={() => onSelect(template)}
-          >
+    >
       <CardContent className="p-0 relative">
-                {/* プレビュー画像部分 */}
+        {/* プレビュー画像部分 */}
         <div 
           className={cn(
             "w-full bg-[#2D2D2D] relative overflow-hidden",
@@ -711,13 +737,15 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
           )}
 
           {/* ホバー時のテンプレート名表示 */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <p className="text-xs text-white font-medium truncate">{template.name}</p>
-          </div>
+          {!isCompact && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <p className="text-xs text-white font-medium truncate">{template.name}</p>
+            </div>
+          )}
                   
                   {/* デスクトップ用ホバーオーバーレイ */}
           {onDelete && (
-                  <div className="absolute inset-0 bg-black/50 opacity-0 md:group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2">
+            <div className="absolute inset-0 bg-black/50 opacity-0 md:group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2">
                       <Button 
                         size="sm" 
                         variant="destructive"
@@ -730,68 +758,75 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
                         削除
                       </Button>
             </div>
-                    )}
-                </div>
-                
-                {/* コンテンツ部分 */}
-        <div className="p-3">
+          )}
+        </div>
+        
+        {/* コンテンツ部分 */}
+        <div className={cn("p-3", isCompact && "space-y-2")}>
           <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm truncate">{template.name}</h4>
-              {template.description && (
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm truncate text-foreground">{template.name}</h4>
+              {template.description && !isCompact && (
                 <p className="text-xs text-[#A0A0A0] mt-1 line-clamp-2">{template.description}</p>
               )}
-                    </div>
-                    {/* モバイル用削除ボタン */}
+            </div>
+            {/* モバイル用削除ボタン */}
             {onDelete && (
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                className="md:hidden ml-2 h-6 w-6 p-0 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
+              <Button 
+                size="sm" 
+                variant="ghost"
+                className={cn(
+                  "ml-2 h-6 w-6 p-0 flex-shrink-0",
+                  isCompact ? "opacity-100 text-muted-foreground" : "md:hidden"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
                   onDelete(template.id);
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          <div className={cn(
+            "flex items-center justify-between mt-2",
+            isCompact && "mt-1"
+          )}>
             <div className="flex items-center gap-1 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        {template.category === 'gaming' ? 'ゲーム' :
-                         template.category === 'talk' ? '雑談' :
-                         template.category === 'singing' ? '歌枠' :
-                         template.category === 'collaboration' ? 'コラボ' :
-                         template.category === 'event' ? 'イベント' : 'カスタム'}
-                      </Badge>
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs"
-                        style={{
-                          color: template.metadata.difficulty === 'beginner' ? '#22c55e' :
-                                 template.metadata.difficulty === 'intermediate' ? '#f59e0b' : '#ef4444'
-                        }}
-                      >
-                        {template.metadata.difficulty === 'beginner' ? '初級' :
-                         template.metadata.difficulty === 'intermediate' ? '中級' : '上級'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-yellow-500" />
-                      <span className="text-xs">{template.rating}</span>
-                    </div>
-                  </div>
-                  
-                  {/* メタデータ情報 */}
-                  <div className="flex items-center justify-between mt-1 text-xs text-[#A0A0A0]">
-                    <span>{template.metadata.estimatedTime}分</span>
-                    <span>{template.layout.objects.length}オブジェクト</span>
-                  </div>
-                </div>
+              <Badge variant="secondary" className="text-xs">
+                {template.category === 'gaming' ? 'ゲーム' :
+                 template.category === 'talk' ? '雑談' :
+                 template.category === 'singing' ? '歌枠' :
+                 template.category === 'collaboration' ? 'コラボ' :
+                 template.category === 'event' ? 'イベント' : 'カスタム'}
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className="text-xs"
+                style={{
+                  color: template.metadata.difficulty === 'beginner' ? '#22c55e' :
+                         template.metadata.difficulty === 'intermediate' ? '#f59e0b' : '#ef4444'
+                }}
+              >
+                {template.metadata.difficulty === 'beginner' ? '初級' :
+                 template.metadata.difficulty === 'intermediate' ? '中級' : '上級'}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Star className="h-3 w-3 text-yellow-500" />
+              <span className="text-xs">{template.rating}</span>
+            </div>
+          </div>
+          
+          {!isCompact && (
+            <div className="flex items-center justify-between mt-1 text-xs text-[#A0A0A0]">
+              <span>{template.metadata.estimatedTime}分</span>
+              <span>{template.layout.objects.length}オブジェクト</span>
+            </div>
+          )}
+        </div>
       </CardContent>
-            </Card>
+    </Card>
   );
 };
 
