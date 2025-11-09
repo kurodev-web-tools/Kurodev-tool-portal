@@ -71,6 +71,7 @@ interface SidebarToggleProps {
   className?: string;
   tabs?: TabConfig[];
   onTabClick?: (tabId: string) => void;
+  position?: 'left' | 'right';
 }
 
 export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
@@ -79,6 +80,7 @@ export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
   className,
   tabs = [],
   onTabClick,
+  position = 'right',
 }) => {
   const handleOpen = useCallback(() => {
     onOpen();
@@ -90,6 +92,8 @@ export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
     }
     onOpen();
   }, [onTabClick, onOpen]);
+
+  const mobilePositionClass = position === 'left' ? 'left-4' : 'right-4';
 
   if (isDesktop) {
     // タブが指定されている場合はタブ分表示
@@ -129,10 +133,11 @@ export const SidebarToggle: React.FC<SidebarToggleProps> = memo(({
     );
   }
 
-  // モバイル用のサイドバー開くボタン（右上に配置）
+  // モバイル用のサイドバー開くボタン（位置はpositionで制御）
   return (
     <div className={cn(
-      "fixed top-20 right-4 z-20 lg:hidden",
+      "fixed z-20 lg:hidden",
+      mobilePositionClass,
       className
     )}>
       <Button 
