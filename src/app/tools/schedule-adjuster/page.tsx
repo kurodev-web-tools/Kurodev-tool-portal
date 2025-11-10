@@ -503,7 +503,7 @@ const ScheduleAdjusterPage: React.FC = () => {
                                   variant="ghost"
                                   size="icon"
                                   onClick={(e) => e.stopPropagation()}
-                                  className="md:opacity-0 md:group-hover:opacity-100 transition-opacity text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
+                                  className="md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity text-[#A0A0A0] hover:text-[#E0E0E0] hover:bg-[#4A4A4A]"
                                   aria-label="プロジェクト操作"
                                 >
                                   <MoreVertical className="h-4 w-4" />
@@ -556,7 +556,7 @@ const ScheduleAdjusterPage: React.FC = () => {
                           </div>
                         </div>
                         {project.description && (
-                          <CardDescription className="text-sm sm:text-base text-[#A0A0A0] line-clamp-2">
+                          <CardDescription className="text-sm sm:text-base text-[#A0A0A0] line-clamp-2 min-h-[2.75rem] sm:min-h-[3rem]">
                             {project.description}
                           </CardDescription>
                         )}
