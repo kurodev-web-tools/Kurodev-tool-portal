@@ -240,7 +240,12 @@ export function CalendarView() {
                   </TabsContent>
                   
                   <TabsContent value="schedule" className="mt-4">
-                    <div className={isDesktop ? "max-h-[calc(100vh-500px)] overflow-y-auto" : "max-h-[60vh] overflow-y-auto"}>
+                    <div
+                      className="overflow-y-auto"
+                      style={{
+                        maxHeight: isDesktop ? 'min(32rem, calc(100vh - 16rem))' : 'min(28rem, 70vh)',
+                      }}
+                    >
                       <ScheduleList />
                     </div>
                   </TabsContent>
@@ -252,7 +257,7 @@ export function CalendarView() {
       </div>
 
       {/* Floating Action Buttons for Mobile - Fixed Position */}
-      <div className="fixed bottom-4 right-4 z-40 lg:hidden">
+      <div className="fixed bottom-4 right-4 z-50 lg:hidden pointer-events-none">
         <div className="flex flex-col gap-3">
           {/* フィルターボタン */}
           <Tooltip>
@@ -260,12 +265,10 @@ export function CalendarView() {
               <Button
                 size="icon"
                 variant="outline"
-                className="rounded-full h-12 w-12 shadow-lg bg-white text-[#1F1F1F]"
+                className="rounded-full h-12 w-12 shadow-lg bg-white text-[#1F1F1F] pointer-events-auto"
                 onClick={() => {
                   const newValue = !showFilters;
-                  console.log('Filter button clicked, current showFilters:', showFilters, 'new value:', newValue);
                   setShowFilters(newValue);
-                  console.log('setShowFilters called with:', newValue);
                 }}
               >
                 <Filter className="h-6 w-6" />
@@ -280,7 +283,7 @@ export function CalendarView() {
             <TooltipTrigger asChild>
               <Button
                 size="icon"
-                className="rounded-full h-14 w-14 shadow-lg"
+                className="rounded-full h-14 w-14 shadow-lg pointer-events-auto"
                 onClick={() => setIsModalOpen(true)}
               >
                 <Plus className="h-6 w-6" />

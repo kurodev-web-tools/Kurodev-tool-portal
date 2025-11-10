@@ -38,17 +38,33 @@ export function ScheduleFilters({
   const panelRef = useRef<HTMLDivElement>(null);
   const mobilePanelRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const portalContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const container = document.createElement('div');
+    portalContainerRef.current = container;
+    document.body.appendChild(container);
     setMounted(true);
+
+    return () => {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    };
   }, []);
 
-  // デバッグ用
   useEffect(() => {
-    if (showFilters) {
-      console.log('ScheduleFilters: showFilters is true, mobile panel should be visible');
-      console.log('mobilePanelRef.current:', mobilePanelRef.current);
+    if (!showFilters) {
+      document.body.style.removeProperty('overflow');
+      return;
     }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [showFilters]);
 
   const mobilePanel = showFilters ? (
@@ -322,7 +338,7 @@ export function ScheduleFilters({
           </div>
         )}
       </div>
-      {mounted ? createPortal(mobilePanel, document.body) : null}
+      {mounted && portalContainerRef.current ? createPortal(mobilePanel, portalContainerRef.current) : null}
     </>
   );
 }
