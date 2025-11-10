@@ -162,8 +162,14 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
     return !isMobileSidebarOpen;
   }, [isDesktop, isMobileSidebarOpen]);
 
-  const orderedLayers = React.useMemo(() => {
-    return [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+  const orderedLayersRef = React.useRef(
+    [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+  );
+
+  React.useEffect(() => {
+    orderedLayersRef.current = [...layers].sort(
+      (a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)
+    );
   }, [layers]);
 
   // プレビューのレンダリング
@@ -219,7 +225,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
             >
               <div
               id="download-target" className="w-full h-full relative overflow-visible">
-                {orderedLayers.map((layer) => {
+                {orderedLayersRef.current.map((layer) => {
                   const isSelected = layer.id === selectedLayerId;
                   const isDraggable = isSelected && !layer.locked;
                   const isResizable = isSelected && !layer.locked;

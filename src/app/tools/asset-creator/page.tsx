@@ -2630,7 +2630,7 @@ function AssetCreatorPage() {
         <>
           {isMobileSidebarOpen && (
             <div
-              className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden pointer-events-auto"
               onClick={() => setIsMobileSidebarOpen(false)}
             />
           )}
