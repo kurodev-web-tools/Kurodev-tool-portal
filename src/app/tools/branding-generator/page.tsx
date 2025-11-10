@@ -50,11 +50,18 @@ interface ColorPalette {
   description: string;
 }
 
+interface AnalysisResults {
+  brandPersonality: string;
+  targetAudience: string;
+  keyMessages: string[];
+  strengths: string[];
+}
+
 export default function BrandingGeneratorPage() {
   const [activityStatus, setActivityStatus] = useState<ActivityStatus | null>(null);
   const [currentStep, setCurrentStep] = useState<WorkflowStep>("input");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
   const [concepts, setConcepts] = useState<Concept[]>([]);
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null);
   const [colorPalettes, setColorPalettes] = useState<ColorPalette[]>([]);
@@ -115,12 +122,13 @@ export default function BrandingGeneratorPage() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // モックの分析結果
-      setAnalysisResults({
+      const mockAnalysisResults: AnalysisResults = {
         brandPersonality: "親しみやすく、エネルギッシュ",
         targetAudience: "10-20代のゲーム好きな若者",
         keyMessages: ["楽しい", "親しみやすい", "信頼できる", "面白い"],
         strengths: ["トーク力", "企画力", "リアクション"]
-      });
+      };
+      setAnalysisResults(mockAnalysisResults);
       
       // モックのコンセプト提案
       setConcepts([
@@ -365,78 +373,67 @@ export default function BrandingGeneratorPage() {
           })}
         </div>
 
-        {/* モバイル: 2行表示（3列×2行） */}
-        <div className="md:hidden grid grid-cols-3 gap-4 relative">
-          {/* 接続線（1行目） */}
-          <div className="absolute top-6 left-0 right-0 h-0.5 bg-[#4A4A4A] -z-10" style={{ width: 'calc(100% - 2rem)', marginLeft: '1rem', marginRight: '1rem' }} />
-          <div
-            className="absolute top-6 left-4 h-0.5 bg-[#0070F3] transition-all duration-500 ease-out -z-10"
-            style={{ 
-              width: currentIndex < 3 
-                ? `${((currentIndex + 1) / 3) * 100}%` 
-                : '100%'
-            }}
-          />
-          {/* 接続線（2行目） */}
-          {currentIndex >= 3 && (
-            <>
-              <div className="absolute top-28 left-0 right-0 h-0.5 bg-[#4A4A4A] -z-10" style={{ width: 'calc(100% - 2rem)', marginLeft: '1rem', marginRight: '1rem' }} />
-              <div
-                className="absolute top-28 left-4 h-0.5 bg-[#0070F3] transition-all duration-500 ease-out -z-10"
-                style={{ 
-                  width: `${((currentIndex - 2) / 3) * 100}%`
-                }}
-              />
-            </>
-          )}
-          
-          {/* ステップアイコン */}
+        {/* モバイル: 縦型タイムライン */}
+        <div className="md:hidden flex flex-col gap-4">
           {steps.map((stepItem, index) => {
             const isActive = currentIndex >= index;
             const isCurrent = currentIndex === index;
             const isClickable = index < currentIndex && stepItem.id !== "analyzing";
             const Icon = stepItem.icon;
-            const rowIndex = Math.floor(index / 3);
-            const colIndex = index % 3;
-            
+            const showConnector = index < steps.length - 1;
+            const connectorActive = currentIndex > index;
+
             return (
-              <div key={stepItem.id} className="flex flex-col items-center relative z-10">
-                <div
-                  onClick={() => handleStepClick(stepItem.id, index)}
-                  className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                    isClickable && "cursor-pointer hover:scale-110",
-                    isCurrent
-                      ? "bg-[#0070F3] border-[#0070F3] scale-110 shadow-lg shadow-[#0070F3]/50"
-                      : isActive
-                      ? "bg-[#0070F3]/20 border-[#0070F3]"
-                      : "bg-[#1A1A1A] border-[#4A4A4A]"
-                  )}
-                  title={isClickable ? `${stepItem.label}に戻る` : undefined}
-                >
-                  {isCurrent && stepItem.id === "analyzing" ? (
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
-                  ) : isActive ? (
-                    <Check className="w-6 h-6 text-[#0070F3]" />
-                  ) : (
-                    <Icon className="w-6 h-6 text-[#808080]" />
+              <div key={stepItem.id} className="relative pl-12">
+                <div className="absolute left-0 top-0 flex flex-col items-center">
+                  <button
+                    type="button"
+                    onClick={() => handleStepClick(stepItem.id, index)}
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                      isClickable ? "cursor-pointer hover:scale-110" : "cursor-default",
+                      isCurrent
+                        ? "bg-[#0070F3] border-[#0070F3] scale-110 shadow-lg shadow-[#0070F3]/50"
+                        : isActive
+                        ? "bg-[#0070F3]/20 border-[#0070F3]"
+                        : "bg-[#1A1A1A] border-[#4A4A4A]"
+                    )}
+                    title={isClickable ? `${stepItem.label}に戻る` : undefined}
+                    aria-current={isCurrent ? "step" : undefined}
+                    aria-label={stepItem.label}
+                  >
+                    {isCurrent && stepItem.id === "analyzing" ? (
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    ) : isActive ? (
+                      <Check className="w-5 h-5 text-[#0070F3]" />
+                    ) : (
+                      <Icon className="w-5 h-5 text-[#808080]" />
+                    )}
+                  </button>
+                  {showConnector && (
+                    <div
+                      className={cn(
+                        "w-px mt-2",
+                        connectorActive ? "bg-[#0070F3]" : "bg-[#4A4A4A]"
+                      )}
+                      style={{ height: 28 }}
+                    />
                   )}
                 </div>
-                <p
-                  className={cn(
-                    "text-xs mt-2 text-center px-1",
-                    isClickable && "cursor-pointer",
-                    isCurrent
-                      ? "text-[#0070F3] font-semibold"
-                      : isActive
-                      ? "text-[#A0A0A0]"
-                      : "text-[#808080]"
-                  )}
+                <button
+                  type="button"
                   onClick={() => handleStepClick(stepItem.id, index)}
+                  className={cn(
+                    "text-left text-sm leading-5 transition-colors duration-200",
+                    isClickable ? "text-[#A0A0A0] hover:text-white" : "",
+                    isCurrent ? "text-[#0070F3] font-semibold" : "",
+                    !isActive && !isClickable ? "text-[#808080]" : ""
+                  )}
                   title={isClickable ? `${stepItem.label}に戻る` : undefined}
+                  disabled={!isClickable}
                 >
                   {stepItem.label}
-                </p>
+                </button>
               </div>
             );
           })}
