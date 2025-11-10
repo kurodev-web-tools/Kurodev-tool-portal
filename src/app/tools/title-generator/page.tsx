@@ -154,6 +154,12 @@ export default function TitleGeneratorPage() {
   // 自動保存用のタイマーref（5.4対応）
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true); // 初回読み込みフラグ
+  const clearAutoSaveTimer = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+  }, []);
 
   // 入力内容の保存（5.4対応）
   const saveInputDraft = useCallback(() => {
@@ -208,22 +214,25 @@ export default function TitleGeneratorPage() {
     if (isInitialLoadRef.current) return;
     
     // 既存のタイマーをクリア
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
+    clearAutoSaveTimer();
     
     // 新しいタイマーをセット（1秒後に保存）
     autoSaveTimerRef.current = setTimeout(() => {
       saveInputDraft();
+      autoSaveTimerRef.current = null;
     }, AUTO_SAVE_DELAY);
     
     // クリーンアップ
     return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
+      clearAutoSaveTimer();
     };
-  }, [videoTheme, keywords, targetAudience, videoMood, saveInputDraft]);
+  }, [videoTheme, keywords, targetAudience, videoMood, saveInputDraft, clearAutoSaveTimer]);
+
+  useEffect(() => {
+    return () => {
+      clearAutoSaveTimer();
+    };
+  }, [clearAutoSaveTimer]);
 
   // 履歴の読み込み（初回マウント時）
   useEffect(() => {
@@ -246,8 +255,12 @@ export default function TitleGeneratorPage() {
     
     try {
       setHistory(prev => {
+        const needsPrune = prev.length >= MAX_HISTORY_ITEMS;
         const updated = [newHistory, ...prev].slice(0, MAX_HISTORY_ITEMS);
         localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+        if (needsPrune) {
+          toast.info(`履歴は${MAX_HISTORY_ITEMS}件までです。古いデータを自動的に削除しました。`);
+        }
         return updated;
       });
     } catch (err) {
