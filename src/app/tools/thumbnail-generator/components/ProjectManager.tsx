@@ -224,9 +224,10 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                 <Card
                   key={project.id}
                   className={cn(
-                    "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group w-[85vw] min-w-[85vw] snap-center",
+                    "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group shrink-0 snap-center",
                     currentProjectName === project.name && "border-2 border-[#20B2AA]"
                   )}
+                  style={{ width: 'min(85vw, 340px)' }}
                   onClick={() => handleLoad(project.id)}
                 >
                   <CardContent className="p-3 space-y-3">

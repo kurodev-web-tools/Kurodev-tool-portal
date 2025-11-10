@@ -227,8 +227,14 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
   ) => {
     const isExpanded = expandedTemplateIds.has(result.template.id);
 
+    const isMobileCard = extraClassName?.includes('mobile-card');
+
     return (
-      <Card key={result.template.id} className={cn('relative', extraClassName)}>
+      <Card
+        key={result.template.id}
+        className={cn('relative', isMobileCard && 'snap-center shrink-0', extraClassName && !isMobileCard && extraClassName)}
+        style={isMobileCard ? { width: 'min(85vw, 340px)' } : undefined}
+      >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -819,7 +825,7 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
               ) : (
                 <div className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 px-2">
                   {generatedTemplates.map((result, index) =>
-                    renderGeneratedCard(result, index, 'min-w-[85vw] snap-center')
+                    renderGeneratedCard(result, index, 'mobile-card')
                   )}
                 </div>
               )}

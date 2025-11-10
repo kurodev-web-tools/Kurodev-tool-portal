@@ -1086,7 +1086,6 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
                      platform === 'instagram-post' ? 'Instagram投稿' : 'Instagramストーリー'}形式でエクスポートしました`);
     } catch (error) {
       logger.error('Quick export failed', error, 'ThumbnailGenerator');
-      toast.error('エクスポートに失敗しました');
     }
   }, [exportHandlers]);
 
@@ -1108,8 +1107,13 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
       batchSizes: [],
     };
 
-    await exportHandlers.handleAdvancedExport(exportSettings);
-    setShowMobileExportQuickSettings(false);
+    try {
+      await exportHandlers.handleAdvancedExport(exportSettings);
+      toast.success(`${preset.label}をエクスポートしました`);
+      setShowMobileExportQuickSettings(false);
+    } catch (error) {
+      logger.error('Mobile quick export failed', error, 'ThumbnailGenerator');
+    }
   }, [
     currentQuickPreset,
     currentQuickQuality,

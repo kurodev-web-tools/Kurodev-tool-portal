@@ -48,6 +48,7 @@ export const useExportHandlers = (): ExportHandlers => {
     } catch (error) {
       console.error('エクスポートエラー:', error);
       toast.error('エクスポートに失敗しました');
+      throw error;
     } finally {
       setIsExporting(false);
     }
