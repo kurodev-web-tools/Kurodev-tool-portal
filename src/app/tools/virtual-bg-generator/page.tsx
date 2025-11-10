@@ -243,6 +243,15 @@ export default function VirtualBackgroundGeneratorPage() {
   const [canScrollRight, setCanScrollRight] = useState(false); // タブの右スクロール可能フラグ
   const tabsScrollRef = useRef<HTMLDivElement>(null); // タブスクロール用のref
   const [generationStep, setGenerationStep] = useState<string | null>(null); // 生成ステップ（7.1.6）
+  const expandPreviewForMobile = useCallback(() => {
+    if (isDesktop) {
+      return;
+    }
+    setIsPreviewCollapsed((prev) => (prev ? false : prev));
+  }, [isDesktop]);
+  const togglePreviewCollapse = useCallback(() => {
+    setIsPreviewCollapsed((prev) => !prev);
+  }, []);
   
   // タブスクロール位置を監視（モバイルのみ）
   useEffect(() => {
@@ -615,9 +624,7 @@ export default function VirtualBackgroundGeneratorPage() {
     setIsLoading(true);
     
     // モバイル表示の場合、生成開始時にプレビューエリアを展開
-    if (!isDesktop && isPreviewCollapsed) {
-      setIsPreviewCollapsed(false);
-    }
+    expandPreviewForMobile();
     isCancelledRef.current = false;
     setGenerationStep(null);
     setEstimatedTimeRemaining(0);
@@ -713,11 +720,9 @@ export default function VirtualBackgroundGeneratorPage() {
     setIsLoading(false);
     
     // モバイル表示の場合、プレビューエリアを展開（生成完了後）
-    if (!isDesktop && isPreviewCollapsed) {
-      setIsPreviewCollapsed(false);
-    }
+    expandPreviewForMobile();
     isCancelledRef.current = false; // リセット
-  }, [prompt, imageCount, handleAsyncError, isDesktop, handleAutoTagImage, isPreviewCollapsed]);
+  }, [prompt, imageCount, handleAsyncError, handleAutoTagImage, expandPreviewForMobile]);
 
   const handleCopyPrompt = useCallback(async () => {
     try {
@@ -1483,9 +1488,7 @@ export default function VirtualBackgroundGeneratorPage() {
       setSelectedImage(item.imageUrl);
       
       // モバイル表示の場合、プレビューエリアを自動展開
-      if (!isDesktop && isPreviewCollapsed) {
-        setIsPreviewCollapsed(false);
-      }
+      expandPreviewForMobile();
       
       toast.success('履歴を復元しました');
     } else if (item.type === 'search') {
@@ -1499,7 +1502,7 @@ export default function VirtualBackgroundGeneratorPage() {
       // 検索を実行
       handleSearch();
     }
-  }, [handleSearch, isDesktop, isPreviewCollapsed]);
+  }, [handleSearch, expandPreviewForMobile]);
 
   // フィルター済み・検索済み履歴（7.1.4）
   const filteredHistory = useMemo(() => {
@@ -3139,7 +3142,7 @@ export default function VirtualBackgroundGeneratorPage() {
                             setGeneratedImages([historyImage]);
                             setExpandedImageId(`history-${item.id}`);
                             if (!isDesktop) {
-                              setIsPreviewCollapsed(false);
+                              expandPreviewForMobile();
                             }
                           }}
                         >
@@ -3930,7 +3933,7 @@ export default function VirtualBackgroundGeneratorPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsPreviewCollapsed(!isPreviewCollapsed)}
+                  onClick={togglePreviewCollapse}
                   className="h-8 w-8"
                   aria-label={isPreviewCollapsed ? "プレビューを展開" : "プレビューを折りたたむ"}
                 >
