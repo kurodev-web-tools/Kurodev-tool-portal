@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { generateTitleIdeas } from "@/services/aiClient";
 import type { TitleGenerationRequest } from "@/types/ai";
+import { TagButtonGroup } from "@/components/shared/TagButtonGroup";
 import { useTitleHistory } from "./hooks/useTitleHistory";
 import { TitleHistoryList } from "./components/TitleHistoryList";
 import {
@@ -1555,22 +1556,13 @@ export default function TitleGeneratorPage() {
                   {(() => {
                     const suggestions = suggestHashtags(keywords, videoTheme);
                     const availableSuggestions = suggestions.filter(s => !hashtags.includes(s));
-                    return availableSuggestions.length > 0 && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-muted-foreground">候補:</span>
-                        {availableSuggestions.slice(0, 5).map((suggestion) => (
-                          <Button
-                            key={suggestion}
-                            variant="outline"
-                            size="sm"
-                            className="text-xs h-9 md:h-7"
-                            onClick={() => handleAddHashtag(suggestion)}
-                          >
-                            <Sparkles className="h-3 w-3 md:h-3 mr-1" />
-                            {suggestion}
-                          </Button>
-                        ))}
-                      </div>
+                    return (
+                      <TagButtonGroup
+                        label="候補:"
+                        items={availableSuggestions}
+                        onItemClick={handleAddHashtag}
+                        icon={Sparkles}
+                      />
                     );
                   })()}
                   
@@ -1578,22 +1570,14 @@ export default function TitleGeneratorPage() {
                   {isClient && (() => {
                     const favorites = loadHashtagFavorites();
                     const availableFavorites = (favorites as string[]).filter((f: string) => !hashtags.includes(f));
-                    return availableFavorites.length > 0 && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-muted-foreground">お気に入り:</span>
-                        {availableFavorites.slice(0, 5).map((favorite) => (
-                          <Button
-                            key={favorite}
-                            variant="outline"
-                            size="sm"
-                            className="text-xs h-9 md:h-7"
-                            onClick={() => handleAddHashtag(favorite)}
-                          >
-                            <Star className="h-3 w-3 md:h-3 mr-1 fill-[#20B2AA] text-[#20B2AA]" />
-                            {favorite}
-                          </Button>
-                        ))}
-                      </div>
+                    return (
+                      <TagButtonGroup
+                        label="お気に入り:"
+                        items={availableFavorites}
+                        onItemClick={handleAddHashtag}
+                        icon={Star}
+                        buttonClassName="text-xs h-9 md:h-7"
+                      />
                     );
                   })()}
                 </div>
