@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, Check, Star, GripVertical, History, Trash2, Clock, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save, RefreshCw, Wand2, MoreVertical } from "lucide-react";
+import { Loader2, FileText, Copy, Check, Star, GripVertical, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save, RefreshCw, Wand2, MoreVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -49,10 +49,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { usePersistentState } from "@/hooks/usePersistentState";
 import { generateTitleIdeas } from "@/services/aiClient";
 import type { TitleGenerationRequest } from "@/types/ai";
 import type { GenerationHistoryEntry, TitleOption } from "@/types/title-generator";
+import { useTitleHistory } from "./hooks/useTitleHistory";
+import { TitleHistoryList } from "./components/TitleHistoryList";
 export default function TitleGeneratorPage() {
   const { isDesktop } = useSidebar({
     defaultOpen: true,
@@ -67,16 +68,23 @@ export default function TitleGeneratorPage() {
   const [aiTitles, setAiTitles] = useState<TitleOption[]>([]); // AI提案タイトル案
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
   const [copiedItem, setCopiedItem] = useState<string | null>(null); // コピー状態
-  const [history, setHistory] = usePersistentState<GenerationHistoryEntry[]>(
-    'history',
-    () => [],
-    {
-      namespace: 'title-generator',
-      version: 1,
-      onError: (error) => logger.error('タイトル生成履歴の復元に失敗しました', error, 'TitleGenerator'),
-    },
-  );
+  const {
+    history,
+    addHistory,
+    removeHistory,
+    clearHistory,
+    isHydrated: isHistoryHydrated,
+  } = useTitleHistory();
   const [hashtags, setHashtags] = useState<string[]>([]); // ハッシュタグリスト（5.7対応）
+  const setHashtagsSafely = useCallback((next: string[]) => {
+    if (next.length === 0) return;
+    setHashtags(prev => {
+      if (prev.length === next.length && prev.every((tag, index) => tag === next[index])) {
+        return prev;
+      }
+      return next;
+    });
+  }, []);
   const [newHashtagInput, setNewHashtagInput] = useState(""); // 新規ハッシュタグ入力（5.7対応）
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default"); // 選択中のテンプレート（5.8対応）
   const [showTemplatePreview, setShowTemplatePreview] = useState(false); // テンプレートプレビュー表示（5.8対応）
@@ -106,7 +114,6 @@ export default function TitleGeneratorPage() {
   const INPUT_STORAGE_KEY = 'title-generator-input-draft'; // 入力内容の一時保存（5.4対応）
   const HASHTAG_FAVORITES_STORAGE_KEY = 'title-generator-hashtag-favorites'; // ハッシュタグのお気に入り（5.7対応）
   const DESCRIPTION_TEMPLATES_STORAGE_KEY = 'title-generator-description-templates'; // 概要欄テンプレート（5.8対応）
-  const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const AUTO_SAVE_DELAY = 1000; // 自動保存の遅延時間（ミリ秒）
   const YOUTUBE_DESCRIPTION_LIMIT = 5000; // YouTube概要欄の文字数制限（5.5対応）
   const YOUTUBE_TITLE_RECOMMENDED_LENGTH = 60; // YouTubeタイトルの推奨文字数（5.6対応）
@@ -224,35 +231,6 @@ export default function TitleGeneratorPage() {
     };
   }, [clearAutoSaveTimer]);
 
-  // 履歴の保存
-  const saveHistory = useCallback((newEntry: GenerationHistoryEntry) => {
-    setHistory(prev => {
-      const needsPrune = prev.length >= MAX_HISTORY_ITEMS;
-      const updated = [newEntry, ...prev].slice(0, MAX_HISTORY_ITEMS);
-      if (needsPrune) {
-        toast.info(`履歴は${MAX_HISTORY_ITEMS}件までです。古いデータを自動的に削除しました。`);
-      }
-      return updated;
-    });
-  }, [setHistory]);
-
-  // 履歴の削除
-  const deleteHistory = useCallback((historyId: string) => {
-    setHistory(prev => {
-      const updated = prev.filter(h => h.id !== historyId);
-      return updated;
-    });
-    toast.success('履歴を削除しました');
-  }, [setHistory]);
-
-  // 履歴の全削除
-  const clearAllHistory = useCallback(() => {
-    if (confirm('すべての履歴を削除しますか？')) {
-      setHistory([]);
-      toast.success('すべての履歴を削除しました');
-    }
-  }, [setHistory]);
-
   // 履歴からの読み込み
   const loadFromHistory = useCallback((historyItem: GenerationHistoryEntry) => {
     setAiTitles(historyItem.titles);
@@ -273,6 +251,13 @@ export default function TitleGeneratorPage() {
     
     toast.success('履歴から読み込みました');
   }, []);
+
+  const handleRemoveHistory = useCallback(
+    (id: string) => {
+      removeHistory(id);
+    },
+    [removeHistory],
+  );
 
   // プリセットテンプレート定義（5.8対応）
   const presetTemplates: DescriptionTemplate[] = [
@@ -387,24 +372,36 @@ export default function TitleGeneratorPage() {
     return description.trim();
   }, [videoTheme, hashtags]);
 
+  const extractHashtagsFromDescription = useCallback((description: string): string[] => {
+    const hashtagSection = description.match(/【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/);
+    if (!hashtagSection) return [];
+
+    const hashtagLine = hashtagSection[1].trim();
+    const matches = hashtagLine.match(/#([\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)/g);
+    if (!matches) return [];
+
+    return matches.map(tag => tag.replace('#', ''));
+  }, []);
+
   // テンプレートを適用（5.8対応）
   const applyTemplate = useCallback((templateId: string) => {
+    if (templateId === selectedTemplateId) return;
+
     const template = allTemplates.find(t => t.id === templateId);
     if (!template) return;
-    
+
     const generated = generateDescriptionFromTemplate(template);
     setAiDescription(generated);
     setFinalDescription(generated);
     setSelectedTemplateId(templateId);
-    
-    // ハッシュタグを抽出して設定
+
     const extracted = extractHashtagsFromDescription(generated);
     if (extracted.length > 0) {
-      setHashtags(extracted);
+      setHashtagsSafely(extracted);
     }
-    
+
     toast.success(`「${template.name}」テンプレートを適用しました`);
-  }, [allTemplates, generateDescriptionFromTemplate]);
+  }, [allTemplates, extractHashtagsFromDescription, generateDescriptionFromTemplate, selectedTemplateId, setHashtagsSafely]);
 
   // バリデーション関数（5.9対応）
   const validateVideoTheme = useCallback((value: string): ValidationError | null => {
@@ -487,18 +484,6 @@ export default function TitleGeneratorPage() {
       [field]: error || undefined
     }));
   }, [validateVideoTheme, validateKeywords, validateTargetAudience, validateVideoMood]);
-
-  // ハッシュタグ管理用のユーティリティ関数（5.7対応）- テンプレート適用前に定義
-  const extractHashtagsFromDescription = useCallback((description: string): string[] => {
-    const hashtagSection = description.match(/【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/);
-    if (!hashtagSection) return [];
-    
-    const hashtagLine = hashtagSection[1].trim();
-    const matches = hashtagLine.match(/#([\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)/g);
-    if (!matches) return [];
-    
-    return matches.map(tag => tag.replace('#', ''));
-  }, []);
 
   const getSavedFavoriteTitles = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -618,7 +603,7 @@ export default function TitleGeneratorPage() {
       // ハッシュタグを抽出して設定
       const extracted = extractHashtagsFromDescription(newDescription);
       if (extracted.length > 0) {
-        setHashtags(extracted);
+        setHashtagsSafely(extracted);
       }
       
       toast.success('概要欄を再生成しました');
@@ -628,7 +613,7 @@ export default function TitleGeneratorPage() {
     } finally {
       setIsRegeneratingDescription(false);
     }
-  }, [videoTheme, generateDescription, extractHashtagsFromDescription]);
+  }, [videoTheme, generateDescription, extractHashtagsFromDescription, setHashtagsSafely]);
 
   // 個別タイトル案の再生成（5.10対応）
   const handleRegenerateSingleTitle = useCallback(async (titleId: string, currentText: string) => {
@@ -734,7 +719,7 @@ export default function TitleGeneratorPage() {
             : DEFAULT_HASHTAGS;
 
       if (hashtags.length === 0) {
-        setHashtags(nextHashtags);
+        setHashtagsSafely(nextHashtags);
       }
 
       const generatedDescription = generateDescription(nextHashtags);
@@ -760,7 +745,7 @@ export default function TitleGeneratorPage() {
           videoMood,
         },
       };
-      saveHistory(historyEntry);
+      addHistory(historyEntry);
       
       // 生成成功時は入力内容の一時保存をクリア（5.4対応）
       // 履歴に保存されたので、一時保存は不要
@@ -778,7 +763,7 @@ export default function TitleGeneratorPage() {
     }, "生成中にエラーが発生しました");
     
     setIsLoading(false);
-  }, [videoTheme, keywords, targetAudience, videoMood, handleAsyncError, isDesktop, saveHistory]);
+  }, [videoTheme, keywords, targetAudience, videoMood, handleAsyncError, isDesktop, addHistory]);
 
   const handleTitleSelect = useCallback((title: string) => {
     setFinalTitle(title);
@@ -955,17 +940,17 @@ export default function TitleGeneratorPage() {
     if (!trimmedTag || hashtags.includes(trimmedTag)) return;
     
     const newHashtags = [...hashtags, trimmedTag];
-    setHashtags(newHashtags);
+    setHashtagsSafely(newHashtags);
     updateDescriptionHashtags(newHashtags);
     setNewHashtagInput("");
-  }, [hashtags, updateDescriptionHashtags]);
+  }, [hashtags, setHashtagsSafely, updateDescriptionHashtags]);
 
   // ハッシュタグの削除
   const handleRemoveHashtag = useCallback((tag: string) => {
     const newHashtags = hashtags.filter(t => t !== tag);
-    setHashtags(newHashtags);
+    setHashtagsSafely(newHashtags);
     updateDescriptionHashtags(newHashtags);
-  }, [hashtags, updateDescriptionHashtags]);
+  }, [hashtags, setHashtagsSafely, updateDescriptionHashtags]);
 
   // ハッシュタグのお気に入り保存
   const handleSaveHashtagToFavorites = useCallback((tag: string) => {
@@ -1032,10 +1017,10 @@ export default function TitleGeneratorPage() {
     if (aiDescription) {
       const extracted = extractHashtagsFromDescription(aiDescription);
       if (extracted.length > 0) {
-        setHashtags(extracted);
+        setHashtagsSafely(extracted);
       }
     }
-  }, [aiDescription, extractHashtagsFromDescription]);
+  }, [aiDescription, extractHashtagsFromDescription, setHashtagsSafely]);
 
   // ドラッグ&ドロップの並び替え
   const onDragEnd = useCallback((result: DropResult) => {
@@ -1069,7 +1054,7 @@ export default function TitleGeneratorPage() {
           <TabsTrigger value="input">入力</TabsTrigger>
           <TabsTrigger value="history">
             履歴
-            {history.length > 0 && (
+            {isHistoryHydrated && history.length > 0 && (
               <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                 {history.length}
               </Badge>
@@ -1276,115 +1261,14 @@ export default function TitleGeneratorPage() {
         </TabsContent>
         
         <TabsContent value="history" className="flex-1 space-y-4 md:overflow-auto mt-0">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>生成履歴</span>
-              {history.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearAllHistory}
-                  className="text-red-400 hover:text-red-300"
-                  aria-label="すべての履歴を削除"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {history.length === 0 ? (
-              <div className="text-center text-sm text-muted-foreground py-8">
-                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>生成履歴がありません</p>
-                <p className="text-xs mt-2">タイトルと概要欄を生成すると、ここに履歴が表示されます</p>
-              </div>
-            ) : (
-              <div className="space-y-2 md:max-h-[calc(100vh-300px)] md:overflow-y-auto">
-                {history.map((item) => {
-                  const dateStr = new Date(item.timestamp).toLocaleString('ja-JP', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  });
-                  const relativeTime = (() => {
-                    const diff = Date.now() - item.timestamp;
-                    const minutes = Math.floor(diff / 60000);
-                    const hours = Math.floor(diff / 3600000);
-                    const days = Math.floor(diff / 86400000);
-                    if (minutes < 1) return 'たった今';
-                    if (minutes < 60) return `${minutes}分前`;
-                    if (hours < 24) return `${hours}時間前`;
-                    if (days < 7) return `${days}日前`;
-                    return dateStr;
-                  })();
-                  
-                  return (
-                    <Card
-                      key={item.id}
-                      className={cn(
-                        "cursor-pointer hover:border-[#20B2AA] transition-all group relative overflow-visible"
-                      )}
-                      onClick={() => loadFromHistory(item)}
-                    >
-                      {/* 左側のボーダー（独立した要素として配置） */}
-                      <div className={cn(
-                        "absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-[#20B2AA] transition-colors rounded-l-xl",
-                        "-ml-2" // カードの外側に少しはみ出させる
-                      )} />
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            {/* 最初のタイトル案をプレビュー */}
-                            {item.titles.length > 0 && (
-                              <p className="text-sm font-medium truncate mb-1">
-                                {item.titles[0].text}
-                              </p>
-                            )}
-                            
-                            {/* 入力情報の簡易表示 */}
-                            {item.inputData.videoTheme && (
-                              <p className="text-xs text-muted-foreground truncate mb-1">
-                                {item.inputData.videoTheme.substring(0, 50)}
-                                {item.inputData.videoTheme.length > 50 ? '...' : ''}
-                              </p>
-                            )}
-                            
-                            {/* タイムスタンプ */}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              <span>{relativeTime}</span>
-                              <span className="text-[#808080]">・</span>
-                              <span>{item.titles.length}件のタイトル案</span>
-                            </div>
-                          </div>
-                          
-                          {/* 削除ボタン */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteHistory(item.id);
-                            }}
-                            aria-label="履歴を削除"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
+          <TitleHistoryList
+            items={history}
+            onSelect={loadFromHistory}
+            onDelete={handleRemoveHistory}
+            onClear={clearHistory}
+            isHydrated={isHistoryHydrated}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -1796,7 +1680,7 @@ export default function TitleGeneratorPage() {
                     className="text-xs h-7"
                     onClick={() => {
                       const preset = ['VTuber', 'ゲーム実況', '実況', 'エンタメ'];
-                      setHashtags(preset);
+                      setHashtagsSafely(preset);
                       updateDescriptionHashtags(preset);
                     }}
                   >
@@ -1808,7 +1692,7 @@ export default function TitleGeneratorPage() {
                     className="text-xs h-7"
                     onClick={() => {
                       const preset = ['VTuber', '歌枠', '歌ってみた', 'エンタメ'];
-                      setHashtags(preset);
+                      setHashtagsSafely(preset);
                       updateDescriptionHashtags(preset);
                     }}
                   >
@@ -1820,7 +1704,7 @@ export default function TitleGeneratorPage() {
                     className="text-xs h-7"
                     onClick={() => {
                       const preset = ['VTuber', 'コラボ', 'コラボ配信', 'エンタメ'];
-                      setHashtags(preset);
+                      setHashtagsSafely(preset);
                       updateDescriptionHashtags(preset);
                     }}
                   >
