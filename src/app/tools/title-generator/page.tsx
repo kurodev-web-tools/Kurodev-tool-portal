@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -51,9 +53,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { generateTitleIdeas } from "@/services/aiClient";
 import type { TitleGenerationRequest } from "@/types/ai";
-import type { GenerationHistoryEntry, TitleOption } from "@/types/title-generator";
 import { useTitleHistory } from "./hooks/useTitleHistory";
 import { TitleHistoryList } from "./components/TitleHistoryList";
+import {
+  titleGenerationInputSchema,
+  type TitleGenerationFormValues,
+  type GenerationHistoryEntry,
+  type TitleOption,
+} from "@/types/title-generator";
 export default function TitleGeneratorPage() {
   const { isDesktop } = useSidebar({
     defaultOpen: true,
@@ -127,25 +134,53 @@ export default function TitleGeneratorPage() {
   const TARGET_AUDIENCE_MAX_LENGTH = 100; // ターゲット層の最大文字数
   const VIDEO_MOOD_MAX_LENGTH = 100; // 動画の雰囲気の最大文字数
   
-  // 入力フォームのstate管理（5.4対応）
-  const [videoTheme, setVideoTheme] = useState(""); // 動画のテーマ・内容
-  const [keywords, setKeywords] = useState(""); // 主要キーワード
-  const [targetAudience, setTargetAudience] = useState(""); // ターゲット層
-  const [videoMood, setVideoMood] = useState(""); // 動画の雰囲気
+  const [isClient, setIsClient] = useState(false);
+
+  const form = useForm<TitleGenerationFormValues>({
+    resolver: zodResolver(titleGenerationInputSchema),
+    mode: "onChange",
+    defaultValues: {
+      videoTheme: "",
+      keywords: "",
+      targetAudience: "",
+      videoMood: "",
+    },
+  });
+
+  const {
+    register,
+    watch,
+    getValues,
+    reset,
+    trigger,
+    getFieldState,
+    formState: { errors },
+  } = form;
+
+  const videoTheme = watch("videoTheme");
+  const keywords = watch("keywords");
+  const targetAudience = watch("targetAudience");
+  const videoMood = watch("videoMood");
+  const parseFieldError = useCallback(
+    (field: keyof TitleGenerationFormValues) => {
+      const raw = errors[field]?.message as string | undefined;
+      if (!raw) {
+        return { message: undefined, suggestion: undefined };
+      }
+      const [message, suggestion] = raw.split("|");
+      return { message, suggestion };
+    },
+    [errors],
+  );
+  const videoThemeError = parseFieldError("videoTheme");
+  const keywordsError = parseFieldError("keywords");
+  const targetAudienceError = parseFieldError("targetAudience");
+  const videoMoodError = parseFieldError("videoMood");
   
-  // バリデーション状態の管理（5.9対応）
-  interface ValidationError {
-    message: string;
-    suggestion?: string;
-  }
-  
-  const [validationErrors, setValidationErrors] = useState<{
-    videoTheme?: ValidationError;
-    keywords?: ValidationError;
-    targetAudience?: ValidationError;
-    videoMood?: ValidationError;
-  }>({});
-  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const { handleAsyncError } = useErrorHandler();
 
   // 自動保存用のタイマーref（5.4対応）
@@ -163,6 +198,7 @@ export default function TitleGeneratorPage() {
     if (typeof window === 'undefined') return;
     
     try {
+      const { videoTheme, keywords, targetAudience, videoMood } = getValues();
       const draftData = {
         videoTheme,
         keywords,
@@ -174,7 +210,7 @@ export default function TitleGeneratorPage() {
     } catch (err) {
       console.error('入力内容保存失敗', err);
     }
-  }, [videoTheme, keywords, targetAudience, videoMood]);
+  }, [getValues]);
 
   // 入力内容の読み込み（初回マウント時）（5.4対応）
   useEffect(() => {
@@ -185,15 +221,15 @@ export default function TitleGeneratorPage() {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object') {
-          // 古いデータ（7日以上前）は削除
           const daysSinceSave = (Date.now() - (parsed.timestamp || 0)) / (1000 * 60 * 60 * 24);
           if (daysSinceSave < 7) {
-            if (parsed.videoTheme) setVideoTheme(parsed.videoTheme);
-            if (parsed.keywords) setKeywords(parsed.keywords);
-            if (parsed.targetAudience) setTargetAudience(parsed.targetAudience);
-            if (parsed.videoMood) setVideoMood(parsed.videoMood);
+            reset({
+              videoTheme: parsed.videoTheme ?? "",
+              keywords: parsed.keywords ?? "",
+              targetAudience: parsed.targetAudience ?? "",
+              videoMood: parsed.videoMood ?? "",
+            });
           } else {
-            // 古いデータを削除
             localStorage.removeItem(INPUT_STORAGE_KEY);
           }
         }
@@ -203,7 +239,7 @@ export default function TitleGeneratorPage() {
       console.error('入力内容読み込み失敗', err);
       isInitialLoadRef.current = false;
     }
-  }, []); // 初回のみ実行
+  }, [reset]); // 初回のみ実行
 
   // 自動保存（入力値変更時、debounce付き）（5.4対応）
   useEffect(() => {
@@ -241,16 +277,18 @@ export default function TitleGeneratorPage() {
     }
     
     // 入力フォームも復元
-    setVideoTheme(historyItem.inputData.videoTheme);
-    setKeywords(historyItem.inputData.keywords);
-    setTargetAudience(historyItem.inputData.targetAudience);
-    setVideoMood(historyItem.inputData.videoMood);
+    reset({
+      videoTheme: historyItem.inputData.videoTheme,
+      keywords: historyItem.inputData.keywords,
+      targetAudience: historyItem.inputData.targetAudience,
+      videoMood: historyItem.inputData.videoMood,
+    });
     
     // 左サイドバーを入力タブに切り替え
     setLeftPanelTab('input');
     
     toast.success('履歴から読み込みました');
-  }, []);
+  }, [reset]);
 
   const handleRemoveHistory = useCallback(
     (id: string) => {
@@ -402,88 +440,6 @@ export default function TitleGeneratorPage() {
 
     toast.success(`「${template.name}」テンプレートを適用しました`);
   }, [allTemplates, extractHashtagsFromDescription, generateDescriptionFromTemplate, selectedTemplateId, setHashtagsSafely]);
-
-  // バリデーション関数（5.9対応）
-  const validateVideoTheme = useCallback((value: string): ValidationError | null => {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return {
-        message: '動画のテーマ・内容は必須です',
-        suggestion: '動画の内容や台本の要約を10文字以上入力してください'
-      };
-    }
-    if (trimmed.length < VIDEO_THEME_MIN_LENGTH) {
-      return {
-        message: `${VIDEO_THEME_MIN_LENGTH}文字以上入力してください`,
-        suggestion: 'もう少し具体的な内容を記入すると、より良いタイトルが生成されます'
-      };
-    }
-    if (trimmed.length > VIDEO_THEME_MAX_LENGTH) {
-      return {
-        message: `${VIDEO_THEME_MAX_LENGTH}文字以内で入力してください`,
-        suggestion: '重要なポイントをまとめて入力してください'
-      };
-    }
-    return null;
-  }, []);
-
-  const validateKeywords = useCallback((value: string): ValidationError | null => {
-    const trimmed = value.trim();
-    if (trimmed.length > KEYWORDS_MAX_LENGTH) {
-      return {
-        message: `${KEYWORDS_MAX_LENGTH}文字以内で入力してください`,
-        suggestion: 'カンマ区切りで主要なキーワードのみを入力してください'
-      };
-    }
-    return null;
-  }, []);
-
-  const validateTargetAudience = useCallback((value: string): ValidationError | null => {
-    const trimmed = value.trim();
-    if (trimmed.length > TARGET_AUDIENCE_MAX_LENGTH) {
-      return {
-        message: `${TARGET_AUDIENCE_MAX_LENGTH}文字以内で入力してください`,
-        suggestion: '簡潔にターゲット層を入力してください（例: 10代男性、VTuberファン）'
-      };
-    }
-    return null;
-  }, []);
-
-  const validateVideoMood = useCallback((value: string): ValidationError | null => {
-    const trimmed = value.trim();
-    if (trimmed.length > VIDEO_MOOD_MAX_LENGTH) {
-      return {
-        message: `${VIDEO_MOOD_MAX_LENGTH}文字以内で入力してください`,
-        suggestion: '簡潔に雰囲気を入力してください（例: 面白い、感動、解説）'
-      };
-    }
-    return null;
-  }, []);
-
-  // リアルタイムバリデーション（5.9対応）
-  const validateField = useCallback((field: 'videoTheme' | 'keywords' | 'targetAudience' | 'videoMood', value: string) => {
-    let error: ValidationError | null = null;
-    
-    switch (field) {
-      case 'videoTheme':
-        error = validateVideoTheme(value);
-        break;
-      case 'keywords':
-        error = validateKeywords(value);
-        break;
-      case 'targetAudience':
-        error = validateTargetAudience(value);
-        break;
-      case 'videoMood':
-        error = validateVideoMood(value);
-        break;
-    }
-    
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error || undefined
-    }));
-  }, [validateVideoTheme, validateKeywords, validateTargetAudience, validateVideoMood]);
 
   const getSavedFavoriteTitles = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -674,41 +630,34 @@ export default function TitleGeneratorPage() {
 
   // T-04: フロントエンド内でのUIロジック実装
   const handleGenerateClick = useCallback(async () => {
-    // 入力フォームのバリデーション（5.9対応: 全フィールドを検証）
-    const videoThemeError = validateVideoTheme(videoTheme);
-    
-    if (videoThemeError) {
-      setValidationErrors({ videoTheme: videoThemeError });
-      toast.error('入力エラー', {
-        description: videoThemeError.message
+    const isValid = await trigger();
+    if (!isValid) {
+      const fields: (keyof TitleGenerationFormValues)[] = [
+        "videoTheme",
+        "keywords",
+        "targetAudience",
+        "videoMood",
+      ];
+      let message: string | undefined;
+      for (const field of fields) {
+        const fieldState = getFieldState(field);
+        if (fieldState.error?.message) {
+          message = fieldState.error.message as string;
+          break;
+        }
+      }
+      const [primary] = (message ?? "入力内容を確認してください").split("|");
+      toast.error("入力エラー", {
+        description: primary,
       });
       return;
     }
-    
-    // その他のフィールドも検証（エラーがあっても生成は可能）
-    const keywordsError = validateKeywords(keywords);
-    const targetAudienceError = validateTargetAudience(targetAudience);
-    const videoMoodError = validateVideoMood(videoMood);
-    
-    setValidationErrors({
-      keywords: keywordsError || undefined,
-      targetAudience: targetAudienceError || undefined,
-      videoMood: videoMoodError || undefined,
-    });
-    
-    // 警告がある場合は表示（生成は続行）
-    const hasWarnings = keywordsError || targetAudienceError || videoMoodError;
-    if (hasWarnings) {
-      toast.warning('一部の入力に問題がありますが、生成を続行します', {
-        duration: 3000
-      });
-    }
+
+    const { videoTheme, keywords, targetAudience, videoMood } = getValues();
 
     setIsLoading(true);
-    
-    // 非同期処理をエラーハンドリングでラップ
+
     await handleAsyncError(async () => {
-      // タイトルと概要欄の両方を生成（共通関数を使用）
       const { titles: sortedTitles, recommendedHashtags } = await generateTitles();
 
       const nextHashtags =
@@ -726,13 +675,11 @@ export default function TitleGeneratorPage() {
 
       setAiTitles(sortedTitles);
       setAiDescription(generatedDescription);
-      // 最初のタイトル案を自動選択
       if (sortedTitles.length > 0) {
         setFinalTitle(sortedTitles[0].text);
       }
       setFinalDescription(generatedDescription);
-      
-      // 履歴に保存（5.3対応）
+
       const historyEntry: GenerationHistoryEntry = {
         id: `history-${Date.now()}`,
         timestamp: Date.now(),
@@ -746,24 +693,22 @@ export default function TitleGeneratorPage() {
         },
       };
       addHistory(historyEntry);
-      
-      // 生成成功時は入力内容の一時保存をクリア（5.4対応）
-      // 履歴に保存されたので、一時保存は不要
-      if (typeof window !== 'undefined') {
+
+      if (typeof window !== "undefined") {
         try {
           localStorage.removeItem(INPUT_STORAGE_KEY);
         } catch (err) {
-          console.error('一時保存クリア失敗', err);
+          console.error("一時保存クリア失敗", err);
         }
       }
-      
+
       if (!isDesktop) {
-        setActiveTab("results"); // モバイルでは結果タブに切り替える
+        setActiveTab("results");
       }
     }, "生成中にエラーが発生しました");
-    
+
     setIsLoading(false);
-  }, [videoTheme, keywords, targetAudience, videoMood, handleAsyncError, isDesktop, addHistory]);
+  }, [addHistory, generateDescription, generateTitles, getFieldState, getValues, handleAsyncError, hashtags.length, isDesktop, setHashtagsSafely, trigger]);
 
   const handleTitleSelect = useCallback((title: string) => {
     setFinalTitle(title);
@@ -1078,42 +1023,38 @@ export default function TitleGeneratorPage() {
                 <Textarea
                   id="video-theme"
                   placeholder="例: 新作RPGゲームを初見プレイ。序盤のキャラクター作成から、最初のボス戦までの流れを実況します。"
-                  value={videoTheme}
-                  onChange={(e) => {
-                    setVideoTheme(e.target.value);
-                    validateField('videoTheme', e.target.value);
-                  }}
-                  onBlur={() => validateField('videoTheme', videoTheme)}
+                  {...register("videoTheme")}
                   rows={4}
                   className={cn(
                     "resize-y",
-                    validationErrors.videoTheme && "border-red-500 focus-visible:ring-red-500"
+                    videoThemeError.message && "border-red-500 focus-visible:ring-red-500"
                   )}
                 />
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                   <div className="flex-1">
-                    {validationErrors.videoTheme && (
+                    {videoThemeError.message ? (
                       <div className="space-y-1">
-                        <p className="text-xs text-red-500">{validationErrors.videoTheme.message}</p>
-                        {validationErrors.videoTheme.suggestion && (
-                          <p className="text-xs text-muted-foreground">{validationErrors.videoTheme.suggestion}</p>
+                        <p className="text-xs text-red-500">{videoThemeError.message}</p>
+                        {videoThemeError.suggestion && (
+                          <p className="text-xs text-muted-foreground">{videoThemeError.suggestion}</p>
                         )}
                       </div>
-                    )}
-                    {!validationErrors.videoTheme && (
+                    ) : (
                       <p className="text-xs text-muted-foreground">
                         {VIDEO_THEME_MIN_LENGTH}〜{VIDEO_THEME_MAX_LENGTH}文字推奨。動画の内容や台本の要約を具体的に入力してください。
                       </p>
                     )}
                   </div>
-                  <span className={cn(
-                    "text-xs md:ml-2",
-                    videoTheme.length < VIDEO_THEME_MIN_LENGTH 
-                      ? "text-red-500" 
-                      : videoTheme.length > VIDEO_THEME_MAX_LENGTH 
-                        ? "text-red-500" 
-                        : "text-muted-foreground"
-                  )}>
+                  <span
+                    className={cn(
+                      "text-xs md:ml-2",
+                      videoTheme.length < VIDEO_THEME_MIN_LENGTH
+                        ? "text-red-500"
+                        : videoTheme.length > VIDEO_THEME_MAX_LENGTH
+                          ? "text-red-500"
+                          : "text-muted-foreground"
+                    )}
+                  >
                     {videoTheme.length}/{VIDEO_THEME_MAX_LENGTH}
                   </span>
                 </div>
@@ -1123,82 +1064,74 @@ export default function TitleGeneratorPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="keywords">主要キーワード</Label>
-                  <Input 
-                    id="keywords" 
+                  <Input
+                    id="keywords"
                     placeholder="例: ゲーム名, キャラクター名, 感想"
-                    value={keywords}
-                    onChange={(e) => {
-                      setKeywords(e.target.value);
-                      validateField('keywords', e.target.value);
-                    }}
-                    onBlur={() => validateField('keywords', keywords)}
+                    {...register("keywords")}
                     className={cn(
-                      validationErrors.keywords && "border-red-500 focus-visible:ring-red-500"
+                      keywordsError.message && "border-red-500 focus-visible:ring-red-500"
                     )}
                   />
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                     <div className="flex-1">
-                      {validationErrors.keywords && (
+                      {keywordsError.message ? (
                         <div className="space-y-1">
-                          <p className="text-xs text-red-500">{validationErrors.keywords.message}</p>
-                          {validationErrors.keywords.suggestion && (
-                            <p className="text-xs text-muted-foreground">{validationErrors.keywords.suggestion}</p>
+                          <p className="text-xs text-red-500">{keywordsError.message}</p>
+                          {keywordsError.suggestion && (
+                            <p className="text-xs text-muted-foreground">{keywordsError.suggestion}</p>
                           )}
                         </div>
-                      )}
-                      {!validationErrors.keywords && (
+                      ) : (
                         <p className="text-xs text-muted-foreground">
                           カンマ区切りで入力。タイトル生成に使用されます。
                         </p>
                       )}
                     </div>
-                    <span className={cn(
-                      "text-xs md:ml-2",
-                      keywords.length > KEYWORDS_MAX_LENGTH 
-                        ? "text-red-500" 
-                        : "text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-xs md:ml-2",
+                        keywords.length > KEYWORDS_MAX_LENGTH
+                          ? "text-red-500"
+                          : "text-muted-foreground"
+                      )}
+                    >
                       {keywords.length}/{KEYWORDS_MAX_LENGTH}
                     </span>
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="target-audience">ターゲット層</Label>
-                  <Input 
-                    id="target-audience" 
+                  <Input
+                    id="target-audience"
                     placeholder="例: 10代男性, VTuberファン"
-                    value={targetAudience}
-                    onChange={(e) => {
-                      setTargetAudience(e.target.value);
-                      validateField('targetAudience', e.target.value);
-                    }}
-                    onBlur={() => validateField('targetAudience', targetAudience)}
+                    {...register("targetAudience")}
                     className={cn(
-                      validationErrors.targetAudience && "border-red-500 focus-visible:ring-red-500"
+                      targetAudienceError.message && "border-red-500 focus-visible:ring-red-500"
                     )}
                   />
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                     <div className="flex-1">
-                      {validationErrors.targetAudience && (
+                      {targetAudienceError.message ? (
                         <div className="space-y-1">
-                          <p className="text-xs text-red-500">{validationErrors.targetAudience.message}</p>
-                          {validationErrors.targetAudience.suggestion && (
-                            <p className="text-xs text-muted-foreground">{validationErrors.targetAudience.suggestion}</p>
+                          <p className="text-xs text-red-500">{targetAudienceError.message}</p>
+                          {targetAudienceError.suggestion && (
+                            <p className="text-xs text-muted-foreground">{targetAudienceError.suggestion}</p>
                           )}
                         </div>
-                      )}
-                      {!validationErrors.targetAudience && (
+                      ) : (
                         <p className="text-xs text-muted-foreground">
                           任意。視聴者の属性を入力。
                         </p>
                       )}
                     </div>
-                    <span className={cn(
-                      "text-xs md:ml-2",
-                      targetAudience.length > TARGET_AUDIENCE_MAX_LENGTH 
-                        ? "text-red-500" 
-                        : "text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-xs md:ml-2",
+                        targetAudience.length > TARGET_AUDIENCE_MAX_LENGTH
+                          ? "text-red-500"
+                          : "text-muted-foreground"
+                      )}
+                    >
                       {targetAudience.length}/{TARGET_AUDIENCE_MAX_LENGTH}
                     </span>
                   </div>
@@ -1210,27 +1143,21 @@ export default function TitleGeneratorPage() {
                 <Input 
                   id="video-mood" 
                   placeholder="例: 面白い, 感動, 解説"
-                  value={videoMood}
-                  onChange={(e) => {
-                    setVideoMood(e.target.value);
-                    validateField('videoMood', e.target.value);
-                  }}
-                  onBlur={() => validateField('videoMood', videoMood)}
+                  {...register("videoMood")}
                   className={cn(
-                    validationErrors.videoMood && "border-red-500 focus-visible:ring-red-500"
+                    videoMoodError.message && "border-red-500 focus-visible:ring-red-500"
                   )}
                 />
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-1 md:gap-0">
                   <div className="flex-1">
-                    {validationErrors.videoMood && (
+                    {videoMoodError.message ? (
                       <div className="space-y-1">
-                        <p className="text-xs text-red-500">{validationErrors.videoMood.message}</p>
-                        {validationErrors.videoMood.suggestion && (
-                          <p className="text-xs text-muted-foreground">{validationErrors.videoMood.suggestion}</p>
+                        <p className="text-xs text-red-500">{videoMoodError.message}</p>
+                        {videoMoodError.suggestion && (
+                          <p className="text-xs text-muted-foreground">{videoMoodError.suggestion}</p>
                         )}
                       </div>
-                    )}
-                    {!validationErrors.videoMood && (
+                    ) : (
                       <p className="text-xs text-muted-foreground">
                         任意。動画の雰囲気やトーンを入力。
                       </p>
@@ -1648,7 +1575,7 @@ export default function TitleGeneratorPage() {
                   })()}
                   
                   {/* お気に入りハッシュタグ */}
-                  {(() => {
+                  {isClient && (() => {
                     const favorites = loadHashtagFavorites();
                     const availableFavorites = (favorites as string[]).filter((f: string) => !hashtags.includes(f));
                     return availableFavorites.length > 0 && (

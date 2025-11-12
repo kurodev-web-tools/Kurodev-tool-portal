@@ -1,21 +1,29 @@
-export interface TitleGenerationRequest {
-  videoTheme: string;
-  keywords?: string;
-  targetAudience?: string;
-  mood?: string;
-  baseTitle?: string;
-  hashtags?: string[];
-}
+import { z } from 'zod';
 
-export interface TitleSuggestion {
-  id: string;
-  text: string;
-  emphasis?: 'low' | 'medium' | 'high';
-}
+export const titleGenerationRequestSchema = z.object({
+  videoTheme: z.string(),
+  keywords: z.string().optional(),
+  targetAudience: z.string().optional(),
+  mood: z.string().optional(),
+  baseTitle: z.string().optional(),
+  hashtags: z.array(z.string()).optional(),
+});
 
-export interface TitleGenerationResponse {
-  suggestions: TitleSuggestion[];
-  recommendedHashtags: string[];
-  insights?: string[];
-}
+export type TitleGenerationRequest = z.infer<typeof titleGenerationRequestSchema>;
+
+export const titleSuggestionSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  emphasis: z.enum(['low', 'medium', 'high']).optional(),
+});
+
+export type TitleSuggestion = z.infer<typeof titleSuggestionSchema>;
+
+export const titleGenerationResponseSchema = z.object({
+  suggestions: z.array(titleSuggestionSchema),
+  recommendedHashtags: z.array(z.string()),
+  insights: z.array(z.string()).optional(),
+});
+
+export type TitleGenerationResponse = z.infer<typeof titleGenerationResponseSchema>;
 
