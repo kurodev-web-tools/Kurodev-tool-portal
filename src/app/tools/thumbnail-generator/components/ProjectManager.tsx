@@ -28,6 +28,7 @@ import {
   loadProject,
 } from '../utils/projectUtils';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { HorizontalSnapScroll } from '@/components/shared/HorizontalSnapScroll';
 
 interface ProjectManagerProps {
   onLoadProject: (project: ThumbnailProject) => void;
@@ -219,15 +220,18 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
       ) : (
         <>
           {isMobile ? (
-            <div className="-mx-2 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 px-2 scrollbar-thin">
+            <HorizontalSnapScroll
+              className="scrollbar-thin"
+              innerClassName="gap-3"
+              itemStyle={() => ({ width: 'min(85vw, 340px)' })}
+            >
               {filteredProjects.map((project) => (
                 <Card
                   key={project.id}
                   className={cn(
-                    "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group shrink-0 snap-center",
+                    "cursor-pointer hover:border-[#20B2AA] transition-all duration-200 group w-full",
                     currentProjectName === project.name && "border-2 border-[#20B2AA]"
                   )}
-                  style={{ width: 'min(85vw, 340px)' }}
                   onClick={() => handleLoad(project.id)}
                 >
                   <CardContent className="p-3 space-y-3">
@@ -350,7 +354,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                   </CardContent>
                 </Card>
               ))}
-            </div>
+            </HorizontalSnapScroll>
           ) : (
             <ScrollArea className="h-[calc(100vh-400px)]">
               <div className="space-y-2">

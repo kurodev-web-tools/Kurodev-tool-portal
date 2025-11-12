@@ -49,6 +49,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { usePersistentState } from "@/hooks/usePersistentState";
+import { generateTitleIdeas } from "@/services/aiClient";
+import type { TitleGenerationRequest } from "@/types/ai";
+import type { GenerationHistoryEntry, TitleOption } from "@/types/title-generator";
 export default function TitleGeneratorPage() {
   const { isDesktop } = useSidebar({
     defaultOpen: true,
@@ -60,32 +64,18 @@ export default function TitleGeneratorPage() {
   const [isLoading, setIsLoading] = useState(false); // ローディング状態
   const [finalTitle, setFinalTitle] = useState(""); // 最終タイトル
   const [finalDescription, setFinalDescription] = useState(""); // 最終概要欄
-  
-  // タイトル案のデータ構造（お気に入り機能対応）
-  interface TitleOption {
-    id: string;
-    text: string;
-    isFavorite: boolean;
-  }
-  
-  // 生成履歴のデータ構造（5.3対応）
-  interface GenerationHistory {
-    id: string;
-    timestamp: number;
-    titles: TitleOption[];
-    description: string;
-    inputData: {
-      videoTheme: string;
-      keywords: string;
-      targetAudience: string;
-      videoMood: string;
-    };
-  }
-  
   const [aiTitles, setAiTitles] = useState<TitleOption[]>([]); // AI提案タイトル案
   const [aiDescription, setAiDescription] = useState(""); // AI提案概要欄
   const [copiedItem, setCopiedItem] = useState<string | null>(null); // コピー状態
-  const [history, setHistory] = useState<GenerationHistory[]>([]); // 生成履歴
+  const [history, setHistory] = usePersistentState<GenerationHistoryEntry[]>(
+    'history',
+    () => [],
+    {
+      namespace: 'title-generator',
+      version: 1,
+      onError: (error) => logger.error('タイトル生成履歴の復元に失敗しました', error, 'TitleGenerator'),
+    },
+  );
   const [hashtags, setHashtags] = useState<string[]>([]); // ハッシュタグリスト（5.7対応）
   const [newHashtagInput, setNewHashtagInput] = useState(""); // 新規ハッシュタグ入力（5.7対応）
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default"); // 選択中のテンプレート（5.8対応）
@@ -113,7 +103,6 @@ export default function TitleGeneratorPage() {
   
   // ローカルストレージキー
   const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
-  const HISTORY_STORAGE_KEY = 'title-generator-history';
   const INPUT_STORAGE_KEY = 'title-generator-input-draft'; // 入力内容の一時保存（5.4対応）
   const HASHTAG_FAVORITES_STORAGE_KEY = 'title-generator-hashtag-favorites'; // ハッシュタグのお気に入り（5.7対応）
   const DESCRIPTION_TEMPLATES_STORAGE_KEY = 'title-generator-description-templates'; // 概要欄テンプレート（5.8対応）
@@ -122,6 +111,7 @@ export default function TitleGeneratorPage() {
   const YOUTUBE_DESCRIPTION_LIMIT = 5000; // YouTube概要欄の文字数制限（5.5対応）
   const YOUTUBE_TITLE_RECOMMENDED_LENGTH = 60; // YouTubeタイトルの推奨文字数（5.6対応）
   const YOUTUBE_HASHTAG_RECOMMENDED_COUNT = 15; // YouTubeハッシュタグの推奨数（5.7対応）
+  const DEFAULT_HASHTAGS = ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
   
   // 入力フォームのバリデーション制限（5.9対応）
   const VIDEO_THEME_MIN_LENGTH = 10; // 動画のテーマ・内容の最小文字数
@@ -234,73 +224,37 @@ export default function TitleGeneratorPage() {
     };
   }, [clearAutoSaveTimer]);
 
-  // 履歴の読み込み（初回マウント時）
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setHistory(Array.isArray(parsed) ? parsed : []);
-      }
-    } catch (err) {
-      console.error('履歴読み込み失敗', err);
-    }
-  }, []);
-
   // 履歴の保存
-  const saveHistory = useCallback((newHistory: GenerationHistory) => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      setHistory(prev => {
-        const needsPrune = prev.length >= MAX_HISTORY_ITEMS;
-        const updated = [newHistory, ...prev].slice(0, MAX_HISTORY_ITEMS);
-        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
-        if (needsPrune) {
-          toast.info(`履歴は${MAX_HISTORY_ITEMS}件までです。古いデータを自動的に削除しました。`);
-        }
-        return updated;
-      });
-    } catch (err) {
-      console.error('履歴保存失敗', err);
-    }
-  }, []);
+  const saveHistory = useCallback((newEntry: GenerationHistoryEntry) => {
+    setHistory(prev => {
+      const needsPrune = prev.length >= MAX_HISTORY_ITEMS;
+      const updated = [newEntry, ...prev].slice(0, MAX_HISTORY_ITEMS);
+      if (needsPrune) {
+        toast.info(`履歴は${MAX_HISTORY_ITEMS}件までです。古いデータを自動的に削除しました。`);
+      }
+      return updated;
+    });
+  }, [setHistory]);
 
   // 履歴の削除
   const deleteHistory = useCallback((historyId: string) => {
     setHistory(prev => {
       const updated = prev.filter(h => h.id !== historyId);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
-        } catch (err) {
-          console.error('履歴削除失敗', err);
-        }
-      }
       return updated;
     });
     toast.success('履歴を削除しました');
-  }, []);
+  }, [setHistory]);
 
   // 履歴の全削除
   const clearAllHistory = useCallback(() => {
     if (confirm('すべての履歴を削除しますか？')) {
       setHistory([]);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.removeItem(HISTORY_STORAGE_KEY);
-        } catch (err) {
-          console.error('履歴全削除失敗', err);
-        }
-      }
       toast.success('すべての履歴を削除しました');
     }
-  }, []);
+  }, [setHistory]);
 
   // 履歴からの読み込み
-  const loadFromHistory = useCallback((historyItem: GenerationHistory) => {
+  const loadFromHistory = useCallback((historyItem: GenerationHistoryEntry) => {
     setAiTitles(historyItem.titles);
     setAiDescription(historyItem.description);
     setFinalDescription(historyItem.description);
@@ -546,68 +500,68 @@ export default function TitleGeneratorPage() {
     return matches.map(tag => tag.replace('#', ''));
   }, []);
 
-  // タイトル生成用の共通関数（ダミーデータ、5.10対応）
-  const generateTitles = useCallback(async (baseTitle?: string): Promise<TitleOption[]> => {
-    // ダミーデータ生成（AI実装時はここを置き換え）
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    let generatedTitleTexts: string[];
-    if (baseTitle) {
-      // ベースタイトルから別パターンを生成（ダミーデータ）
-      const patterns = [
-        baseTitle.replace('【初見】', '【実況】').replace('挑戦', '攻略'),
-        baseTitle.replace('超絶高難易度', '新作').replace('絶叫', '完全'),
-        baseTitle.replace('【', '【コラボ】').replace('挑戦', '一緒にプレイ'),
-      ];
-      generatedTitleTexts = patterns;
-    } else {
-      // 通常生成（ダミーデータ）
-      generatedTitleTexts = [
-        "【初見】超絶高難易度ゲームに挑戦！絶叫必至の展開が...",
-        "【実況】新作ゲームを完全攻略！隠し要素も全部見つけた",
-        "【コラボ】人気VTuberと一緒にゲーム！予想外の展開に..."
-      ];
+  const getSavedFavoriteTitles = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return new Set<string>();
     }
-    
-    // 既存のお気に入り状態を読み込み
-    const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
-    const savedFavorites = (() => {
-      if (typeof window === 'undefined') return new Set<string>();
-      try {
-        const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
-        return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
-      } catch {
-        return new Set<string>();
-      }
-    })();
-    
-    // タイトル案をオブジェクト配列に変換
-    const newTitles: TitleOption[] = generatedTitleTexts.map((text, index) => ({
-      id: `title-${Date.now()}-${index}`,
-      text,
-      isFavorite: savedFavorites.has(text),
-    }));
-    
-    // お気に入りを先頭に、その後にソート
-    return [
-      ...newTitles.filter(t => t.isFavorite),
-      ...newTitles.filter(t => !t.isFavorite),
-    ];
+    try {
+      const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
   }, []);
 
+  // タイトル生成用の共通関数
+  const generateTitles = useCallback(
+    async (baseTitle?: string): Promise<{ titles: TitleOption[]; recommendedHashtags: string[] }> => {
+    const request: TitleGenerationRequest = {
+      videoTheme,
+      keywords,
+      targetAudience,
+      mood: videoMood,
+      baseTitle,
+      hashtags,
+    };
+
+    const response = await generateTitleIdeas(request);
+
+    const favorites = getSavedFavoriteTitles();
+    const now = Date.now();
+
+    const mapped: TitleOption[] = response.suggestions.map((suggestion, index) => ({
+      id: suggestion.id ?? `title-${now}-${index}`,
+      text: suggestion.text,
+      isFavorite: favorites.has(suggestion.text),
+    }));
+
+      const sorted = [
+        ...mapped.filter(title => title.isFavorite),
+        ...mapped.filter(title => !title.isFavorite),
+      ];
+
+      return {
+        titles: sorted,
+        recommendedHashtags: response.recommendedHashtags,
+      };
+    },
+    [videoTheme, keywords, targetAudience, videoMood, hashtags, getSavedFavoriteTitles],
+  );
+
   // 概要欄生成用の共通関数（5.10対応）
-  const generateDescription = useCallback((): string => {
+  const generateDescription = useCallback((overrideHashtags?: string[]): string => {
     // 選択中のテンプレートから概要欄を生成（5.8対応）
     const selectedTemplate = allTemplates.find(t => t.id === selectedTemplateId) || presetTemplates[0];
     
     // ハッシュタグが未設定の場合はデフォルトを設定（5.7対応）
-    const currentHashtags = hashtags.length > 0 ? hashtags : ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
+    const activeHashtags = overrideHashtags ?? hashtags;
+    const currentHashtags = activeHashtags.length > 0 ? activeHashtags : DEFAULT_HASHTAGS;
     
     // テンプレートから概要欄を生成
     return generateDescriptionFromTemplate({
       ...selectedTemplate,
       sections: selectedTemplate.sections.map(s => 
-        s.type === 'hashtag' 
+        s.type === 'hashtag'
           ? { ...s, content: currentHashtags.map(tag => `#${tag}`).join(' ') }
           : s
       ),
@@ -626,12 +580,12 @@ export default function TitleGeneratorPage() {
     setIsRegeneratingTitles(true);
     
     try {
-      const newTitles = await generateTitles();
-      setAiTitles(newTitles);
+      const { titles } = await generateTitles();
+      setAiTitles(titles);
       
       // 最初のタイトル案を自動選択
-      if (newTitles.length > 0) {
-        setFinalTitle(newTitles[0].text);
+      if (titles.length > 0) {
+        setFinalTitle(titles[0].text);
       }
       
       toast.success('タイトルを再生成しました');
@@ -711,7 +665,7 @@ export default function TitleGeneratorPage() {
     setIsRegeneratingTitles(true);
     
     try {
-      const newTitles = await generateTitles(baseTitleText);
+      const { titles: newTitles } = await generateTitles(baseTitleText);
       
       // 既存のタイトルに追加（お気に入りを維持）
       setAiTitles(prev => {
@@ -770,23 +724,20 @@ export default function TitleGeneratorPage() {
     // 非同期処理をエラーハンドリングでラップ
     await handleAsyncError(async () => {
       // タイトルと概要欄の両方を生成（共通関数を使用）
-      const sortedTitles = await generateTitles();
-      const generatedDescription = generateDescription();
-      
-      // ハッシュタグが未設定の場合はデフォルトを設定（5.7対応）
+      const { titles: sortedTitles, recommendedHashtags } = await generateTitles();
+
+      const nextHashtags =
+        hashtags.length > 0
+          ? hashtags
+          : recommendedHashtags.length > 0
+            ? recommendedHashtags
+            : DEFAULT_HASHTAGS;
+
       if (hashtags.length === 0) {
-        const defaultHashtags = ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
-        setHashtags(defaultHashtags);
-        // テンプレートを再適用してハッシュタグを反映
-        const updatedDescription = generateDescription();
-        setAiTitles(sortedTitles);
-        setAiDescription(updatedDescription);
-        setFinalDescription(updatedDescription);
-      } else {
-        setAiTitles(sortedTitles);
-        setAiDescription(generatedDescription);
-        setFinalDescription(generatedDescription);
+        setHashtags(nextHashtags);
       }
+
+      const generatedDescription = generateDescription(nextHashtags);
 
       setAiTitles(sortedTitles);
       setAiDescription(generatedDescription);
@@ -797,7 +748,7 @@ export default function TitleGeneratorPage() {
       setFinalDescription(generatedDescription);
       
       // 履歴に保存（5.3対応）
-      const historyEntry: GenerationHistory = {
+      const historyEntry: GenerationHistoryEntry = {
         id: `history-${Date.now()}`,
         timestamp: Date.now(),
         titles: sortedTitles,

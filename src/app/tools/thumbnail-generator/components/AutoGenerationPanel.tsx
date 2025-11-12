@@ -40,6 +40,7 @@ import { logger } from '@/lib/logger';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
+import { HorizontalSnapScroll } from '@/components/shared/HorizontalSnapScroll';
 
 interface AutoGenerationPanelProps {
   onTemplateGenerated: (template: ThumbnailTemplate) => void;
@@ -227,13 +228,10 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
   ) => {
     const isExpanded = expandedTemplateIds.has(result.template.id);
 
-    const isMobileCard = extraClassName?.includes('mobile-card');
-
     return (
       <Card
         key={result.template.id}
-        className={cn('relative', isMobileCard && 'snap-center shrink-0', extraClassName && !isMobileCard && extraClassName)}
-        style={isMobileCard ? { width: 'min(85vw, 340px)' } : undefined}
+        className={cn('relative', extraClassName)}
       >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
@@ -823,11 +821,11 @@ export const AutoGenerationPanel: React.FC<AutoGenerationPanelProps> = ({
                   {renderGeneratedCard(generatedTemplates[0], 0, 'w-full')}
                 </div>
               ) : (
-                <div className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 px-2">
-                  {generatedTemplates.map((result, index) =>
-                    renderGeneratedCard(result, index, 'mobile-card')
-                  )}
-                </div>
+                <HorizontalSnapScroll
+                  itemStyle={() => ({ width: 'min(85vw, 340px)' })}
+                >
+                  {generatedTemplates.map((result, index) => renderGeneratedCard(result, index))}
+                </HorizontalSnapScroll>
               )}
             </>
           )}
