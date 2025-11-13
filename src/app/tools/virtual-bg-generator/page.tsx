@@ -276,7 +276,7 @@ export default function VirtualBackgroundGeneratorPage() {
     }
   }, [isDesktop, activeTab]);
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number>(0); // 残り推定時間（7.1.6）
-  const isCancelledRef = useRef(false); // キャンセルフラグ（7.1.6 - useRefで管理）
+  const abortControllerRef = useRef<AbortController | null>(null); // キャンセル用AbortController
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState(""); // ネガティブプロンプト（7.1.1）
   const [category, setCategory] = useState("");
@@ -561,9 +561,12 @@ export default function VirtualBackgroundGeneratorPage() {
     toast.success('テンプレートを適用しました');
   }, []);
 
-  // 生成キャンセル処理（7.1.6）
+  // 生成キャンセル処理（7.1.6 - AbortControllerを使用）
   const handleCancelGeneration = useCallback(() => {
-    isCancelledRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     setIsLoading(false);
     setGenerationStep(null);
     setEstimatedTimeRemaining(0);
@@ -625,51 +628,92 @@ export default function VirtualBackgroundGeneratorPage() {
     
     // モバイル表示の場合、生成開始時にプレビューエリアを展開
     expandPreviewForMobile();
-    isCancelledRef.current = false;
+    
+    // 新しいAbortControllerを作成
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    const signal = abortController.signal;
+    
     setGenerationStep(null);
     setEstimatedTimeRemaining(0);
 
-    await handleAsyncError(async () => {
-      // 各ステップを順次実行（7.1.6）
-      for (let i = 0; i < bgGenerationSteps.length; i++) {
-        if (isCancelledRef.current) {
-          return; // キャンセルされた場合は処理を中断
-        }
-
-        const step = bgGenerationSteps[i];
-        setGenerationStep(step.id);
-
-        // 残り推定時間を計算（7.1.6）
-        const remainingSteps = bgGenerationSteps.slice(i);
-        const totalRemaining = remainingSteps.reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0);
-        setEstimatedTimeRemaining(totalRemaining);
-
-        // ステップごとの処理時間をシミュレート
-        const stepDuration = (step.estimatedSeconds || 1) * 1000;
-        const startTime = Date.now();
-        
-        // 残り時間のカウントダウン（7.1.6）
-        const countdownInterval = setInterval(() => {
-          if (isCancelledRef.current) {
-            clearInterval(countdownInterval);
-            return;
-          }
-          const elapsed = (Date.now() - startTime) / 1000;
-          const remaining = Math.max(0, (step.estimatedSeconds || 1) - elapsed + 
-            remainingSteps.slice(1).reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0));
-          setEstimatedTimeRemaining(remaining);
-        }, 100);
-
-        await new Promise(resolve => setTimeout(resolve, stepDuration));
-        clearInterval(countdownInterval);
-
-        if (isCancelledRef.current) {
+    // AbortSignal対応のsetTimeoutラッパー
+    const sleep = (ms: number): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        if (signal.aborted) {
+          reject(new Error('Aborted'));
           return;
         }
-      }
+        const timeoutId = setTimeout(() => {
+          if (signal.aborted) {
+            reject(new Error('Aborted'));
+          } else {
+            resolve();
+          }
+        }, ms);
+        signal.addEventListener('abort', () => {
+          clearTimeout(timeoutId);
+          reject(new Error('Aborted'));
+        });
+      });
+    };
 
-      if (isCancelledRef.current) {
-        return;
+    await handleAsyncError(async () => {
+      try {
+        // 各ステップを順次実行（7.1.6）
+        for (let i = 0; i < bgGenerationSteps.length; i++) {
+          if (signal.aborted) {
+            return; // キャンセルされた場合は処理を中断
+          }
+
+          const step = bgGenerationSteps[i];
+          setGenerationStep(step.id);
+
+          // 残り推定時間を計算（7.1.6）
+          const remainingSteps = bgGenerationSteps.slice(i);
+          const totalRemaining = remainingSteps.reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0);
+          setEstimatedTimeRemaining(totalRemaining);
+
+          // ステップごとの処理時間をシミュレート
+          const stepDuration = (step.estimatedSeconds || 1) * 1000;
+          const startTime = Date.now();
+          
+          // 残り時間のカウントダウン（7.1.6）
+          const countdownInterval = setInterval(() => {
+            if (signal.aborted) {
+              clearInterval(countdownInterval);
+              return;
+            }
+            const elapsed = (Date.now() - startTime) / 1000;
+            const remaining = Math.max(0, (step.estimatedSeconds || 1) - elapsed + 
+              remainingSteps.slice(1).reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0));
+            setEstimatedTimeRemaining(remaining);
+          }, 100);
+
+          try {
+            await sleep(stepDuration);
+          } catch (err) {
+            clearInterval(countdownInterval);
+            if (err instanceof Error && err.message === 'Aborted') {
+              return; // キャンセルされた
+            }
+            throw err;
+          }
+          clearInterval(countdownInterval);
+
+          if (signal.aborted) {
+            return;
+          }
+        }
+
+        if (signal.aborted) {
+          return;
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message === 'Aborted') {
+          return; // キャンセルされた場合はエラーを無視
+        }
+        throw err;
       }
 
       // プレースホルダー画像を生成（7.1.2: GeneratedImage型に拡張）
@@ -721,7 +765,7 @@ export default function VirtualBackgroundGeneratorPage() {
     
     // モバイル表示の場合、プレビューエリアを展開（生成完了後）
     expandPreviewForMobile();
-    isCancelledRef.current = false; // リセット
+    abortControllerRef.current = null; // リセット
   }, [prompt, imageCount, handleAsyncError, handleAutoTagImage, expandPreviewForMobile]);
 
   const handleCopyPrompt = useCallback(async () => {

@@ -186,16 +186,27 @@ export const EditorUI: React.FC<EditorUIProps> = () => {
     return !isMobileSidebarOpen;
   }, [isDesktop, isMobileSidebarOpen]);
 
+  // レイヤーのインデックスマップを作成（O(n²)をO(n)に最適化）
+  const layerIndexMap = React.useMemo(() => {
+    const map = new Map<string, number>();
+    editorState.layers.forEach((layer, index) => {
+      map.set(layer.id, index);
+    });
+    return map;
+  }, [editorState.layers]);
+
   const orderedLayers = React.useMemo(() => {
     return [...editorState.layers].sort((a, b) => {
       const az = a.zIndex ?? 0;
       const bz = b.zIndex ?? 0;
       if (az === bz) {
-        return editorState.layers.indexOf(a) - editorState.layers.indexOf(b);
+        const indexA = layerIndexMap.get(a.id) ?? 0;
+        const indexB = layerIndexMap.get(b.id) ?? 0;
+        return indexA - indexB;
       }
       return az - bz;
     });
-  }, [editorState.layers]);
+  }, [editorState.layers, layerIndexMap]);
 
   const currentQuickPreset = React.useMemo(
     () => QUICK_EXPORT_PRESETS.find((item) => item.id === mobileExportPreset) ?? QUICK_EXPORT_PRESETS[0],
