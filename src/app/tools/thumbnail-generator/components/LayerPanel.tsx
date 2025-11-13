@@ -44,7 +44,7 @@ export const LayerPanel: React.FC = () => {
   const handleAddLayer = (type: 'text' | 'image' | 'shape') => {
     const layerCount = layers.filter(l => l.type === type).length + 1;
     let name = '';
-    let initialProps: any = {
+    const initialProps: any = {
       visible: true,
       locked: false,
       x: isDesktop ? 100 : 50,

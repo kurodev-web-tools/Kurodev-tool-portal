@@ -10,7 +10,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useContextualDisplay } from "@/hooks/use-contextual-display";
 import { useLearningSystem } from "@/hooks/use-learning-system";
 import { tools } from "@/data/tools";
-import { suites } from "@/data/suites";
+import { useSuites } from "@/hooks/use-suites";
 import { useSuiteTracking } from "@/hooks/use-suite-tracking";
 import { Button } from "@/components/ui/button";
 import { Settings, Brain, Users } from "lucide-react";
@@ -31,6 +31,7 @@ export default function Home() {
   const { preferences } = useTheme();
   const contextualDisplay = useContextualDisplay();
   const { trackUsage } = useLearningSystem();
+  const { suites } = useSuites();
   const handleSuiteClick = useSuiteTracking({
     addToRecent: quickAccess.addToRecent,
     trackUsage,

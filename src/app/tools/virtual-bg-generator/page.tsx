@@ -911,7 +911,7 @@ export default function VirtualBackgroundGeneratorPage() {
       }));
       
       // ソート（7.1.3）
-      let sortedResults = [...allMockResults];
+      const sortedResults = [...allMockResults];
       switch (searchSortOrder) {
         case 'relevance':
           sortedResults.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
