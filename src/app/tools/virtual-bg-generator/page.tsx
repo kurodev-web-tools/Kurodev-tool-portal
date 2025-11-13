@@ -58,6 +58,7 @@ import { Switch } from "@/components/ui/switch";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useErrorHandler } from "@/hooks/use-error-handler";
 import { validatePrompt } from "@/lib/validation";
+import { useBackgroundGeneration, bgGenerationSteps, type GeneratedImage } from "./hooks/useBackgroundGeneration";
 import { Sidebar, SidebarToggle } from "@/components/layouts/Sidebar";
 import { 
   Sparkles, 
@@ -97,25 +98,9 @@ import {
 import { cn } from "@/lib/utils";
 import { readStorage, writeStorage, removeStorage } from "@/lib/browser-storage";
 
-// 生成ステップの型定義（7.1.6）
-interface GenerationStep {
-  id: string;
-  label: string;
-  estimatedSeconds?: number; // 推定所要時間（秒）
-}
-
-// 生成ステップ定義（7.1.6）
-const bgGenerationSteps: GenerationStep[] = [
-  { id: 'analyze', label: 'プロンプトを分析中...', estimatedSeconds: 3 },
-  { id: 'prepare', label: '生成パラメータを設定中...', estimatedSeconds: 2 },
-  { id: 'generate', label: '画像を生成中...', estimatedSeconds: 10 },
-  { id: 'process', label: '画像を処理中...', estimatedSeconds: 3 },
-  { id: 'complete', label: '完成！', estimatedSeconds: 0 },
-];
-
 // プログレスバーコンポーネント（7.1.6）
 interface ProgressBarProps {
-  steps: GenerationStep[];
+  steps: typeof bgGenerationSteps; // bgGenerationStepsはuseBackgroundGenerationからインポート
   currentStepId: string | null;
   estimatedTimeRemaining?: number; // 残り推定時間（秒）
   onCancel?: () => void; // キャンセル関数
@@ -237,12 +222,10 @@ export default function VirtualBackgroundGeneratorPage() {
     desktopDefaultOpen: true,
   });
   const [activeTab, setActiveTab] = useState("generate");
-  const [isLoading, setIsLoading] = useState(false);
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(true); // プレビューエリアの折りたたみ状態（デフォルト: 折りたたみ）
   const [canScrollLeft, setCanScrollLeft] = useState(false); // タブの左スクロール可能フラグ
   const [canScrollRight, setCanScrollRight] = useState(false); // タブの右スクロール可能フラグ
   const tabsScrollRef = useRef<HTMLDivElement>(null); // タブスクロール用のref
-  const [generationStep, setGenerationStep] = useState<string | null>(null); // 生成ステップ（7.1.6）
   const expandPreviewForMobile = useCallback(() => {
     if (isDesktop) {
       return;
@@ -275,8 +258,14 @@ export default function VirtualBackgroundGeneratorPage() {
       };
     }
   }, [isDesktop, activeTab]);
-  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number>(0); // 残り推定時間（7.1.6）
-  const abortControllerRef = useRef<AbortController | null>(null); // キャンセル用AbortController
+  // バーチャル背景生成フック
+  const {
+    isGenerating,
+    generationStep,
+    estimatedTimeRemaining,
+    generate: generateBackground,
+    cancel: cancelGeneration,
+  } = useBackgroundGeneration();
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState(""); // ネガティブプロンプト（7.1.1）
   const [category, setCategory] = useState("");
@@ -286,19 +275,6 @@ export default function VirtualBackgroundGeneratorPage() {
   const [selectedColor, setSelectedColor] = useState<string>(""); // カラーパレット（7.1.1）
   
   // 生成画像のデータ構造（7.1.2）
-  interface GeneratedImage {
-    id: string;
-    url: string;
-    prompt: string;
-    negativePrompt?: string;
-    category?: string;
-    style?: string;
-    resolution?: string;
-    color?: string;
-    createdAt: number;
-    downloadCount?: number; // ダウンロード回数（7.1.2）
-  }
-  
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
@@ -561,17 +537,10 @@ export default function VirtualBackgroundGeneratorPage() {
     toast.success('テンプレートを適用しました');
   }, []);
 
-  // 生成キャンセル処理（7.1.6 - AbortControllerを使用）
+  // 生成キャンセル処理（useBackgroundGenerationフックを使用）
   const handleCancelGeneration = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    setIsLoading(false);
-    setGenerationStep(null);
-    setEstimatedTimeRemaining(0);
-    toast.info('生成をキャンセルしました');
-  }, []);
+    cancelGeneration();
+  }, [cancelGeneration]);
 
   // 自動タグ付け（生成パラメータから）（7.1.7）
   const handleAutoTagImage = useCallback((imageId: string, img: GeneratedImage) => {
@@ -614,159 +583,6 @@ export default function VirtualBackgroundGeneratorPage() {
     }
   }, []);
 
-  const handleGenerate = useCallback(async () => {
-    const promptError = validatePrompt(prompt);
-    if (promptError) {
-      logger.error('バリデーションエラー', { error: promptError }, 'VirtualBgGenerator');
-      toast.error('プロンプトの検証エラー', {
-        description: promptError
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
-    // モバイル表示の場合、生成開始時にプレビューエリアを展開
-    expandPreviewForMobile();
-    
-    // 新しいAbortControllerを作成
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-    const signal = abortController.signal;
-    
-    setGenerationStep(null);
-    setEstimatedTimeRemaining(0);
-
-    // AbortSignal対応のsetTimeoutラッパー
-    const sleep = (ms: number): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        if (signal.aborted) {
-          reject(new Error('Aborted'));
-          return;
-        }
-        const timeoutId = setTimeout(() => {
-          if (signal.aborted) {
-            reject(new Error('Aborted'));
-          } else {
-            resolve();
-          }
-        }, ms);
-        signal.addEventListener('abort', () => {
-          clearTimeout(timeoutId);
-          reject(new Error('Aborted'));
-        });
-      });
-    };
-
-    await handleAsyncError(async () => {
-      try {
-        // 各ステップを順次実行（7.1.6）
-        for (let i = 0; i < bgGenerationSteps.length; i++) {
-          if (signal.aborted) {
-            return; // キャンセルされた場合は処理を中断
-          }
-
-          const step = bgGenerationSteps[i];
-          setGenerationStep(step.id);
-
-          // 残り推定時間を計算（7.1.6）
-          const remainingSteps = bgGenerationSteps.slice(i);
-          const totalRemaining = remainingSteps.reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0);
-          setEstimatedTimeRemaining(totalRemaining);
-
-          // ステップごとの処理時間をシミュレート
-          const stepDuration = (step.estimatedSeconds || 1) * 1000;
-          const startTime = Date.now();
-          
-          // 残り時間のカウントダウン（7.1.6）
-          const countdownInterval = setInterval(() => {
-            if (signal.aborted) {
-              clearInterval(countdownInterval);
-              return;
-            }
-            const elapsed = (Date.now() - startTime) / 1000;
-            const remaining = Math.max(0, (step.estimatedSeconds || 1) - elapsed + 
-              remainingSteps.slice(1).reduce((sum, s) => sum + (s.estimatedSeconds || 0), 0));
-            setEstimatedTimeRemaining(remaining);
-          }, 100);
-
-          try {
-            await sleep(stepDuration);
-          } catch (err) {
-            clearInterval(countdownInterval);
-            if (err instanceof Error && err.message === 'Aborted') {
-              return; // キャンセルされた
-            }
-            throw err;
-          }
-          clearInterval(countdownInterval);
-
-          if (signal.aborted) {
-            return;
-          }
-        }
-
-        if (signal.aborted) {
-          return;
-        }
-      } catch (err) {
-        if (err instanceof Error && err.message === 'Aborted') {
-          return; // キャンセルされた場合はエラーを無視
-        }
-        throw err;
-      }
-
-      // プレースホルダー画像を生成（7.1.2: GeneratedImage型に拡張）
-      const newImages: GeneratedImage[] = Array.from({ length: parseInt(imageCount) }, (_, i) => ({
-        id: `img-${Date.now()}-${i}`,
-        url: `https://picsum.photos/800/600?random=${Date.now() + i}`,
-        prompt: prompt || '',
-        negativePrompt: negativePrompt || undefined,
-        category: category || undefined,
-        style: style || undefined,
-        resolution: resolution || undefined,
-        color: selectedColor || undefined,
-        createdAt: Date.now(),
-        downloadCount: 0,
-      }));
-      
-      setGeneratedImages(prev => [...prev, ...newImages]);
-      setSelectedImage(newImages[0]?.url || null);
-      
-      // 履歴に追加（自動保存）（7.1.6）
-      newImages.forEach(img => {
-        addToHistory({
-          url: img.url,
-          prompt: img.prompt,
-          negativePrompt: img.negativePrompt,
-          category: img.category,
-          style: img.style,
-          resolution: img.resolution,
-          color: img.color,
-        }, 'generated');
-      });
-      
-      // 自動タグ付け（7.1.7）
-      newImages.forEach(img => {
-        handleAutoTagImage(img.id, img);
-      });
-      
-      // 生成完了通知（7.1.6）
-      toast.success(`${imageCount}枚の背景を生成しました`, {
-        description: '生成が完了しました',
-      });
-
-      // ステップをリセット
-      setGenerationStep(null);
-      setEstimatedTimeRemaining(0);
-    }, "背景生成中にエラーが発生しました");
-
-    setIsLoading(false);
-    
-    // モバイル表示の場合、プレビューエリアを展開（生成完了後）
-    expandPreviewForMobile();
-    abortControllerRef.current = null; // リセット
-  }, [prompt, imageCount, handleAsyncError, handleAutoTagImage, expandPreviewForMobile]);
 
   const handleCopyPrompt = useCallback(async () => {
     try {
@@ -1269,37 +1085,6 @@ export default function VirtualBackgroundGeneratorPage() {
     };
   }, [useInfiniteScroll, isSearching, searchResults.length, handleAsyncError, categories]);
 
-  // ショートカットキー（7.1.8）
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + Enter: 生成
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        if (!isLoading && prompt.trim()) {
-          handleGenerate();
-        }
-      }
-      
-      // Escape: ダイアログを閉じる
-      if (e.key === 'Escape') {
-        if (expandedImageId !== null) {
-          setExpandedImageId(null);
-        }
-        if (isCollectionDialogOpen) {
-          setIsCollectionDialogOpen(false);
-        }
-      }
-      
-      // Ctrl/Cmd + A: すべて選択（画像一覧が表示されている場合）
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedImages.length > 0) {
-        e.preventDefault();
-        handleSelectAll();
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLoading, prompt, handleGenerate, expandedImageId, isCollectionDialogOpen, sortedImages.length, handleSelectAll]);
 
   // サムネイルサイズのスタイル（7.1.3）
   const thumbnailSizeClasses = useMemo(() => {
@@ -1492,6 +1277,81 @@ export default function VirtualBackgroundGeneratorPage() {
       return newHistory.slice(0, maxHistoryCount);
     });
   }, [prompt, negativePrompt, category, style, resolution, selectedColor, searchKeyword, selectedCategories, selectedColors, selectedResolution, selectedLicense, maxHistoryCount]);
+
+  // 背景生成処理（useBackgroundGenerationフックを使用）
+  const handleGenerate = useCallback(async () => {
+    try {
+      await generateBackground({
+        prompt,
+        negativePrompt,
+        category,
+        style,
+        resolution,
+        color: selectedColor,
+        imageCount,
+        onImagesGenerated: (newImages) => {
+          setGeneratedImages((prev) => [...prev, ...newImages]);
+          setSelectedImage(newImages[0]?.url || null);
+        },
+        onHistoryAdd: (imageData) => {
+          addToHistory(imageData, 'generated');
+        },
+        onAutoTag: handleAutoTagImage,
+        onExpandPreview: expandPreviewForMobile,
+        onError: (error) => {
+          logger.error('背景生成中にエラーが発生しました', error, 'VirtualBgGenerator');
+          toast.error('背景生成中にエラーが発生しました');
+        },
+      });
+    } catch (error) {
+      // エラーはuseBackgroundGeneration内で処理される
+      logger.error('背景生成の呼び出しエラー', error, 'VirtualBgGenerator');
+    }
+  }, [
+    prompt,
+    negativePrompt,
+    category,
+    style,
+    resolution,
+    selectedColor,
+    imageCount,
+    generateBackground,
+    handleAutoTagImage,
+    expandPreviewForMobile,
+    addToHistory,
+  ]);
+
+  // キーボードショートカット（7.1.6）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Enter: 生成
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!isGenerating && prompt.trim()) {
+          handleGenerate();
+        }
+      }
+      
+      // Escape: ダイアログを閉じる
+      if (e.key === 'Escape') {
+        if (expandedImageId !== null) {
+          setExpandedImageId(null);
+        }
+        if (isCollectionDialogOpen) {
+          setIsCollectionDialogOpen(false);
+        }
+      }
+      
+      // Ctrl/Cmd + A: すべて選択（画像一覧が表示されている場合）
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedImages.length > 0) {
+        e.preventDefault();
+        handleSelectAll();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isGenerating, prompt, handleGenerate, expandedImageId, isCollectionDialogOpen, sortedImages.length, handleSelectAll]);
 
   // 履歴の削除（7.1.4）
   const deleteHistoryItem = useCallback((id: string) => {
@@ -1875,11 +1735,11 @@ export default function VirtualBackgroundGeneratorPage() {
 
           <Button 
             onClick={handleGenerate} 
-            disabled={isLoading || !prompt.trim()}
+            disabled={isGenerating || !prompt.trim()}
             className="w-full"
             size="lg"
           >
-            {isLoading ? (
+            {isGenerating ? (
               <>
                 <Sparkles className="mr-2 h-4 w-4 animate-spin" />
                 生成中...
@@ -2837,11 +2697,11 @@ export default function VirtualBackgroundGeneratorPage() {
 
       <Button 
         onClick={handleGenerate} 
-        disabled={isLoading || !prompt.trim()}
+        disabled={isGenerating || !prompt.trim()}
         className="w-full"
         size="lg"
       >
-        {isLoading ? (
+        {isGenerating ? (
           <>
             <Sparkles className="mr-2 h-4 w-4 animate-spin" />
             生成中...
@@ -3406,7 +3266,7 @@ export default function VirtualBackgroundGeneratorPage() {
       "p-3 sm:p-4 lg:p-6",
       isDesktop ? "h-full" : ""
     )}>
-      {isLoading && generationStep ? (
+      {isGenerating && generationStep ? (
         // 生成プロセスの可視化（7.1.6）
         <ProgressBar
           steps={bgGenerationSteps}
@@ -3902,7 +3762,7 @@ export default function VirtualBackgroundGeneratorPage() {
         </div>
       ) : (
         <div className="h-full flex items-center justify-center">
-          {isLoading ? (
+          {isGenerating ? (
             <div className="text-center text-muted-foreground px-4">
               <div className="w-full h-full bg-[#2D2D2D] rounded-md flex flex-col items-center justify-center text-center p-8 min-h-[400px]">
                 <Loader2 className="w-16 h-16 text-[#A0A0A0] mb-4 animate-spin" aria-hidden="true" />
