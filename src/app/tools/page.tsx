@@ -2,14 +2,14 @@
 
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { EnhancedToolsSection } from "@/components/enhanced-tools-section";
-import { useQuickAccess } from "@/hooks/use-quick-access";
 import { tools } from "@/data/tools";
 import { useToolTracking } from "@/hooks/use-tool-tracking";
+import { useRecentTools } from "@/hooks/use-recent-tools";
 import type { ToolItem } from "@/components/enhanced-tools-section";
 
 export default function ToolsPage() {
-  const quickAccess = useQuickAccess(tools);
-  const trackToolUsage = useToolTracking(quickAccess.addToRecent);
+  const { addToRecent } = useRecentTools();
+  const trackToolUsage = useToolTracking(addToRecent);
 
   const handleItemClick = (item: ToolItem) => {
     trackToolUsage(item);
