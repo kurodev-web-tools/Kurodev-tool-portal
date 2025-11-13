@@ -39,6 +39,15 @@ import type {
   GenerationHistory,
   SavedScript,
 } from './types';
+import { useIdeaStorage } from './hooks/useIdeaStorage';
+import { usePersonaStorage } from './hooks/usePersonaStorage';
+import {
+  STORAGE_KEYS,
+  loadHistoryFromStorage,
+  saveHistoryToStorage,
+  loadSavedScriptsFromStorage,
+  saveSavedScriptsToStorage,
+} from './types/storage';
 
 // カテゴリごとの色分けとアイコン定義
 const categoryConfig: Record<IdeaCategory, {
@@ -152,20 +161,9 @@ const defaultTemplates: ScriptTemplate[] = [
   },
 ];
 
-const FAVORITES_STORAGE_VERSION = 1;
-const HISTORY_STORAGE_VERSION = 1;
-const SAVED_SCRIPTS_STORAGE_VERSION = 1;
-const PERSONAS_STORAGE_VERSION = 1;
-
 const BROWSER_CATEGORIES: IdeaCategory[] = ['gaming', 'singing', 'talk', 'collaboration', 'event', 'other'];
 
-const IDEAS_ORDER_STORAGE_KEY = 'script-generator-ideas-order';
-const FAVORITES_STORAGE_KEY = 'script-generator-favorites';
-const HISTORY_STORAGE_KEY = 'script-generator-history';
-const SAVED_SCRIPTS_STORAGE_KEY = 'script-generator-saved-scripts';
 const CUSTOM_TEMPLATES_STORAGE_KEY = 'script-generator-custom-templates';
-const PERSONAS_STORAGE_KEY = 'script-generator-personas';
-const DEFAULT_PERSONA_STORAGE_KEY = 'script-generator-default-persona';
 
 const isBrowserEnvironment = () => typeof window !== 'undefined';
 
@@ -228,203 +226,6 @@ const isValidHistoryItem = (value: unknown): value is GenerationHistory => {
   );
 };
 
-const loadFavoritesFromStorage = (key: string): Set<number> => {
-  const payload = readStorage<{ version?: number; items?: unknown } | unknown[]>(key);
-  const items = Array.isArray(payload)
-    ? payload
-    : payload && typeof payload === 'object' && Array.isArray((payload as { items?: unknown }).items)
-      ? (payload as { items: unknown[] }).items
-      : [];
-
-  const ids = items.filter((id): id is number => typeof id === 'number');
-  return new Set(ids);
-};
-
-const persistFavoritesToStorage = (key: string, ids: Set<number>) => {
-  writeStorage(key, {
-    version: FAVORITES_STORAGE_VERSION,
-    items: Array.from(ids),
-  });
-};
-
-const loadIdeasOrderFromStorage = (key: string): Record<number, number> => {
-  const payload = readStorage<Record<string, number>>(key);
-  if (!payload) return {};
-
-  return Object.entries(payload).reduce<Record<number, number>>((acc, [ideaId, order]) => {
-    const numericId = Number(ideaId);
-    if (Number.isFinite(numericId) && Number.isFinite(order)) {
-      acc[numericId] = Number(order);
-    }
-    return acc;
-  }, {});
-};
-
-const persistIdeasOrderToStorage = (key: string, orderMap: Record<number, number>) => {
-  writeStorage(key, orderMap);
-};
-
-const loadHistoryFromStorage = (key: string): GenerationHistory[] => {
-  const payload = readStorage<{ version?: number; items?: unknown } | unknown[]>(key);
-  const items = Array.isArray(payload)
-    ? payload
-    : payload && typeof payload === 'object' && Array.isArray((payload as { items?: unknown }).items)
-      ? (payload as { items: unknown[] }).items
-      : [];
-
-  const historyItems = items
-    .filter(isValidHistoryItem)
-    .map((item) => {
-      const record = item as GenerationHistory;
-      return {
-        ...record,
-        ideas: sanitizeIdeas(record.ideas),
-        keywords: typeof record.keywords === 'string' ? record.keywords : undefined,
-        direction: typeof record.direction === 'string' ? record.direction : undefined,
-        createdAt: typeof record.createdAt === 'string' ? record.createdAt : new Date(record.timestamp).toISOString(),
-      };
-    });
-
-  return historyItems.slice(0, 100);
-};
-
-const persistHistoryToStorage = (key: string, items: GenerationHistory[]) => {
-  writeStorage(key, {
-    version: HISTORY_STORAGE_VERSION,
-    items,
-  });
-};
-
-const isValidSavedScript = (value: unknown): value is SavedScript => {
-  if (!value || typeof value !== 'object') return false;
-  const record = value as Record<string, unknown>;
-  return (
-    typeof record.id === 'string' &&
-    typeof record.scriptId === 'number' &&
-    typeof record.title === 'string' &&
-    typeof record.introduction === 'string' &&
-    typeof record.body === 'string' &&
-    typeof record.conclusion === 'string' &&
-    typeof record.createdAt === 'number' &&
-    typeof record.updatedAt === 'number' &&
-    typeof record.version === 'number'
-  );
-};
-
-const loadSavedScriptsFromStorage = (key: string): SavedScript[] => {
-  const payload = readStorage<{ version?: number; items?: unknown } | unknown[]>(key);
-  const items = Array.isArray(payload)
-    ? payload
-    : payload && typeof payload === 'object' && Array.isArray((payload as { items?: unknown }).items)
-      ? (payload as { items: unknown[] }).items
-      : [];
-
-  return items.filter(isValidSavedScript).map((item) => {
-    const record = item as SavedScript;
-    return {
-      ...record,
-      versionName: typeof record.versionName === 'string' ? record.versionName : undefined,
-      templateId: typeof record.templateId === 'string' ? record.templateId : undefined,
-      sections: record.sections && typeof record.sections === 'object' ? record.sections : undefined,
-    };
-  });
-};
-
-const persistSavedScriptsToStorage = (key: string, items: SavedScript[]) => {
-  writeStorage(key, {
-    version: SAVED_SCRIPTS_STORAGE_VERSION,
-    items,
-  });
-};
-
-interface PersonasStoragePayload {
-  version: number;
-  personas: Persona[];
-  defaultPersonaId: string | null;
-}
-
-const isValidPersona = (value: unknown): value is Persona => {
-  if (!value || typeof value !== 'object') return false;
-  const record = value as Record<string, unknown>;
-  return (
-    typeof record.id === 'string' &&
-    typeof record.name === 'string' &&
-    typeof record.description === 'string' &&
-    typeof record.createdAt === 'number' &&
-    typeof record.updatedAt === 'number'
-  );
-};
-
-const sanitizePersonas = (value: unknown): Persona[] => {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isValidPersona).map((persona) => ({
-    ...persona,
-    speakingStyle: Array.isArray(persona.speakingStyle) ? persona.speakingStyle.map(style => String(style)) : undefined,
-    traits: Array.isArray(persona.traits) ? persona.traits.map(trait => String(trait)) : undefined,
-  }));
-};
-
-const loadPersonasFromStorage = (
-  personasKey: string,
-  defaultKey: string,
-): PersonasStoragePayload => {
-  const fallback: PersonasStoragePayload = {
-    version: PERSONAS_STORAGE_VERSION,
-    personas: [],
-    defaultPersonaId: null,
-  };
-
-  const payload = readStorage<PersonasStoragePayload | unknown>(personasKey);
-
-  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-    const record = payload as Partial<PersonasStoragePayload>;
-    const personas = sanitizePersonas(record.personas);
-    const defaultPersonaId =
-      typeof record.defaultPersonaId === 'string'
-        ? record.defaultPersonaId
-        : null;
-
-    return {
-      version: record.version ?? PERSONAS_STORAGE_VERSION,
-      personas,
-      defaultPersonaId,
-    };
-  }
-
-  if (Array.isArray(payload)) {
-    const personas = sanitizePersonas(payload);
-    const defaultPersonaId = readStorage<string | null>(defaultKey);
-    return {
-      version: PERSONAS_STORAGE_VERSION,
-      personas,
-      defaultPersonaId: typeof defaultPersonaId === 'string' ? defaultPersonaId : null,
-    };
-  }
-
-  const legacyDefault = readStorage<string | null>(defaultKey);
-
-  return {
-    ...fallback,
-    defaultPersonaId: typeof legacyDefault === 'string' ? legacyDefault : null,
-  };
-};
-
-const persistPersonasToStorage = (
-  key: string,
-  defaultKey: string,
-  personas: Persona[],
-  defaultPersonaId: string | null,
-) => {
-  writeStorage(key, {
-    version: PERSONAS_STORAGE_VERSION,
-    personas,
-    defaultPersonaId,
-  });
-
-  if (isBrowserEnvironment()) {
-    window.localStorage.removeItem(defaultKey);
-  }
-};
 
 // 生成ステップ定義（6.9）
 const ideaGenerationSteps: GenerationStep[] = [
@@ -533,7 +334,14 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ steps, currentStepId, type })
 };
 
 export default function ScriptGeneratorPage() {
-  const [generatedIdeas, setGeneratedIdeas] = useState<Idea[]>([]);
+  // アイデアストレージ管理フック
+  const ideaStorage = useIdeaStorage();
+  const { ideas: generatedIdeas, setIdeas: setGeneratedIdeas, favoriteIds, ideasOrderRef, addIdea, removeIdea, updateIdea, reorderIdeas, toggleFavorite } = ideaStorage;
+  
+  // ペルソナストレージ管理フック
+  const personaStorage = usePersonaStorage();
+  const { personas, setPersonas, selectedPersonaId, setSelectedPersonaId, defaultPersonaId, setDefaultPersona, createPersona: createPersonaHook, updatePersona: updatePersonaHook, deletePersona: deletePersonaHook, getPersona } = personaStorage;
+  
   const [selectedIdeaId, setSelectedIdeaId] = useState<number | null>(null);
   const [currentScript, setCurrentScript] = useState<Script | null>(null);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
@@ -565,20 +373,20 @@ export default function ScriptGeneratorPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<IdeaDifficulty | 'all'>('all');
   const [durationFilter, setDurationFilter] = useState<{ min?: number; max?: number }>({});
   
-  // お気に入りと並び替えの状態管理
-  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(() =>
-    loadFavoritesFromStorage(FAVORITES_STORAGE_KEY),
-  );
   const [ideaViewMode, setIdeaViewMode] = useState<'all' | 'favorites' | 'recent'>('all');
   
   const MAX_HISTORY_ITEMS = 50; // 最大履歴件数
   const MAX_SAVED_SCRIPTS = 50; // 最大保存件数（6.7）
-  const MAX_PERSONAS = 50; // 最大ペルソナ数（6.12）
   
   // 生成履歴の状態管理
-  const [history, setHistory] = useState<GenerationHistory[]>(() =>
-    loadHistoryFromStorage(HISTORY_STORAGE_KEY),
-  );
+  const [history, setHistory] = useState<GenerationHistory[]>(() => {
+    try {
+      return loadHistoryFromStorage(STORAGE_KEYS.HISTORY) || [];
+    } catch (error) {
+      logger.warn('履歴の読み込みに失敗しました', error, 'ScriptGenerator');
+      return [];
+    }
+  });
   const [historySearchQuery, setHistorySearchQuery] = useState<string>('');
   const [historyFilterCategory, setHistoryFilterCategory] = useState<IdeaCategory | 'all'>('all');
   
@@ -589,9 +397,14 @@ export default function ScriptGeneratorPage() {
   const MAX_SCRIPT_HISTORY_LENGTH = 50; // 最大履歴数
   
   // 保存済み台本の状態管理（6.7）
-  const [savedScripts, setSavedScripts] = useState<SavedScript[]>(() =>
-    loadSavedScriptsFromStorage(SAVED_SCRIPTS_STORAGE_KEY),
-  );
+  const [savedScripts, setSavedScripts] = useState<SavedScript[]>(() => {
+    try {
+      return loadSavedScriptsFromStorage(STORAGE_KEYS.SAVED_SCRIPTS) || [];
+    } catch (error) {
+      logger.warn('保存済み台本の読み込みに失敗しました', error, 'ScriptGenerator');
+      return [];
+    }
+  });
   const [saveStatus, setSaveStatus] = useState<'saved' | 'editing' | 'saving'>('saved'); // 保存状態
   const AUTO_SAVE_INTERVAL = 30000; // 自動保存間隔（30秒）
   
@@ -599,19 +412,6 @@ export default function ScriptGeneratorPage() {
   const [customTemplates, setCustomTemplates] = useState<ScriptTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('standard'); // 選択中のテンプレートID
   
-  // ペルソナ管理の状態管理（6.12）
-  const personasStorageRef = React.useRef(
-    loadPersonasFromStorage(PERSONAS_STORAGE_KEY, DEFAULT_PERSONA_STORAGE_KEY),
-  );
-  const [personas, setPersonas] = useState<Persona[]>(
-    () => personasStorageRef.current.personas,
-  );
-  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(
-    () => personasStorageRef.current.defaultPersonaId,
-  );
-  const [defaultPersonaId, setDefaultPersonaId] = useState<string | null>(
-    () => personasStorageRef.current.defaultPersonaId,
-  );
   const [isPersonaDialogOpen, setIsPersonaDialogOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
   const [personaFormData, setPersonaFormData] = useState({
@@ -636,9 +436,6 @@ export default function ScriptGeneratorPage() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const tabsScrollRef = React.useRef<HTMLDivElement>(null);
-  const ideasOrderRef = React.useRef<Record<number, number>>(
-    loadIdeasOrderFromStorage(IDEAS_ORDER_STORAGE_KEY),
-  );
   const { handleAsyncError } = useErrorHandler();
 
   // デバイスサイズに応じてデフォルトタブを設定
@@ -710,7 +507,7 @@ export default function ScriptGeneratorPage() {
           difficulty: ideaData.difficulty,
         };
         
-        setGeneratedIdeas(prev => [importedIdea, ...prev]);
+        addIdea(importedIdea);
         setSelectedIdeaId(importedIdea.id);
         toast.success('共有された企画案を読み込みました');
         
@@ -793,7 +590,7 @@ export default function ScriptGeneratorPage() {
       setHistory(prev => {
         const updated = [newHistory, ...prev].slice(0, MAX_HISTORY_ITEMS);
         try {
-          persistHistoryToStorage(HISTORY_STORAGE_KEY, updated);
+          saveHistoryToStorage(STORAGE_KEYS.HISTORY, updated);
         } catch (error) {
           logger.error('履歴保存失敗', error, 'ScriptGenerator');
           toast.error('履歴の保存に失敗しました');
@@ -811,7 +608,7 @@ export default function ScriptGeneratorPage() {
     setHistory(prev => {
       const updated = prev.filter(h => h.id !== historyId);
       try {
-        persistHistoryToStorage(HISTORY_STORAGE_KEY, updated);
+        saveHistoryToStorage(STORAGE_KEYS.HISTORY, updated);
       } catch (error) {
         logger.error('履歴削除失敗', error, 'ScriptGenerator');
         toast.error('履歴の削除に失敗しました');
@@ -825,7 +622,7 @@ export default function ScriptGeneratorPage() {
   const clearAllHistory = useCallback(() => {
     if (confirm('すべての履歴を削除しますか？')) {
       try {
-        persistHistoryToStorage(HISTORY_STORAGE_KEY, []);
+        saveHistoryToStorage(STORAGE_KEYS.HISTORY, []);
         setHistory([]);
       } catch (error) {
         logger.error('履歴全削除失敗', error, 'ScriptGenerator');
@@ -850,16 +647,25 @@ export default function ScriptGeneratorPage() {
         })
       : ideasWithFavorites;
 
-    setGeneratedIdeas(ordered);
+    // 既存のアイデアをクリアして、履歴から読み込んだアイデアを設定
+    setGeneratedIdeas(ideasWithFavorites);
+    
+    // 並び順を適用
+    if (ordered.length > 0) {
+      reorderIdeas(ordered);
+    }
     setSelectedIdeaId(null);
     setCurrentScript(null);
     setIdeaViewMode('all');
     // 履歴タブを閉じて、メインエリアにフォーカス
     setSelectedTab(isDesktop ? "generate" : "persona");
-  }, [favoriteIds, isDesktop]);
+  }, [favoriteIds, isDesktop, setGeneratedIdeas, reorderIdeas, ideasOrderRef, setSelectedIdeaId, setCurrentScript, setIdeaViewMode, setSelectedTab]);
 
   // フィルタリングされた履歴
   const filteredHistory = useMemo(() => {
+    if (!history || !Array.isArray(history)) {
+      return [];
+    }
     return history.filter(item => {
       // 検索クエリ（キーワード、方向性、企画案タイトルで検索）
       if (historySearchQuery) {
@@ -884,25 +690,6 @@ export default function ScriptGeneratorPage() {
     });
   }, [history, historySearchQuery, historyFilterCategory]);
 
-  const persistPersonasState = useCallback(
-    (nextPersonas: Persona[], nextDefaultPersonaId: string | null) => {
-      try {
-        persistPersonasToStorage(
-          PERSONAS_STORAGE_KEY,
-          DEFAULT_PERSONA_STORAGE_KEY,
-          nextPersonas,
-          nextDefaultPersonaId,
-        );
-        return true;
-      } catch (error) {
-        toast.error('ペルソナの保存に失敗しました');
-        logger.error('ペルソナ保存失敗', error, 'ScriptGenerator');
-        return false;
-      }
-    },
-    [],
-  );
-
   // ペルソナフォームのリセット（6.12）
   const resetPersonaForm = useCallback(() => {
     setPersonaFormData({
@@ -916,66 +703,52 @@ export default function ScriptGeneratorPage() {
 
   // ペルソナの作成（6.12）
   const createPersona = useCallback(() => {
-    const newPersona: Persona = {
-      id: `persona-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: personaFormData.name.trim(),
-      description: personaFormData.description.trim(),
-      speakingStyle: personaFormData.speakingStyle,
-      traits: personaFormData.traits,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    if (!newPersona.name) {
+    if (!personaFormData.name.trim()) {
       toast.error('ペルソナ名を入力してください');
       return;
     }
 
-    if (personas.length >= MAX_PERSONAS) {
-      toast.error(`ペルソナは最大${MAX_PERSONAS}件まで作成できます`);
-      return;
+    const newPersona = createPersonaHook({
+      name: personaFormData.name.trim(),
+      description: personaFormData.description.trim(),
+      speakingStyle: personaFormData.speakingStyle,
+      traits: personaFormData.traits,
+    });
+
+    if (!newPersona) {
+      return; // エラーはフック内で処理済み
     }
-
-    const updated = [...personas, newPersona];
-    const nextDefaultId = personas.length === 0 ? newPersona.id : defaultPersonaId;
-
-    if (!persistPersonasState(updated, nextDefaultId ?? null)) {
-      return;
-    }
-
-    setPersonas(updated);
 
     // 最初のペルソナを自動的にデフォルトと選択に設定
-    if (personas.length === 0 && nextDefaultId) {
-      setDefaultPersonaId(nextDefaultId);
-      setSelectedPersonaId(nextDefaultId);
+    if (personas.length === 0) {
+      setDefaultPersona(newPersona.id);
+      setSelectedPersonaId(newPersona.id);
     }
 
     toast.success('ペルソナを作成しました');
     setIsPersonaDialogOpen(false);
     resetPersonaForm();
-  }, [personas, personaFormData, defaultPersonaId, persistPersonasState, resetPersonaForm]);
+  }, [personaFormData, personas.length, createPersonaHook, setDefaultPersona, resetPersonaForm]);
 
   // ペルソナの更新（6.12）
   const updatePersona = useCallback((persona: Persona) => {
-    const updated = personas.map(p => 
-      p.id === persona.id 
-        ? { ...persona, updatedAt: Date.now() }
-        : p
-    );
-    if (!persistPersonasState(updated, defaultPersonaId)) {
-      return;
-    }
+    const success = updatePersonaHook(persona.id, {
+      name: persona.name,
+      description: persona.description,
+      speakingStyle: persona.speakingStyle,
+      traits: persona.traits,
+    });
 
-    setPersonas(updated);
-    toast.success('ペルソナを更新しました');
-    setIsPersonaDialogOpen(false);
-    resetPersonaForm();
-  }, [personas, defaultPersonaId, persistPersonasState, resetPersonaForm]);
+    if (success) {
+      toast.success('ペルソナを更新しました');
+      setIsPersonaDialogOpen(false);
+      resetPersonaForm();
+    }
+  }, [updatePersonaHook, resetPersonaForm]);
 
   // ペルソナの削除（6.12）
   const deletePersona = useCallback((id: string) => {
-    const persona = personas.find(p => p.id === id);
+    const persona = getPersona(id);
     if (!persona) return;
 
     if (defaultPersonaId === id) {
@@ -987,29 +760,14 @@ export default function ScriptGeneratorPage() {
       return;
     }
 
-    const updated = personas.filter(p => p.id !== id);
-    if (!persistPersonasState(updated, defaultPersonaId)) {
-      return;
+    const success = deletePersonaHook(id);
+    if (success) {
+      if (selectedPersonaId === id) {
+        setSelectedPersonaId(defaultPersonaId || (personas.length > 1 ? personas.find(p => p.id !== id)?.id || null : null));
+      }
+      toast.success('ペルソナを削除しました');
     }
-
-    setPersonas(updated);
-
-    if (selectedPersonaId === id) {
-      setSelectedPersonaId(defaultPersonaId || (updated.length > 0 ? updated[0].id : null));
-    }
-
-    toast.success('ペルソナを削除しました');
-  }, [personas, defaultPersonaId, selectedPersonaId, persistPersonasState]);
-
-  // デフォルトペルソナの設定（6.12）
-  const setDefaultPersona = useCallback((id: string) => {
-    if (!persistPersonasState(personas, id)) {
-      return;
-    }
-
-    setDefaultPersonaId(id);
-    toast.success('デフォルトペルソナを設定しました');
-  }, [personas, persistPersonasState]);
+  }, [defaultPersonaId, selectedPersonaId, personas, getPersona, deletePersonaHook, setSelectedPersonaId]);
 
   // 編集開始（6.12）
   const handleEditPersona = useCallback((persona: Persona) => {
@@ -1050,33 +808,12 @@ export default function ScriptGeneratorPage() {
     }
   }, [editingPersona, personaFormData, updatePersona, createPersona]);
 
-  // お気に入りの切り替え
-  const toggleFavorite = useCallback((id: number) => {
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-
-      try {
-        persistFavoritesToStorage(FAVORITES_STORAGE_KEY, next);
-      } catch (error) {
-        toast.error('お気に入りの保存に失敗しました');
-        logger.error('お気に入り保存失敗', error, 'ScriptGenerator');
-        return prev;
-      }
-
-      setGeneratedIdeas(prevIdeas =>
-        prevIdeas.map(idea =>
-          idea.id === id ? { ...idea, isFavorite: next.has(id) } : idea,
-        ),
-      );
-
-      return next;
-    });
-  }, []);
+  // お気に入りの切り替え（useIdeaStorageフックを使用）
+  const handleToggleFavorite = useCallback((id: number) => {
+    toggleFavorite(id);
+    // アイデアのisFavorite状態を更新
+    updateIdea(id, { isFavorite: !favoriteIds.has(id) });
+  }, [toggleFavorite, updateIdea, favoriteIds]);
 
   // 企画案をテキスト形式に変換（6.13）
   const formatIdeaAsText = useCallback((idea: Idea): string => {
@@ -1261,34 +998,18 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
     const destinationIndex = result.destination?.index;
     if (destinationIndex == null) return;
 
-    setGeneratedIdeas(prev => {
-      const updatedIdeas = [...prev];
-      const sourceId = parseInt(result.draggableId, 10);
-      const sourceIndex = updatedIdeas.findIndex(i => i.id === sourceId);
+    const sourceId = parseInt(result.draggableId, 10);
+    if (Number.isNaN(sourceId)) return;
 
-      if (Number.isNaN(sourceId) || sourceIndex === -1) {
-        return prev;
-      }
+    const updatedIdeas = [...generatedIdeas];
+    const sourceIndex = updatedIdeas.findIndex(i => i.id === sourceId);
+    if (sourceIndex === -1) return;
 
-      const [movedItem] = updatedIdeas.splice(sourceIndex, 1);
-      updatedIdeas.splice(destinationIndex, 0, movedItem);
+    const [movedItem] = updatedIdeas.splice(sourceIndex, 1);
+    updatedIdeas.splice(destinationIndex, 0, movedItem);
 
-      const orderMap = updatedIdeas.reduce<Record<number, number>>((acc, item, index) => {
-        acc[item.id] = index;
-        return acc;
-      }, {});
-
-      ideasOrderRef.current = orderMap;
-
-      try {
-        persistIdeasOrderToStorage(IDEAS_ORDER_STORAGE_KEY, orderMap);
-      } catch (error) {
-        logger.error('企画案の並び順保存失敗', error, 'ScriptGenerator');
-      }
-
-      return updatedIdeas;
-    });
-  }, []);
+    reorderIdeas(updatedIdeas);
+  }, [generatedIdeas, reorderIdeas]);
 
   // フィルタリングロジック
   const filteredIdeas = useMemo(() => {
@@ -1355,16 +1076,20 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
         isFavorite: favoriteIds.has(idea.id),
       }));
 
+      // 生成されたアイデアを追加
+      generated.forEach(idea => addIdea(idea));
+      
+      // 並び順を適用
       const orderMap = ideasOrderRef.current;
       const orderedIdeas = orderMap && Object.keys(orderMap).length > 0
-        ? [...generated].sort((a, b) => {
+        ? [...generatedIdeas, ...generated].sort((a, b) => {
             const orderA = orderMap[a.id] ?? a.id;
             const orderB = orderMap[b.id] ?? b.id;
             return orderA - orderB;
           })
-        : generated;
+        : [...generatedIdeas, ...generated];
 
-      setGeneratedIdeas(orderedIdeas);
+      reorderIdeas(orderedIdeas);
       setSelectedIdeaId(null);
       // フィルターをリセット
       setSearchQuery('');
@@ -1549,7 +1274,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
       })();
 
       try {
-        persistSavedScriptsToStorage(SAVED_SCRIPTS_STORAGE_KEY, updatedList);
+        saveSavedScriptsToStorage(STORAGE_KEYS.SAVED_SCRIPTS, updatedList);
         setSavedScripts(updatedList);
         setSaveStatus('saved');
         setIsEditingScript(false);
@@ -1625,7 +1350,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
       
       const updated = [duplicatedScript, ...savedScripts].slice(0, MAX_SAVED_SCRIPTS);
       try {
-        persistSavedScriptsToStorage(SAVED_SCRIPTS_STORAGE_KEY, updated);
+        saveSavedScriptsToStorage(STORAGE_KEYS.SAVED_SCRIPTS, updated);
         setSavedScripts(updated);
         toast.success('台本を複製しました');
         setIsDuplicateDialogOpen(false);
@@ -1660,7 +1385,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
     
     const updated = [duplicatedScript, ...savedScripts].slice(0, MAX_SAVED_SCRIPTS);
     try {
-      persistSavedScriptsToStorage(SAVED_SCRIPTS_STORAGE_KEY, updated);
+      saveSavedScriptsToStorage(STORAGE_KEYS.SAVED_SCRIPTS, updated);
       setSavedScripts(updated);
       toast.success('台本を複製しました');
       setIsDuplicateDialogOpen(false);
@@ -1706,7 +1431,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
     setSavedScripts(prev => {
       const updated = prev.filter(s => s.id !== scriptId);
       try {
-        persistSavedScriptsToStorage(SAVED_SCRIPTS_STORAGE_KEY, updated);
+        saveSavedScriptsToStorage(STORAGE_KEYS.SAVED_SCRIPTS, updated);
         toast.success('保存済み台本を削除しました');
         return updated;
       } catch (error) {
@@ -4069,7 +3794,7 @@ ${idea.points.map((point, index) => `  ${index + 1}. ${point}`).join('\n')}
                                                     size="icon"
                                                     onClick={(e) => {
                                                       e.stopPropagation();
-                                                      toggleFavorite(idea.id);
+                                                      handleToggleFavorite(idea.id);
                                                     }}
                                                     className={cn(
                                                       "h-8 w-8",
