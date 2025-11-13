@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useScheduleFilter } from '../hooks/useScheduleFilter';
+import { useScheduleFilters } from '../hooks/useScheduleFilters';
 import { ScheduleFilters } from './ScheduleFilters';
 import { ScheduleTooltipContent } from './ScheduleTooltip';
 import { MonthView } from './MonthView';
@@ -26,11 +25,16 @@ export function CalendarView() {
   const { setIsModalOpen, selectedDate, setSelectedDate, schedules } = useSchedule();
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showFilters, setShowFilters] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [scheduleListMaxHeight, setScheduleListMaxHeight] = useState<string>('min(28rem, 70vh)');
 
-  // カスタムフックでフィルタリング
+  // フィルター関連の状態管理を統合したフック
   const {
+    showFilters,
+    setShowFilters,
+    selectedTab,
+    setSelectedTab,
     filters,
     filteredSchedules,
     toggleCategoryFilter,
@@ -40,7 +44,7 @@ export function CalendarView() {
     uniqueCategories,
     uniquePlatforms,
     hasActiveFilters
-  } = useScheduleFilter(schedules);
+  } = useScheduleFilters(schedules);
 
   // ビューモードの保存と復元
   useEffect(() => {
@@ -53,6 +57,49 @@ export function CalendarView() {
   useEffect(() => {
     localStorage.setItem('calendarViewMode', viewMode);
   }, [viewMode]);
+
+  // ScheduleListの高さを動的に計算
+  useEffect(() => {
+    if (isDesktop) {
+      // デスクトップ版は固定値を使用
+      setScheduleListMaxHeight('min(32rem, calc(100vh - 16rem))');
+      return;
+    }
+
+    const calculateHeight = () => {
+      if (!headerRef.current) return;
+
+      const headerHeight = headerRef.current.offsetHeight;
+      const tabsListHeight = 48; // TabsListの高さ（h-12 = 48px）
+      const tabsContentMargin = 16; // TabsContentのmt-4 = 16px
+      const containerPadding = 32; // コンテナの上下パディング（p-4 = 16px × 2）
+      const containerMargin = 24; // コンテナのmt-6 = 24px
+      const mainAreaPadding = 16; // メインエリアの上下パディング（p-2 = 8px × 2）
+      const floatingButtonHeight = 80; // フローティングボタンの高さ（bottom-4 = 16px + ボタン高さ64px）
+
+      // 小画面landscapeを考慮（画面の高さが小さい場合）
+      const viewportHeight = window.innerHeight;
+      const isLandscape = window.innerWidth > window.innerHeight;
+      const minHeight = isLandscape ? 200 : 300; // landscape時は最小高さを小さく
+
+      // calc(100vh - headerHeight - tabsListHeight - tabsContentMargin - containerPadding - containerMargin - mainAreaPadding - floatingButtonHeight)
+      const calculatedHeight = viewportHeight - headerHeight - tabsListHeight - tabsContentMargin - containerPadding - containerMargin - mainAreaPadding - floatingButtonHeight;
+      const finalHeight = Math.max(calculatedHeight, minHeight);
+
+      setScheduleListMaxHeight(`${finalHeight}px`);
+    };
+
+    // 初回計算を少し遅らせて、DOMが完全にレンダリングされた後に実行
+    const timeoutId = setTimeout(calculateHeight, 100);
+    window.addEventListener('resize', calculateHeight);
+    window.addEventListener('orientationchange', calculateHeight);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', calculateHeight);
+      window.removeEventListener('orientationchange', calculateHeight);
+    };
+  }, [isDesktop, selectedTab]);
 
   // ダブルクリック判定
   const [lastClickTime, setLastClickTime] = useState(0);
@@ -102,7 +149,7 @@ export function CalendarView() {
     <TooltipProvider>
       <div className="flex flex-col min-h-full">
         {/* ビュー切り替えコントロール */}
-        <div className="flex items-center justify-between mb-6 p-4">
+        <div ref={headerRef} className="flex items-center justify-between mb-6 p-4">
           {/* 左側：ビュー切り替えボタン + 今日ボタン（モバイル表示） */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-[#2D2D2D] rounded-lg p-1">
@@ -225,7 +272,7 @@ export function CalendarView() {
           {!isDesktop && (
             <div className="mt-6">
               <div className="bg-[#2D2D2D]/80 border border-[#4A4A4A]/30 rounded-lg p-4 backdrop-blur-sm">
-                <Tabs defaultValue="sns" className="w-full">
+                <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'sns' | 'schedule')} className="w-full">
                   <TabsList className="w-full h-12 items-center justify-center rounded-md bg-secondary p-1 text-secondary-foreground">
                     <TabsTrigger value="sns" className="flex-1">
                       SNS投稿
@@ -243,7 +290,7 @@ export function CalendarView() {
                     <div
                       className="overflow-y-auto"
                       style={{
-                        maxHeight: isDesktop ? 'min(32rem, calc(100vh - 16rem))' : 'min(28rem, 70vh)',
+                        maxHeight: scheduleListMaxHeight,
                       }}
                     >
                       <ScheduleList />
