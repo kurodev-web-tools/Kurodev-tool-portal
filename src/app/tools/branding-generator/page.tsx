@@ -29,33 +29,19 @@ import { Sidebar, SidebarToggle } from "@/components/layouts/Sidebar";
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  type AnalysisResults,
+  type Concept,
+  type ColorPalette,
+  parseAnalysisResults,
+  parseConcepts,
+  parseColorPalettes,
+} from "./types/branding";
 
 type ActivityStatus = "active" | "pre-activity";
 
 // ワークフローのステップ定義
 type WorkflowStep = "input" | "analyzing" | "analysis-results" | "concept-proposal" | "color-palette" | "save";
-
-interface Concept {
-  id: string;
-  name: string;
-  description: string;
-  keywords: string[];
-  recommendedActivities: string[];
-}
-
-interface ColorPalette {
-  id: string;
-  name: string;
-  colors: string[];
-  description: string;
-}
-
-interface AnalysisResults {
-  brandPersonality: string;
-  targetAudience: string;
-  keyMessages: string[];
-  strengths: string[];
-}
 
 export default function BrandingGeneratorPage() {
   const [activityStatus, setActivityStatus] = useState<ActivityStatus | null>(null);
@@ -121,17 +107,18 @@ export default function BrandingGeneratorPage() {
       // モック処理: 分析中
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // モックの分析結果
-      const mockAnalysisResults: AnalysisResults = {
+      // モックの分析結果（zodスキーマでバリデーション）
+      const mockAnalysisData = {
         brandPersonality: "親しみやすく、エネルギッシュ",
         targetAudience: "10-20代のゲーム好きな若者",
         keyMessages: ["楽しい", "親しみやすい", "信頼できる", "面白い"],
         strengths: ["トーク力", "企画力", "リアクション"]
       };
-      setAnalysisResults(mockAnalysisResults);
+      const validatedAnalysisResults = parseAnalysisResults(mockAnalysisData);
+      setAnalysisResults(validatedAnalysisResults);
       
-      // モックのコンセプト提案
-      setConcepts([
+      // モックのコンセプト提案（zodスキーマでバリデーション）
+      const mockConceptsData = [
         {
           id: "concept-1",
           name: "癒し系ゲーマー",
@@ -153,7 +140,9 @@ export default function BrandingGeneratorPage() {
           keywords: ["明るい", "エネルギッシュ", "エンタメ", "楽しさ"],
           recommendedActivities: ["ゲーム実況", "歌枠", "企画配信"]
         }
-      ]);
+      ];
+      const validatedConcepts = parseConcepts(mockConceptsData);
+      setConcepts(validatedConcepts);
       
       setCurrentStep("analysis-results");
     }, "分析中にエラーが発生しました");
@@ -182,8 +171,8 @@ export default function BrandingGeneratorPage() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       const selectedConcept = concepts.find(c => c.id === conceptId);
-      // 選択したコンセプトに基づいてカラーパレットを生成
-      const palettes: ColorPalette[] = [
+      // 選択したコンセプトに基づいてカラーパレットを生成（zodスキーマでバリデーション）
+      const palettesData = [
         {
           id: "palette-1",
           name: "メインパレット",
@@ -212,7 +201,8 @@ export default function BrandingGeneratorPage() {
         }
       ];
       
-      setColorPalettes(palettes);
+      const validatedPalettes = parseColorPalettes(palettesData);
+      setColorPalettes(validatedPalettes);
       setCurrentStep("color-palette");
     }, "カラーパレットの生成に失敗しました");
     
