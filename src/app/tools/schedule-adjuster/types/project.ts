@@ -37,3 +37,8 @@ export interface ProjectFormValues {
   duration: string;
 }
 
+export interface CreateProjectResult {
+  success: boolean;
+  shouldSwitchTab: boolean;
+}
+

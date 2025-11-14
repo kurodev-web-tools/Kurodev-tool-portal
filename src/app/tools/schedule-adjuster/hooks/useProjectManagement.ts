@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import type { Project, ProjectFormValues } from '../types/project';
+import type { Project, ProjectFormValues, CreateProjectResult } from '../types/project';
 
 const DEFAULT_SETTINGS = {
   timezone: 'Asia/Tokyo',
@@ -81,52 +81,63 @@ export function useProjectManagement() {
   ]);
 
   const createProject = useCallback(
-    async (formValues: ProjectFormValues, isDesktop: boolean) => {
+    async (formValues: ProjectFormValues, isDesktop: boolean): Promise<CreateProjectResult> => {
       setError(null);
       setIsCreatingProject(true);
 
-      await handleAsyncError(
-        async () => {
-          if (!formValues.name.trim()) {
-            const errorMsg = 'プロジェクト名を入力してください';
-            setError(errorMsg);
-            toast.error(errorMsg);
+      try {
+        const result = await handleAsyncError(
+          async (): Promise<CreateProjectResult> => {
+            if (!formValues.name.trim()) {
+              const errorMsg = 'プロジェクト名を入力してください';
+              setError(errorMsg);
+              toast.error(errorMsg);
+              setIsCreatingProject(false);
+              throw new Error(errorMsg);
+            }
+
+            // ローディング状態をシミュレート（実際のAPI呼び出し時はここを置き換え）
+            await new Promise((resolve) => setTimeout(resolve, 800));
+
+            const newProject: Project = {
+              id: Date.now().toString(),
+              name: formValues.name,
+              description: formValues.description,
+              duration: parseInt(formValues.duration),
+              participants: 1,
+              status: 'active',
+              createdAt: new Date().toISOString().split('T')[0],
+              updatedAt: new Date().toISOString().split('T')[0],
+              schedules: [],
+              settings: { ...DEFAULT_SETTINGS },
+            };
+
+            setProjects((prev) => [newProject, ...prev]);
+
+            // 作成完了通知
+            toast.success('プロジェクトを作成しました', {
+              description: `${newProject.name}のスケジュール調整を開始できます`,
+            });
+
             setIsCreatingProject(false);
-            throw new Error(errorMsg);
-          }
+            return { success: true, shouldSwitchTab: !isDesktop };
+          },
+          'プロジェクトの作成に失敗しました'
+        );
 
-          // ローディング状態をシミュレート（実際のAPI呼び出し時はここを置き換え）
-          await new Promise((resolve) => setTimeout(resolve, 800));
+        if (result) {
+          return result;
+        }
 
-          const newProject: Project = {
-            id: Date.now().toString(),
-            name: formValues.name,
-            description: formValues.description,
-            duration: parseInt(formValues.duration),
-            participants: 1,
-            status: 'active',
-            createdAt: new Date().toISOString().split('T')[0],
-            updatedAt: new Date().toISOString().split('T')[0],
-            schedules: [],
-            settings: { ...DEFAULT_SETTINGS },
-          };
-
-          setProjects((prev) => [newProject, ...prev]);
-
-          // 作成完了通知
-          toast.success('プロジェクトを作成しました', {
-            description: `${newProject.name}のスケジュール調整を開始できます`,
-          });
-
-          setIsCreatingProject(false);
-          return { success: true, shouldSwitchTab: !isDesktop };
-        },
-        'プロジェクトの作成に失敗しました'
-      ).catch((err) => {
+        // handleAsyncErrorがnullを返した場合（エラー発生時）
+        setIsCreatingProject(false);
+        setError('プロジェクトの作成に失敗しました');
+        return { success: false, shouldSwitchTab: false };
+      } catch (err) {
         setIsCreatingProject(false);
         setError(err instanceof Error ? err.message : 'プロジェクトの作成に失敗しました');
         return { success: false, shouldSwitchTab: false };
-      });
+      }
     },
     [handleAsyncError]
   );
