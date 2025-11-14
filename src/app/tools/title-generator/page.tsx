@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, FileText, Copy, Check, Star, GripVertical, Edit2, Eye, TrendingUp, AlertCircle, Hash, X, Plus, Sparkles, FileCode, Save, RefreshCw, Wand2, MoreVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import type { DropResult } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
 import {
   Card,
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useSidebar } from "@/hooks/use-sidebar";
-import { useErrorHandler } from "@/hooks/use-error-handler";
 import { logger } from "@/lib/logger";
 import {
   Tabs,
@@ -49,14 +48,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { generateTitleIdeas } from "@/services/aiClient";
-import type { TitleGenerationRequest } from "@/types/ai";
-import { TagButtonGroup } from "@/components/shared/TagButtonGroup";
 import { useTitleHistory } from "./hooks/useTitleHistory";
 import { TitleHistoryList } from "./components/TitleHistoryList";
 import { TitleInputForm } from "./components/TitleInputForm";
 import { TitleResultsDisplay } from "./components/TitleResultsDisplay";
 import { useTitleForm } from "./hooks/useTitleForm";
+import { useTitleGeneration } from "./hooks/useTitleGeneration";
+import { useHashtagManagement } from "./hooks/useHashtagManagement";
+import { useDescriptionTemplate } from "./hooks/useDescriptionTemplate";
+import { STORAGE_KEYS } from "./types/storage";
 import type {
   TitleGenerationFormValues,
   GenerationHistoryEntry,
@@ -70,7 +70,6 @@ export default function TitleGeneratorPage() {
   const [activeTab, setActiveTab] = useState("settings"); // モバイル用タブの状態
   const [leftPanelTab, setLeftPanelTab] = useState("input"); // 左サイドバーのタブ（入力/履歴）
   const [descriptionViewMode, setDescriptionViewMode] = useState<"edit" | "preview">("edit"); // 概要欄の表示モード（5.5対応）
-  const [isLoading, setIsLoading] = useState(false); // ローディング状態
   const [finalTitle, setFinalTitle] = useState(""); // 最終タイトル
   const [finalDescription, setFinalDescription] = useState(""); // 最終概要欄
   const [aiTitles, setAiTitles] = useState<TitleOption[]>([]); // AI提案タイトル案
@@ -83,52 +82,57 @@ export default function TitleGeneratorPage() {
     clearHistory,
     isHydrated: isHistoryHydrated,
   } = useTitleHistory();
-  const [hashtags, setHashtags] = useState<string[]>([]); // ハッシュタグリスト（5.7対応）
-  const setHashtagsSafely = useCallback((next: string[]) => {
-    if (next.length === 0) return;
-    setHashtags(prev => {
-      if (prev.length === next.length && prev.every((tag, index) => tag === next[index])) {
-        return prev;
-      }
-      return next;
-    });
-  }, []);
-  const [newHashtagInput, setNewHashtagInput] = useState(""); // 新規ハッシュタグ入力（5.7対応）
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default"); // 選択中のテンプレート（5.8対応）
-  const [showTemplatePreview, setShowTemplatePreview] = useState(false); // テンプレートプレビュー表示（5.8対応）
-  const [isRegeneratingTitles, setIsRegeneratingTitles] = useState(false); // タイトルのみ再生成中（5.10対応）
-  const [isRegeneratingDescription, setIsRegeneratingDescription] = useState(false); // 概要欄のみ再生成中（5.10対応）
-  const [regeneratingTitleId, setRegeneratingTitleId] = useState<string | null>(null); // 個別タイトル再生成中（5.10対応）
   
-  // 概要欄テンプレートのデータ構造（5.8対応）
-  interface TemplateSection {
-    type: 'summary' | 'timestamp' | 'related' | 'hashtag' | 'sns' | 'setlist' | 'guest' | 'custom';
-    title?: string;
-    content: string;
-    enabled: boolean;
-    order: number;
-  }
+  // フックを使用
+  const {
+    isLoading,
+    isRegeneratingTitles,
+    isRegeneratingDescription,
+    regeneratingTitleId,
+    generateTitles: generateTitlesHook,
+    generateDescription: generateDescriptionHook,
+    regenerateTitlesOnly,
+    regenerateDescriptionOnly,
+    regenerateSingleTitle,
+    generateVariantFromTitle,
+    generateAll,
+  } = useTitleGeneration();
   
-  interface DescriptionTemplate {
-    id: string;
-    name: string;
-    description: string;
-    sections: TemplateSection[];
-    isCustom?: boolean;
-  }
+  const {
+    hashtags,
+    setHashtags: setHashtagsSafely,
+    newHashtagInput,
+    setNewHashtagInput,
+    addHashtag: handleAddHashtag,
+    removeHashtag: handleRemoveHashtag,
+    saveHashtagToFavorites: handleSaveHashtagToFavorites,
+    loadHashtagFavorites,
+    suggestHashtags,
+    extractHashtagsFromDescription,
+    updateDescriptionHashtags: updateDescriptionHashtagsHook,
+    initializeHashtagsFromDescription,
+  } = useHashtagManagement();
   
-  // ローカルストレージキー
-  const FAVORITES_STORAGE_KEY = 'title-generator-favorites';
-  const INPUT_STORAGE_KEY = 'title-generator-input-draft'; // 入力内容の一時保存（5.4対応）
-  const HASHTAG_FAVORITES_STORAGE_KEY = 'title-generator-hashtag-favorites'; // ハッシュタグのお気に入り（5.7対応）
-  const DESCRIPTION_TEMPLATES_STORAGE_KEY = 'title-generator-description-templates'; // 概要欄テンプレート（5.8対応）
-  const AUTO_SAVE_DELAY = 1000; // 自動保存の遅延時間（ミリ秒）
+  const {
+    presetTemplates,
+    customTemplates,
+    allTemplates,
+    selectedTemplateId,
+    setSelectedTemplateId,
+    selectedTemplate,
+    showTemplatePreview,
+    setShowTemplatePreview,
+    applyTemplate: applyTemplateHook,
+    addCustomTemplate,
+    updateCustomTemplate,
+    deleteCustomTemplate,
+  } = useDescriptionTemplate();
+  
+  // 定数
   const YOUTUBE_DESCRIPTION_LIMIT = 5000; // YouTube概要欄の文字数制限（5.5対応）
   const YOUTUBE_TITLE_RECOMMENDED_LENGTH = 60; // YouTubeタイトルの推奨文字数（5.6対応）
   const YOUTUBE_HASHTAG_RECOMMENDED_COUNT = 15; // YouTubeハッシュタグの推奨数（5.7対応）
   const DEFAULT_HASHTAGS = ['VTuber', 'ゲーム実況', '新作ゲーム', '実況', 'エンタメ'];
-  
-  const { handleAsyncError } = useErrorHandler();
 
   // フォーム状態管理フックを使用
   const {
@@ -176,336 +180,63 @@ export default function TitleGeneratorPage() {
     [removeHistory],
   );
 
-  // プリセットテンプレート定義（5.8対応）
-  const presetTemplates: DescriptionTemplate[] = [
-    {
-      id: 'default',
-      name: 'デフォルト',
-      description: '標準的な構成（概要、タイムスタンプ、関連動画、ハッシュタグ、SNS）',
-      sections: [
-        { type: 'summary', content: 'この動画では、{videoTheme}について詳しく解説しています。', enabled: true, order: 1 },
-        { type: 'timestamp', title: 'タイムスタンプ', content: '00:00 オープニング\n02:30 本編開始\n15:45 まとめ', enabled: true, order: 2 },
-        { type: 'related', title: '関連動画', content: '・前回の動画: [リンク]\n・次回予告: [リンク]', enabled: true, order: 3 },
-        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 4 },
-        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter\nInstagram: @your_instagram', enabled: true, order: 5 },
-      ],
-    },
-    {
-      id: 'game-streaming',
-      name: 'ゲーム実況用',
-      description: 'ゲーム実況向けの構成（概要、タイムスタンプ、ハッシュタグ）',
-      sections: [
-        { type: 'summary', content: 'この動画では、{videoTheme}を実況プレイしています。', enabled: true, order: 1 },
-        { type: 'timestamp', title: 'タイムスタンプ', content: '00:00 オープニング\n02:30 ゲーム開始\n20:00 ハイライト', enabled: true, order: 2 },
-        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 3 },
-        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter', enabled: true, order: 4 },
-      ],
-    },
-    {
-      id: 'singing-stream',
-      name: '歌枠用',
-      description: '歌枠向けの構成（概要、セットリスト、ハッシュタグ）',
-      sections: [
-        { type: 'summary', content: 'この動画では、{videoTheme}を歌わせていただきました！', enabled: true, order: 1 },
-        { type: 'setlist', title: 'セットリスト', content: '1. [曲名1]\n2. [曲名2]\n3. [曲名3]', enabled: true, order: 2 },
-        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 3 },
-        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter', enabled: true, order: 4 },
-      ],
-    },
-    {
-      id: 'collaboration',
-      name: 'コラボ用',
-      description: 'コラボ配信向けの構成（概要、ゲスト情報、タイムスタンプ、ハッシュタグ）',
-      sections: [
-        { type: 'summary', content: 'この動画では、{videoTheme}をコラボ配信しました！', enabled: true, order: 1 },
-        { type: 'guest', title: 'ゲスト', content: 'ゲスト: [ゲスト名]\nチャンネル: [チャンネルリンク]', enabled: true, order: 2 },
-        { type: 'timestamp', title: 'タイムスタンプ', content: '00:00 オープニング\n05:00 本編開始', enabled: true, order: 3 },
-        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 4 },
-        { type: 'sns', title: 'SNS', content: 'Twitter: @your_twitter', enabled: true, order: 5 },
-      ],
-    },
-    {
-      id: 'simple',
-      name: 'シンプル',
-      description: 'シンプルな構成（概要、ハッシュタグのみ）',
-      sections: [
-        { type: 'summary', content: '{videoTheme}', enabled: true, order: 1 },
-        { type: 'hashtag', title: 'ハッシュタグ', content: '{hashtags}', enabled: true, order: 2 },
-      ],
-    },
-  ];
-
-  // カスタムテンプレートの読み込み（5.8対応）
-  const [customTemplates, setCustomTemplates] = useState<DescriptionTemplate[]>([]);
-  
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      const stored = localStorage.getItem(DESCRIPTION_TEMPLATES_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setCustomTemplates(Array.isArray(parsed) ? parsed : []);
-      }
-    } catch (err) {
-      console.error('カスタムテンプレート読み込み失敗', err);
-    }
-  }, []);
-
-  // テンプレート一覧（プリセット + カスタム）
-  const allTemplates = useMemo(() => [...presetTemplates, ...customTemplates], [customTemplates]);
-
-  // テンプレートから概要欄を生成（5.8対応）
-  const generateDescriptionFromTemplate = useCallback((template: DescriptionTemplate) => {
-    const sortedSections = [...template.sections]
-      .filter(s => s.enabled)
-      .sort((a, b) => a.order - b.order);
-    
-    let description = '';
-    
-    sortedSections.forEach((section, index) => {
-      let sectionContent = section.content;
-      
-      // プレースホルダーの置換
-      sectionContent = sectionContent.replace(/{videoTheme}/g, videoTheme || '[動画のテーマ]');
-      sectionContent = sectionContent.replace(/{hashtags}/g, hashtags.length > 0 
-        ? hashtags.map(tag => `#${tag}`).join(' ') 
-        : '#VTuber #エンタメ');
-      
-      if (section.type === 'hashtag') {
-        // ハッシュタグセクションは特別処理（ハッシュタグ管理と連携）
-        description += `【${section.title || 'ハッシュタグ'}】\n${sectionContent}\n`;
-      } else if (section.title) {
-        description += `【${section.title}】\n${sectionContent}\n`;
-      } else {
-        description += `${sectionContent}\n`;
-      }
-      
-      if (index < sortedSections.length - 1) {
-        description += '\n';
-      }
-    });
-    
-    return description.trim();
-  }, [videoTheme, hashtags]);
-
-  const extractHashtagsFromDescription = useCallback((description: string): string[] => {
-    const hashtagSection = description.match(/【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/);
-    if (!hashtagSection) return [];
-
-    const hashtagLine = hashtagSection[1].trim();
-    const matches = hashtagLine.match(/#([\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)/g);
-    if (!matches) return [];
-
-    return matches.map(tag => tag.replace('#', ''));
-  }, []);
-
-  // テンプレートを適用（5.8対応）
+  // テンプレート適用のラッパー関数
   const applyTemplate = useCallback((templateId: string) => {
-    if (templateId === selectedTemplateId) return;
-
-    const template = allTemplates.find(t => t.id === templateId);
-    if (!template) return;
-    
-    const generated = generateDescriptionFromTemplate(template);
-    setAiDescription(generated);
-    setFinalDescription(generated);
-    setSelectedTemplateId(templateId);
-    
-    const extracted = extractHashtagsFromDescription(generated);
-    if (extracted.length > 0) {
-      setHashtagsSafely(extracted);
-    }
-    
-    toast.success(`「${template.name}」テンプレートを適用しました`);
-  }, [allTemplates, extractHashtagsFromDescription, generateDescriptionFromTemplate, selectedTemplateId, setHashtagsSafely]);
-
-  const getSavedFavoriteTitles = useCallback(() => {
-    if (typeof window === 'undefined') {
-      return new Set<string>();
-    }
-    try {
-      const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
-      return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
-    } catch {
-      return new Set<string>();
-    }
-  }, []);
-
-  // タイトル生成用の共通関数
-  const generateTitles = useCallback(
-    async (baseTitle?: string): Promise<{ titles: TitleOption[]; recommendedHashtags: string[] }> => {
-    const request: TitleGenerationRequest = {
+    applyTemplateHook(
+      templateId,
       videoTheme,
-      keywords,
-      targetAudience,
-      mood: videoMood,
-      baseTitle,
       hashtags,
-    };
-
-    const response = await generateTitleIdeas(request);
-
-    const favorites = getSavedFavoriteTitles();
-    const now = Date.now();
-
-    const mapped: TitleOption[] = response.suggestions.map((suggestion, index) => ({
-      id: suggestion.id ?? `title-${now}-${index}`,
-      text: suggestion.text,
-      isFavorite: favorites.has(suggestion.text),
-    }));
-
-      const sorted = [
-        ...mapped.filter(title => title.isFavorite),
-        ...mapped.filter(title => !title.isFavorite),
-      ];
-
-      return {
-        titles: sorted,
-        recommendedHashtags: response.recommendedHashtags,
-      };
-    },
-    [videoTheme, keywords, targetAudience, videoMood, hashtags, getSavedFavoriteTitles],
-  );
-
-  // 概要欄生成用の共通関数（5.10対応）
-  const generateDescription = useCallback((overrideHashtags?: string[]): string => {
-    // 選択中のテンプレートから概要欄を生成（5.8対応）
-    const selectedTemplate = allTemplates.find(t => t.id === selectedTemplateId) || presetTemplates[0];
-    
-    // ハッシュタグが未設定の場合はデフォルトを設定（5.7対応）
-    const activeHashtags = overrideHashtags ?? hashtags;
-    const currentHashtags = activeHashtags.length > 0 ? activeHashtags : DEFAULT_HASHTAGS;
-    
-    // テンプレートから概要欄を生成
-    return generateDescriptionFromTemplate({
-      ...selectedTemplate,
-      sections: selectedTemplate.sections.map(s => 
-        s.type === 'hashtag' 
-          ? { ...s, content: currentHashtags.map(tag => `#${tag}`).join(' ') }
-          : s
-      ),
-    });
-  }, [allTemplates, selectedTemplateId, presetTemplates, hashtags, generateDescriptionFromTemplate]);
+      generateDescriptionHook,
+      extractHashtagsFromDescription,
+      (description: string) => {
+        setAiDescription(description);
+        setFinalDescription(description);
+      },
+      setHashtagsSafely,
+    );
+  }, [videoTheme, hashtags, generateDescriptionHook, extractHashtagsFromDescription, setHashtagsSafely, applyTemplateHook]);
 
   // タイトルのみ再生成（5.10対応）
   const handleGenerateTitlesOnly = useCallback(async () => {
-    if (!videoTheme.trim()) {
-      toast.error('入力エラー', {
-        description: '動画のテーマ・内容を入力してください'
-      });
-      return;
-    }
-
-    setIsRegeneratingTitles(true);
-    
-    try {
-      const { titles } = await generateTitles();
+    const formValues = getValues();
+    await regenerateTitlesOnly(formValues, hashtags, (titles) => {
       setAiTitles(titles);
-      
-      // 最初のタイトル案を自動選択
       if (titles.length > 0) {
         setFinalTitle(titles[0].text);
       }
-      
-      toast.success('タイトルを再生成しました');
-    } catch (err) {
-      logger.error('タイトル再生成失敗', err, 'TitleGenerator');
-      toast.error('タイトルの再生成に失敗しました');
-    } finally {
-      setIsRegeneratingTitles(false);
-    }
-  }, [videoTheme, generateTitles]);
+    });
+  }, [regenerateTitlesOnly, hashtags, getValues]);
 
   // 概要欄のみ再生成（5.10対応）
   const handleGenerateDescriptionOnly = useCallback(async () => {
-    if (!videoTheme.trim()) {
-      toast.error('入力エラー', {
-        description: '動画のテーマ・内容を入力してください'
-      });
-      return;
-    }
-
-    setIsRegeneratingDescription(true);
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // ダミーの待機時間
-      
-      const newDescription = generateDescription();
-      setAiDescription(newDescription);
-      setFinalDescription(newDescription);
-      
-      // ハッシュタグを抽出して設定
-      const extracted = extractHashtagsFromDescription(newDescription);
+    regenerateDescriptionOnly(selectedTemplate, videoTheme, hashtags, (description) => {
+      setAiDescription(description);
+      setFinalDescription(description);
+      const extracted = extractHashtagsFromDescription(description);
       if (extracted.length > 0) {
         setHashtagsSafely(extracted);
       }
-      
-      toast.success('概要欄を再生成しました');
-    } catch (err) {
-      logger.error('概要欄再生成失敗', err, 'TitleGenerator');
-      toast.error('概要欄の再生成に失敗しました');
-    } finally {
-      setIsRegeneratingDescription(false);
-    }
-  }, [videoTheme, generateDescription, extractHashtagsFromDescription, setHashtagsSafely]);
+    });
+  }, [regenerateDescriptionOnly, selectedTemplate, videoTheme, hashtags, extractHashtagsFromDescription, setHashtagsSafely]);
 
   // 個別タイトル案の再生成（5.10対応）
-  const handleRegenerateSingleTitle = useCallback(async (titleId: string, currentText: string) => {
-    setRegeneratingTitleId(titleId);
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 800)); // ダミーの待機時間
-      
-      // 個別タイトル生成（ダミーデータ）
-      const variants = [
-        currentText.replace('【初見】', '【実況】'),
-        currentText.replace('挑戦', '攻略'),
-        currentText + '【衝撃の結末】',
-      ];
-      const newText = variants[Math.floor(Math.random() * variants.length)];
-      
+  const handleRegenerateSingleTitle = useCallback((titleId: string, currentText: string) => {
+    regenerateSingleTitle(titleId, currentText, (id, newText) => {
       setAiTitles(prev => prev.map(title => 
-        title.id === titleId 
+        title.id === id 
           ? { ...title, text: newText }
           : title
       ));
-      
-      toast.success('タイトル案を再生成しました');
-    } catch (err) {
-      logger.error('個別タイトル再生成失敗', err, 'TitleGenerator');
-      toast.error('タイトル案の再生成に失敗しました');
-    } finally {
-      setRegeneratingTitleId(null);
-    }
-  }, []);
+    });
+  }, [regenerateSingleTitle]);
 
   // タイトル案ベースで別パターンを生成（5.10対応）
   const handleGenerateVariantFromTitle = useCallback(async (baseTitleText: string) => {
-    setIsRegeneratingTitles(true);
-    
-    try {
-      const { titles: newTitles } = await generateTitles(baseTitleText);
-      
-      // 既存のタイトルに追加（お気に入りを維持）
-      setAiTitles(prev => {
-        const existingTexts = new Set(prev.map(t => t.text));
-        const filteredNew = newTitles.filter(t => !existingTexts.has(t.text));
-        return [
-          ...prev.filter(t => t.isFavorite),
-          ...filteredNew,
-          ...prev.filter(t => !t.isFavorite && !existingTexts.has(t.text)),
-        ];
-      });
-      
-      toast.success('別パターンを生成しました');
-    } catch (err) {
-      logger.error('別パターン生成失敗', err, 'TitleGenerator');
-      toast.error('別パターンの生成に失敗しました');
-    } finally {
-      setIsRegeneratingTitles(false);
-    }
-  }, [generateTitles]);
+    const formValues = getValues();
+    await generateVariantFromTitle(baseTitleText, formValues, hashtags, aiTitles, (newTitles) => {
+      setAiTitles(newTitles);
+    });
+  }, [generateVariantFromTitle, getValues, hashtags, aiTitles]);
 
   // T-04: フロントエンド内でのUIロジック実装
   const handleGenerateClick = useCallback(async () => {
@@ -532,50 +263,39 @@ export default function TitleGeneratorPage() {
       return;
     }
     
-    const { videoTheme, keywords, targetAudience, videoMood } = getValues();
+    const formValues = getValues();
 
-    setIsLoading(true);
-    
-    await handleAsyncError(async () => {
-      const { titles: sortedTitles, recommendedHashtags } = await generateTitles();
-
+    await generateAll(formValues, hashtags, selectedTemplate, DEFAULT_HASHTAGS, (result) => {
       const nextHashtags =
         hashtags.length > 0
           ? hashtags
-          : recommendedHashtags.length > 0
-            ? recommendedHashtags
+          : result.recommendedHashtags.length > 0
+            ? result.recommendedHashtags
             : DEFAULT_HASHTAGS;
 
       if (hashtags.length === 0) {
         setHashtagsSafely(nextHashtags);
       }
 
-      const generatedDescription = generateDescription(nextHashtags);
-
-      setAiTitles(sortedTitles);
-      setAiDescription(generatedDescription);
-      if (sortedTitles.length > 0) {
-        setFinalTitle(sortedTitles[0].text);
+      setAiTitles(result.titles);
+      setAiDescription(result.description);
+      if (result.titles.length > 0) {
+        setFinalTitle(result.titles[0].text);
       }
-      setFinalDescription(generatedDescription);
+      setFinalDescription(result.description);
       
       const historyEntry: GenerationHistoryEntry = {
         id: `history-${Date.now()}`,
         timestamp: Date.now(),
-        titles: sortedTitles,
-        description: generatedDescription,
-        inputData: {
-          videoTheme,
-          keywords,
-          targetAudience,
-          videoMood,
-        },
+        titles: result.titles,
+        description: result.description,
+        inputData: formValues,
       };
       addHistory(historyEntry);
       
       if (typeof window !== "undefined") {
         try {
-          localStorage.removeItem(INPUT_STORAGE_KEY);
+          localStorage.removeItem(STORAGE_KEYS.INPUT_DRAFT);
         } catch (err) {
           console.error("一時保存クリア失敗", err);
         }
@@ -584,10 +304,8 @@ export default function TitleGeneratorPage() {
       if (!isDesktop) {
         setActiveTab("results");
       }
-    }, "生成中にエラーが発生しました");
-    
-    setIsLoading(false);
-  }, [addHistory, generateDescription, generateTitles, getFieldState, getValues, handleAsyncError, hashtags.length, isDesktop, setHashtagsSafely, validateForm]);
+    });
+  }, [addHistory, generateAll, getFieldState, getValues, hashtags, isDesktop, selectedTemplate, setHashtagsSafely, validateForm]);
 
   const handleTitleSelect = useCallback((title: string) => {
     setFinalTitle(title);
@@ -726,125 +444,35 @@ export default function TitleGeneratorPage() {
     };
   }, []);
 
-  // ハッシュタグの更新処理（5.7対応）
-  const updateDescriptionHashtags = useCallback((newHashtags: string[]) => {
-    const hashtagString = newHashtags.length > 0 
-      ? newHashtags.map(tag => `#${tag}`).join(' ') 
-      : '#VTuber #ゲーム実況 #新作ゲーム #実況 #エンタメ';
-    
-    // 概要欄の【ハッシュタグ】セクションを更新
-    setAiDescription(prev => {
-      if (prev.includes('【ハッシュタグ】')) {
-        return prev.replace(
-          /【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/,
-          `【ハッシュタグ】\n${hashtagString}`
-        );
-      } else {
-        // 【ハッシュタグ】セクションが存在しない場合は追加
-        return prev + (prev.endsWith('\n') ? '' : '\n') + `\n【ハッシュタグ】\n${hashtagString}`;
-      }
-    });
-    
-    // finalDescriptionも更新
-    setFinalDescription(prev => {
-      if (prev.includes('【ハッシュタグ】')) {
-        return prev.replace(
-          /【ハッシュタグ】\s*\n([\s\S]*?)(?=\n【|$)/,
-          `【ハッシュタグ】\n${hashtagString}`
-        );
-      } else {
-        return prev + (prev.endsWith('\n') ? '' : '\n') + `\n【ハッシュタグ】\n${hashtagString}`;
-      }
-    });
-  }, []);
+  // 概要欄更新のラッパー関数（aiDescriptionとfinalDescriptionの両方を更新）
+  const updateDescriptionHashtagsWrapper = useCallback((newHashtags: string[]) => {
+    updateDescriptionHashtagsHook(newHashtags, aiDescription, setAiDescription);
+    updateDescriptionHashtagsHook(newHashtags, finalDescription, setFinalDescription);
+  }, [aiDescription, finalDescription, updateDescriptionHashtagsHook]);
 
-  // ハッシュタグの追加
-  const handleAddHashtag = useCallback((tag: string) => {
-    const trimmedTag = tag.trim().replace(/^#/, ''); // #を削除
+  // ハッシュタグの追加（ラッパー）
+  const handleAddHashtagWrapper = useCallback((tag: string) => {
+    const trimmedTag = tag.trim().replace(/^#/, '');
     if (!trimmedTag || hashtags.includes(trimmedTag)) return;
     
     const newHashtags = [...hashtags, trimmedTag];
-    setHashtagsSafely(newHashtags);
-    updateDescriptionHashtags(newHashtags);
-    setNewHashtagInput("");
-  }, [hashtags, setHashtagsSafely, updateDescriptionHashtags]);
+    handleAddHashtag(tag);
+    updateDescriptionHashtagsWrapper(newHashtags);
+  }, [hashtags, handleAddHashtag, updateDescriptionHashtagsWrapper]);
 
-  // ハッシュタグの削除
-  const handleRemoveHashtag = useCallback((tag: string) => {
+  // ハッシュタグの削除（ラッパー）
+  const handleRemoveHashtagWrapper = useCallback((tag: string) => {
     const newHashtags = hashtags.filter(t => t !== tag);
-    setHashtagsSafely(newHashtags);
-    updateDescriptionHashtags(newHashtags);
-  }, [hashtags, setHashtagsSafely, updateDescriptionHashtags]);
-
-  // ハッシュタグのお気に入り保存
-  const handleSaveHashtagToFavorites = useCallback((tag: string) => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      const stored = localStorage.getItem(HASHTAG_FAVORITES_STORAGE_KEY);
-      const favorites = stored ? JSON.parse(stored) : [];
-      if (!favorites.includes(tag)) {
-        const updated = [...favorites, tag];
-        localStorage.setItem(HASHTAG_FAVORITES_STORAGE_KEY, JSON.stringify(updated));
-        toast.success('ハッシュタグをお気に入りに追加しました');
-      }
-    } catch (err) {
-      console.error('ハッシュタグお気に入り保存失敗', err);
-    }
-  }, []);
-
-  // ハッシュタグのお気に入り読み込み
-  const loadHashtagFavorites = useCallback(() => {
-    if (typeof window === 'undefined') return [];
-    
-    try {
-      const stored = localStorage.getItem(HASHTAG_FAVORITES_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (err) {
-      console.error('ハッシュタグお気に入り読み込み失敗', err);
-      return [];
-    }
-  }, []);
-
-  // ハッシュタグ候補の自動提案（簡易版）
-  const suggestHashtags = useCallback((keywords: string, videoTheme: string) => {
-    const suggestions: string[] = [];
-    
-    // キーワードから生成
-    const keywordList = keywords.split(/[,、，]/).map(k => k.trim()).filter(k => k.length > 0);
-    keywordList.forEach(keyword => {
-      if (keyword.length <= 10) {
-        suggestions.push(keyword);
-      }
-    });
-    
-    // 動画テーマから生成（簡易的なキーワード抽出）
-    if (videoTheme.includes('ゲーム') || videoTheme.includes('ゲーム実況')) {
-      suggestions.push('VTuber', 'ゲーム実況', '実況');
-    }
-    if (videoTheme.includes('歌') || videoTheme.includes('歌枠')) {
-      suggestions.push('VTuber', '歌枠', '歌ってみた');
-    }
-    if (videoTheme.includes('コラボ')) {
-      suggestions.push('VTuber', 'コラボ', 'コラボ配信');
-    }
-    
-    // 一般的なVTuberハッシュタグ
-    suggestions.push('VTuber', 'バーチャルYouTuber', 'エンタメ');
-    
-    // 重複を削除して返す
-    return Array.from(new Set(suggestions));
-  }, []);
+    handleRemoveHashtag(tag);
+    updateDescriptionHashtagsWrapper(newHashtags);
+  }, [hashtags, handleRemoveHashtag, updateDescriptionHashtagsWrapper]);
 
   // 概要欄からハッシュタグを抽出（初回読み込み時）
   useEffect(() => {
     if (aiDescription) {
-      const extracted = extractHashtagsFromDescription(aiDescription);
-      if (extracted.length > 0) {
-        setHashtagsSafely(extracted);
-      }
+      initializeHashtagsFromDescription(aiDescription);
     }
-  }, [aiDescription, extractHashtagsFromDescription, setHashtagsSafely]);
+  }, [aiDescription, initializeHashtagsFromDescription]);
 
   // ドラッグ&ドロップの並び替え
   const onDragEnd = useCallback((result: DropResult) => {
@@ -939,13 +567,13 @@ export default function TitleGeneratorPage() {
       videoTheme={videoTheme}
       isClient={isClient}
       onNewHashtagInputChange={setNewHashtagInput}
-      onAddHashtag={handleAddHashtag}
-      onRemoveHashtag={handleRemoveHashtag}
+      onAddHashtag={handleAddHashtagWrapper}
+      onRemoveHashtag={handleRemoveHashtagWrapper}
       onSaveHashtagToFavorites={handleSaveHashtagToFavorites}
       onLoadHashtagFavorites={loadHashtagFavorites}
       onSuggestHashtags={suggestHashtags}
       onSetHashtags={setHashtagsSafely}
-      onUpdateDescriptionHashtags={updateDescriptionHashtags}
+      onUpdateDescriptionHashtags={updateDescriptionHashtagsWrapper}
       aiTitles={aiTitles}
       aiDescription={aiDescription}
       descriptionViewMode={descriptionViewMode}
