@@ -77,11 +77,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
     }
   };
 
-  // フィルタリングされたテンプレート
+  // フィルタリングされたテンプレート（検索・お気に入りフィルター適用）
+  // アスペクト比フィルタリングは useTemplateManagement で既に適用済み
+  // この useMemo では UI固有のフィルター（検索・お気に入り）のみを適用
   const displayTemplates = useMemo(() => {
     let templates = filteredTemplates;
 
-    // 検索フィルター
+    // 検索フィルター（検索クエリがある場合のみ適用）
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       templates = templates.filter(template => 
@@ -90,7 +92,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate, s
       );
     }
 
-    // お気に入りフィルター
+    // お気に入りフィルター（お気に入りタブが選択されている場合のみ適用）
     if (activeTab === 'favorites') {
       templates = templates.filter(template => favorites.has(template.id));
     }

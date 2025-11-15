@@ -51,6 +51,8 @@ export function useTemplateManagement({ aspectRatio, customAspectRatio }: UseTem
   }, []);
 
   // 選択中のアスペクト比でテンプレートをフィルタリング
+  // このフィルタリングは全体的な制約（アスペクト比）に基づくため、フック内で管理
+  // UI固有のフィルター（検索・お気に入り）は TemplateSelector 側で適用
   const filteredTemplates = useMemo(() => {
     const filtered = templates.filter(t => 
       aspectRatio === 'custom' || t.supportedAspectRatios.includes(aspectRatio)
